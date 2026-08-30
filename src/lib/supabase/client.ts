@@ -1,20 +1,35 @@
 /**
- * Supabase client factory (not wired yet).
+ * Supabase client factory (not wired yet - see .env.example).
  *
- * When you install @supabase/supabase-js and set the env vars in .env.local,
- * replace the body below with the real createClient call and implement the
- * Repository interface in ../data/repository.ts against it.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * SERVER ONLY. There is no browser Supabase client in this app and there must
+ * not be one.
  *
- *   import { createClient } from "@supabase/supabase-js";
- *   export const supabase = createClient(URL, ANON_KEY);
+ * Myanmar ISPs block *.supabase.co. A client-side createClient() would work on
+ * every machine you develop and test from, and fail for the shop staff who
+ * actually use it. So the browser talks only to our own origin; the server
+ * talks to Supabase. Both futsal and billiards are built this way.
+ *
+ * Practical consequences for anyone adding a screen here:
+ *   - reads happen in server components
+ *   - writes happen in server actions calling the `game.*` RPCs
+ *   - the env vars carry NO NEXT_PUBLIC_ prefix, so importing this file from a
+ *     "use client" component gets you undefined, not a leak
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * When wiring it up, install @supabase/supabase-js and mirror the billiards
+ * repo's src/lib/supabase/ - in particular db: { schema: "game" }, without
+ * which PostgREST looks in `public` and returns confusing 404s.
  */
 
-export const dataSource = process.env.NEXT_PUBLIC_DATA_SOURCE ?? "mock";
+import "server-only";
+
+export const dataSource = process.env.DATA_SOURCE ?? "mock";
 
 export function isSupabaseConfigured(): boolean {
   return (
     dataSource === "supabase" &&
-    !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    !!process.env.SUPABASE_URL &&
+    !!process.env.SUPABASE_PUBLISHABLE_KEY
   );
 }
