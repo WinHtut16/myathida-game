@@ -36,6 +36,7 @@ export const my: Record<string, string> = {
   "record.total": "စုစုပေါင်း",
   "record.minCharge": "အနည်းဆုံး {m} မိနစ် တွက်ချက်",
   "record.save": "ဆက်ရှင်သိမ်း",
+  "record.saving": "သိမ်းဆည်းနေသည်…",
 
   "history.title": "ဆက်ရှင်မှတ်တမ်း",
   "history.today": "ယနေ့",
@@ -98,4 +99,5 @@ export const my: Record<string, string> = {
   "common.cancel": "ပယ်ဖျက်",
   "common.save": "သိမ်း",
   "common.viewAs": "ကြည့်ရှုအဖြစ်",
+  "common.dismiss": "ပိတ်မည်",
 };

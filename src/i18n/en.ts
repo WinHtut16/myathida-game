@@ -38,6 +38,7 @@ export const en = {
   "record.total": "Total",
   "record.minCharge": "Minimum {m} min charged",
   "record.save": "Save session",
+  "record.saving": "Saving…",
 
   // history
   "history.title": "Session History",
@@ -106,4 +107,5 @@ export const en = {
   "common.cancel": "Cancel",
   "common.save": "Save",
   "common.viewAs": "View as",
+  "common.dismiss": "Dismiss",
 };

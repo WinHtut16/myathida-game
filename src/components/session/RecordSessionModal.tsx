@@ -1,38 +1,55 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Check, Minus, Plus, X } from "lucide-react";
-import { useStore } from "@/lib/data/store";
+import { recordSessionAction } from "@/app/actions/floor";
 import { localizedName, useT } from "@/i18n";
 import { cx, fill } from "@/lib/ui";
 import { formatMMK, formatMMKUnit } from "@/lib/format";
-import { previewTotal } from "@/lib/pricing";
-import type { OrderLine } from "@/lib/types";
+import { previewTotal, rateFor } from "@/lib/pricing";
+import type { OrderLine, Pricing, Product, StationView } from "@/lib/types";
 
 const PRESETS = [30, 60, 90, 120];
 
-export function RecordSessionModal({ stationId, onClose }: { stationId: string | null; onClose: () => void }) {
+export function RecordSessionModal({
+  stationId,
+  stations,
+  pricing: pricingList,
+  products,
+  onError,
+  onClose,
+}: {
+  stationId: string | null;
+  stations: StationView[];
+  pricing: Pricing[];
+  products: Product[];
+  onError: (message: string) => void;
+  onClose: () => void;
+}) {
   const { t, locale } = useT();
-  const { state, dispatch, pricingFor } = useStore();
+  const [saving, startSaving] = useTransition();
 
-  const available = state.stations.filter((s) => s.status !== "maintenance").sort((a, b) => a.sortOrder - b.sortOrder);
+  const available = stations
+    .map((v) => v.station)
+    .filter((s) => s.status !== "maintenance")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
   const [sid, setSid] = useState<string>(stationId ?? available[0]?.id ?? "");
   const [minutes, setMinutes] = useState<number>(60);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [label, setLabel] = useState("");
 
-  const station = state.stations.find((s) => s.id === sid);
-  const pricing = station ? pricingFor(station.tier) : null;
+  const station = available.find((s) => s.id === sid);
+  const pricing = station ? rateFor(pricingList, station.tier) : null;
 
   const orderLines: OrderLine[] = useMemo(
     () =>
       Object.entries(cart)
         .map(([id, qty]) => {
-          const p = state.products.find((x) => x.id === id)!;
+          const p = products.find((x) => x.id === id)!;
           return { productId: id, productName: p.nameEn, qty, unitPrice: p.price, lineTotal: p.price * qty };
         })
         .filter((l) => l.qty > 0),
-    [cart, state.products],
+    [cart, products],
   );
 
   const preview = pricing ? previewTotal(minutes, pricing, orderLines) : null;
@@ -46,14 +63,36 @@ export function RecordSessionModal({ stationId, onClose }: { stationId: string |
       return copy;
     });
 
+  /**
+   * The figures on screen are a PREVIEW and nothing more. Only the station, the
+   * minutes, the product ids and their quantities are sent; game.record_session
+   * re-derives every price from the database. If the two ever disagree - a
+   * price changed while this modal sat open - the database wins, which is the
+   * correct answer for money.
+   *
+   * The modal stays open until the write is confirmed. Closing optimistically
+   * would tell staff a sale was recorded when it may have been refused for
+   * being out of stock, and on a POS that discrepancy is found at cash-up.
+   */
   const save = () => {
-    if (!station || minutes <= 0) return;
-    const items = orderLines.map((l) => ({ product: state.products.find((p) => p.id === l.productId)!, qty: l.qty }));
-    dispatch({ type: "RECORD_SESSION", stationId: station.id, minutes, items, label: label.trim() || null });
-    onClose();
+    if (!station || minutes <= 0 || saving) return;
+    startSaving(async () => {
+      const result = await recordSessionAction({
+        stationId: station.id,
+        minutes,
+        items: orderLines.map((l) => ({ productId: l.productId, qty: l.qty })),
+        label: label.trim() || null,
+      });
+      if (result.ok) {
+        onClose();
+      } else if (result.message) {
+        onError(result.message);
+        onClose();
+      }
+    });
   };
 
-  const activeProducts = state.products.filter((p) => p.active);
+  const activeProducts = products.filter((p) => p.active);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
@@ -192,11 +231,11 @@ export function RecordSessionModal({ stationId, onClose }: { stationId: string |
             </div>
             <button
               onClick={save}
-              disabled={!station || minutes <= 0}
+              disabled={!station || minutes <= 0 || saving}
               className="bg-success text-white rounded-lg px-5 py-3 text-sm font-semibold flex items-center gap-1.5 disabled:opacity-50"
             >
               <Check size={16} />
-              {t("record.save")}
+              {saving ? t("record.saving") : t("record.save")}
             </button>
           </div>
         </div>

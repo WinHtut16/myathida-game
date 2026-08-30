@@ -1,64 +1,58 @@
-"use client";
+import { TriangleAlert } from "lucide-react";
+import { getFloorData } from "@/lib/data/floor";
+import { FloorBoard } from "@/components/station/FloorBoard";
 
-import { useState } from "react";
-import { Plus, Search } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
-import { StationTile } from "@/components/station/StationTile";
-import { RecordSessionModal } from "@/components/session/RecordSessionModal";
-import { useStore } from "@/lib/data/store";
-import { useT } from "@/i18n";
-import { fill } from "@/lib/ui";
+/**
+ * The floor board: a SERVER component.
+ *
+ * It reads from Supabase here, on the server, and hands plain data to the
+ * client shell. That is not a stylistic preference - Myanmar ISPs block
+ * *.supabase.co, so a browser-side read works perfectly in development and
+ * fails for the shop staff who actually use this. Keeping the fetch on the
+ * server means the browser only ever talks to our own origin.
+ */
 
-export default function FloorPage() {
-  const { t } = useT();
-  const { stationViews } = useStore();
-  const [query, setQuery] = useState("");
-  const [recordFor, setRecordFor] = useState<string | null>(null);
-  const [recordOpen, setRecordOpen] = useState(false);
+// Occupancy changes constantly and two staff share this screen, so a cached
+// render would show one of them a floor that is already wrong.
+export const dynamic = "force-dynamic";
 
-  const occupied = stationViews.filter((v) => v.occupied).length;
-  const filtered = stationViews.filter((v) => query === "" || v.station.name.toLowerCase().includes(query.toLowerCase()));
+export default async function FloorPage() {
+  const data = await getFloorData();
 
-  const openRecord = (stationId: string | null) => {
-    setRecordFor(stationId);
-    setRecordOpen(true);
-  };
+  if (!data.ok) {
+    return <SetupNotice message={data.message} />;
+  }
 
   return (
-    <AppShell
-      title={t("floor.title")}
-      subtitle={fill(t("floor.summary"), { n: stationViews.length, o: occupied })}
-      contentClassName="flex flex-col"
-      right={
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-line-faint border border-line-soft rounded-lg px-3 py-2 text-text-muted text-[13px] w-[180px]">
-            <Search size={14} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("floor.search")}
-              className="bg-transparent outline-none flex-1 text-ink"
-            />
-          </div>
-          <button
-            onClick={() => openRecord(null)}
-            className="flex items-center gap-2 bg-ink text-white rounded-lg px-4 py-[11px] text-sm font-semibold"
-          >
-            <Plus size={15} />
-            {t("floor.record")}
-          </button>
-        </div>
-      }
-    >
-      <div className="flex-1 overflow-auto p-5 px-[22px]">
-        <div className="grid grid-cols-4 gap-4 max-w-[1200px]">
-          {filtered.map((v) => (
-            <StationTile key={v.station.id} v={v} onRecord={() => openRecord(v.station.id)} />
-          ))}
-        </div>
-      </div>
+    <FloorBoard
+      stations={data.stations}
+      pricing={data.pricing}
+      products={data.products}
+    />
+  );
+}
 
-      {recordOpen && <RecordSessionModal stationId={recordFor} onClose={() => setRecordOpen(false)} />}
-    </AppShell>
+/**
+ * Shown instead of the board when the app cannot read its own data.
+ *
+ * Deliberately not a blank screen or a spinner: the two ways this fails on
+ * first run - a schema that was toggled but never saved, and an account with a
+ * grant but no game.staff row - both look identical to "loading forever" and
+ * neither is guessable. Naming the fix here saves an hour of looking in the
+ * wrong place.
+ */
+function SetupNotice({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-app-bg flex items-center justify-center p-6">
+      <div className="max-w-[540px] w-full bg-surface border border-line rounded-xl shadow-card p-6">
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className="w-8 h-8 rounded-lg bg-[#fdf3f1] text-[#8a3324] flex items-center justify-center flex-none">
+            <TriangleAlert size={17} />
+          </span>
+          <h1 className="text-[17px] font-bold m-0">Game shop is not ready yet</h1>
+        </div>
+        <p className="text-[13.5px] text-text-secondary leading-relaxed m-0">{message}</p>
+      </div>
+    </div>
   );
 }

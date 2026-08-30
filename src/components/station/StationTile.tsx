@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleDot, Circle, ClipboardList, Wrench } from "lucide-react";
-import { useStore } from "@/lib/data/store";
+import { setOccupiedAction } from "@/app/actions/floor";
 import { useT } from "@/i18n";
 import { fill } from "@/lib/ui";
 import { formatMMK } from "@/lib/format";
@@ -9,10 +9,34 @@ import type { StationView } from "@/lib/types";
 import { cx } from "@/lib/ui";
 import { TierBadge } from "./TierBadge";
 
-export function StationTile({ v, onRecord }: { v: StationView; onRecord: () => void }) {
+export function StationTile({
+  v,
+  onRecord,
+  onError,
+  onPending,
+  disabled = false,
+}: {
+  v: StationView;
+  onRecord: () => void;
+  onError: (message: string) => void;
+  /** Wraps the action so React keeps the old UI on screen until the refresh lands. */
+  onPending: (fn: () => void) => void;
+  disabled?: boolean;
+}) {
   const { t } = useT();
-  const { dispatch } = useStore();
   const { station, occupied, rate } = v;
+
+  /**
+   * Occupancy is server state now, so this does not flip a local boolean and
+   * hope. The action runs, the server component re-renders with whatever the
+   * database actually says, and a refusal surfaces as a message instead of a
+   * tile that looks changed but is not.
+   */
+  const toggleOccupied = () =>
+    onPending(async () => {
+      const result = await setOccupiedAction(station.id, !occupied);
+      if (!result.ok && result.message) onError(result.message);
+    });
   const maint = station.status === "maintenance";
 
   if (maint) {
@@ -43,9 +67,10 @@ export function StationTile({ v, onRecord }: { v: StationView; onRecord: () => v
       <div className="text-[13px] text-text-muted font-mono">{fill(t("floor.perHour"), { r: formatMMK(rate) })}</div>
 
       <button
-        onClick={() => dispatch({ type: "SET_OCCUPIED", stationId: station.id, occupied: !occupied })}
+        onClick={toggleOccupied}
+        disabled={disabled}
         className={cx(
-          "flex items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-semibold border",
+          "flex items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-semibold border disabled:opacity-60",
           occupied
             ? "bg-status-active-bg text-status-active-ink border-transparent"
             : "bg-line-faint text-text-secondary border-line-soft",
