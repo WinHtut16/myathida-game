@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Myanmar:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0}
+  svg.lucide{width:1em;height:1em;display:inline-block;vertical-align:-0.14em;flex:none;stroke-width:2}
+  a{color:#2f5fa8;text-decoration:none}
+  a:hover{color:#23262e}
+  .mm{font-family:'Noto Sans Myanmar','IBM Plex Sans',sans-serif}
+  @keyframes stripemove{to{background-position:22px 0}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#e9ebef;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#1e2128;padding:56px 64px 120px;display:flex;flex-direction:column;align-items:center;gap:56px;-webkit-font-smoothing:antialiased">
+
+  <!-- ============ COVER / LEGEND ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;border-bottom:1px solid #cfd3da;padding-bottom:22px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#8a909c;margin-bottom:10px">Design handoff · v1.0</div>
+        <h1 style="margin:0;font-size:38px;font-weight:700;letter-spacing:-0.02em;line-height:1.05">MyaThida — Game Shop Management</h1>
+        <p style="margin:10px 0 0;font-size:15px;color:#5b616e;max-width:720px;line-height:1.5">Admin/staff-facing console for a PS4/PS5 walk-in shop. Static hi-fi screens for Claude Code implementation — Next.js · Supabase · server-authoritative timers. Designed for counter-side tablet/desktop landscape.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;flex:none;text-align:right;font-size:12.5px;color:#5b616e">
+        <div style="display:flex;gap:8px;justify-content:flex-end"><span style="color:#8a909c">Type</span><span style="font-weight:600;color:#1e2128">IBM Plex Sans / Mono · Noto Sans Myanmar</span></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><span style="color:#8a909c">Currency</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#1e2128">1,500 MMK</span></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><span style="color:#8a909c">Locales</span><span style="font-weight:600;color:#1e2128">EN · <span class="mm">မြန်မာ</span></span></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px">
+      <!-- status legend -->
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:18px 20px">
+        <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:14px">Station states</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:#9aa2af;flex:none"></span><span style="font-size:13px"><b style="font-weight:600">Idle</b> — free</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:#1a9d6b;flex:none"></span><span style="font-size:13px"><b style="font-weight:600">Active</b> — running</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:#d9920f;flex:none"></span><span style="font-size:13px"><b style="font-weight:600">Warning</b> — &lt;10m</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:#d83a25;flex:none"></span><span style="font-size:13px"><b style="font-weight:600">Expired</b> — act</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:#3b73c4;flex:none"></span><span style="font-size:13px"><b style="font-weight:600">Paused</b> — frozen</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:repeating-linear-gradient(45deg,#cfd3da 0 5px,#e7e9ed 5px 10px);flex:none"></span><span style="font-size:13px"><b style="font-weight:600">Maintenance</b></span></div>
+        </div>
+      </div>
+      <!-- palette -->
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:18px 20px">
+        <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:14px">Palette</div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="height:34px;border-radius:6px;background:#23262e;border:1px solid #dcdfe5"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a909c">Rail</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="height:34px;border-radius:6px;background:#1e2128;border:1px solid #dcdfe5"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a909c">Ink</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="height:34px;border-radius:6px;background:#e9ebef;border:1px solid #dcdfe5"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a909c">Canvas</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="height:34px;border-radius:6px;background:#fff;border:1px solid #dcdfe5"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a909c">Surface</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 01 · FLOOR DASHBOARD ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">01</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Floor Dashboard</h2>
+      <span style="font-size:12.5px;color:#8a909c">StationGrid · StationCard · TabSummaryBar · NewSessionButton · LanguageSwitch · Supabase Realtime</span>
+    </div>
+
+    <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(20,22,28,.04),0 10px 30px rgba(20,22,28,.06)">
+      <!-- chrome -->
+      <div style="height:38px;background:#f6f7f9;border-bottom:1px solid #e6e8ec;display:flex;align-items:center;padding:0 14px;gap:8px">
+        <span style="width:11px;height:11px;border-radius:50%;background:#e0625a"></span><span style="width:11px;height:11px;border-radius:50%;background:#e6b24a"></span><span style="width:11px;height:11px;border-radius:50%;background:#57b463"></span>
+        <span style="margin-left:10px;background:#fff;border:1px solid #e0e3e8;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a909c;padding:3px 12px">myathida.app/</span>
+      </div>
+      <!-- app shell -->
+      <div style="display:flex;height:826px">
+        <!-- left rail -->
+        <div style="width:216px;background:#23262e;color:#c7cbd3;flex:none;display:flex;flex-direction:column;padding:18px 0">
+          <div style="padding:0 20px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #34383f;margin-bottom:12px">
+            <span style="width:30px;height:30px;border-radius:7px;background:#3b73c4;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px">M</span>
+            <div style="line-height:1.1"><div style="color:#fff;font-weight:600;font-size:14.5px">MyaThida</div><div style="font-size:10.5px;color:#7d838e;font-family:'IBM Plex Mono',monospace">GAME SHOP</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;padding:0 12px">
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:7px;background:#3b73c4;color:#fff;font-weight:500;font-size:14px"><span style="font-size:17px"><i data-lucide="layout-dashboard"></i></span>Floor</div>
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:7px;font-size:14px"><span style="font-size:17px"><i data-lucide="package"></i></span>Products</div>
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:7px;font-size:14px"><span style="font-size:17px"><i data-lucide="tag"></i></span>Pricing</div>
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:7px;font-size:14px"><span style="font-size:17px"><i data-lucide="bar-chart-3"></i></span>Reports</div>
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:7px;font-size:14px"><span style="font-size:17px"><i data-lucide="settings"></i></span>Settings</div>
+          </div>
+          <div style="margin-top:auto;padding:0 12px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;padding:3px;background:#1b1e24;border-radius:8px;font-size:12.5px;font-weight:500">
+              <span style="flex:1;text-align:center;padding:6px 0;border-radius:6px;background:#3b3f47;color:#fff">EN</span>
+              <span class="mm" style="flex:1;text-align:center;padding:6px 0;border-radius:6px;color:#9aa0aa">မြန်မာ</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid #34383f">
+              <span style="width:30px;height:30px;border-radius:50%;background:#3b3f47;display:flex;align-items:center;justify-content:center;color:#c7cbd3;font-size:15px"><i data-lucide="user"></i></span>
+              <div style="line-height:1.15"><div style="color:#fff;font-size:13px;font-weight:500">Su Su</div><div style="font-size:10.5px;color:#7d838e">Admin</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- main -->
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0;background:#eef0f3">
+          <!-- top bar -->
+          <div style="height:64px;background:#fff;border-bottom:1px solid #e0e3e8;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex:none">
+            <div style="display:flex;align-items:baseline;gap:14px">
+              <h3 style="margin:0;font-size:19px;font-weight:700">Floor</h3>
+              <span style="font-size:13px;color:#8a909c;font-family:'IBM Plex Mono',monospace">9 stations · 5 active</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:8px;padding:8px 12px;color:#8a909c;font-size:13px;width:200px"><i data-lucide="search"></i><span>Search station or tab</span></div>
+              <button style="display:flex;align-items:center;gap:8px;background:#1e2128;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer"><i data-lucide="plus"></i>New session</button>
+            </div>
+          </div>
+
+          <!-- tab summary bar -->
+          <div style="background:#fff;border-bottom:1px solid #e0e3e8;padding:12px 22px;display:flex;align-items:center;gap:18px;flex:none">
+            <span style="font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#8a909c;font-weight:600;flex:none">Open tabs</span>
+            <div style="display:flex;gap:10px;overflow:hidden;flex:1">
+              <div style="display:flex;align-items:center;gap:10px;border:1px solid #e0e3e8;border-radius:8px;padding:7px 12px;background:#fafbfc"><span style="font-size:13px;font-weight:600">Ko Aung +3</span><span style="font-size:11px;color:#8a909c">2 st</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">24,500 MMK</span></div>
+              <div style="display:flex;align-items:center;gap:10px;border:1px solid #e0e3e8;border-radius:8px;padding:7px 12px;background:#fafbfc"><span style="font-size:13px;font-weight:600">Group B</span><span style="font-size:11px;color:#8a909c">1 st</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">9,000 MMK</span></div>
+              <div style="display:flex;align-items:center;gap:10px;border:1px solid #e0e3e8;border-radius:8px;padding:7px 12px;background:#fafbfc"><span style="font-size:13px;font-weight:600">Walk-in</span><span style="font-size:11px;color:#8a909c">1 st</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">6,000 MMK</span></div>
+            </div>
+            <div style="flex:none;text-align:right;border-left:1px solid #e0e3e8;padding-left:18px"><div style="font-size:10.5px;color:#8a909c;text-transform:uppercase;letter-spacing:.1em">Floor total</div><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700">39,500 MMK</div></div>
+          </div>
+
+          <!-- grid -->
+          <div style="flex:1;overflow:auto;padding:20px 22px">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+
+              <!-- ACTIVE -->
+              <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #1a9d6b;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(20,22,28,.04)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700">TV 1</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS5</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#e7f4ee;color:#0f7a52;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px"><span style="width:7px;height:7px;border-radius:50%;background:#1a9d6b"></span>Active</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:600;letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums">42:15</div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#5b616e"><i data-lucide="users"></i>Ko Aung +3</div>
+                <div style="display:flex;gap:8px;border-top:1px solid #eef0f3;padding-top:12px">
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;color:#1e2128;cursor:pointer"><i data-lucide="plus"></i>Extend</button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="shopping-cart"></i></button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="square"></i></button>
+                </div>
+              </div>
+
+              <!-- WARNING <10 -->
+              <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #d9920f;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(20,22,28,.04)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700">TV 2</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS5</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#fbf1df;color:#96590a;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px"><i data-lucide="alarm-clock"></i>&lt;10 min</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:600;letter-spacing:-0.02em;line-height:1;color:#a86616;font-variant-numeric:tabular-nums">07:42</div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#5b616e"><i data-lucide="users"></i>Group B</div>
+                <div style="display:flex;gap:8px;border-top:1px solid #eef0f3;padding-top:12px">
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#a86616;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer"><i data-lucide="plus"></i>Extend</button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="shopping-cart"></i></button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="square"></i></button>
+                </div>
+              </div>
+
+              <!-- EXPIRED -->
+              <div style="background:#fff;border:1px solid #f0c9c1;border-top:3px solid #d83a25;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 3px rgba(216,58,37,.08)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700">TV 3</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#1e2128;background:#f1f3f6;border:1px solid #dcdfe5;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS4</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#d83a25;color:#fff;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px"><i data-lucide="alert-triangle"></i>Expired</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:600;letter-spacing:-0.02em;line-height:1;color:#c2321f;font-variant-numeric:tabular-nums">-03:10</div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#5b616e"><i data-lucide="users"></i>Walk-in</div>
+                <div style="display:flex;gap:8px;border-top:1px solid #f7e2de;padding-top:12px">
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#c2321f;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer"><i data-lucide="square"></i>End now</button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="plus"></i></button>
+                </div>
+              </div>
+
+              <!-- PAUSED -->
+              <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #3b73c4;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(20,22,28,.04)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700">TV 4</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#1e2128;background:#f1f3f6;border:1px solid #dcdfe5;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS4</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#e9eff8;color:#2f5fa8;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px"><i data-lucide="pause"></i>Paused</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:600;letter-spacing:-0.02em;line-height:1;color:#5b616e;font-variant-numeric:tabular-nums">18:30</div>
+                <div style="font-size:11.5px;color:#2f5fa8;background:#eef3fa;border:1px solid #dbe6f5;border-radius:6px;padding:6px 9px;display:flex;align-items:center;gap:6px"><i data-lucide="info"></i>Controller fault — swapping</div>
+                <div style="display:flex;gap:8px;border-top:1px solid #eef0f3;padding-top:12px">
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#3b73c4;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer"><i data-lucide="play"></i>Resume</button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="square"></i></button>
+                </div>
+              </div>
+
+              <!-- ACTIVE 2 -->
+              <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #1a9d6b;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(20,22,28,.04)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700">TV 5</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS5</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#e7f4ee;color:#0f7a52;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px"><span style="width:7px;height:7px;border-radius:50%;background:#1a9d6b"></span>Active</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:600;letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums">58:03</div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#5b616e"><i data-lucide="users"></i>Ko Aung +3</div>
+                <div style="display:flex;gap:8px;border-top:1px solid #eef0f3;padding-top:12px">
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;color:#1e2128;cursor:pointer"><i data-lucide="plus"></i>Extend</button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="shopping-cart"></i></button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="square"></i></button>
+                </div>
+              </div>
+
+              <!-- IDLE -->
+              <div style="background:#f7f8fa;border:1px dashed #cfd3da;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700;color:#5b616e">TV 6</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#1e2128;background:#eceef1;border:1px solid #dcdfe5;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS4</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;color:#8a909c;font-size:11.5px;font-weight:600;padding:4px 9px"><span style="width:7px;height:7px;border-radius:50%;background:#9aa2af"></span>Idle</div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px 0">
+                  <span style="font-size:22px;color:#b6bcc6"><i data-lucide="monitor"></i></span>
+                  <button style="display:flex;align-items:center;gap:8px;background:#1e2128;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer"><i data-lucide="play"></i>Start</button>
+                </div>
+              </div>
+
+              <!-- ACTIVE 3 -->
+              <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #1a9d6b;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(20,22,28,.04)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700">TV 7</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#1e2128;background:#f1f3f6;border:1px solid #dcdfe5;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS4</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#e7f4ee;color:#0f7a52;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px"><span style="width:7px;height:7px;border-radius:50%;background:#1a9d6b"></span>Active</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:600;letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums">31:20</div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#5b616e"><i data-lucide="users"></i>Walk-in</div>
+                <div style="display:flex;gap:8px;border-top:1px solid #eef0f3;padding-top:12px">
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;color:#1e2128;cursor:pointer"><i data-lucide="plus"></i>Extend</button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="shopping-cart"></i></button>
+                  <button style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:7px;padding:9px;font-size:15px;color:#1e2128;cursor:pointer"><i data-lucide="square"></i></button>
+                </div>
+              </div>
+
+              <!-- MAINTENANCE -->
+              <div style="background:repeating-linear-gradient(45deg,#e7e9ed 0 11px,#eef0f3 11px 22px);border:1px solid #dcdfe5;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700;color:#8a909c">TV 8</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#8a909c;background:#fff;border:1px solid #dcdfe5;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS5</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#fff;color:#8a909c;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;border:1px solid #dcdfe5"><i data-lucide="wrench"></i>Maintenance</div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:22px 0;color:#8a909c">
+                  <span style="font-size:22px"><i data-lucide="power-off"></i></span>
+                  <span style="font-size:12.5px;font-weight:500">Disabled — stand offline</span>
+                </div>
+              </div>
+
+              <!-- IDLE 2 -->
+              <div style="background:#f7f8fa;border:1px dashed #cfd3da;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <div><div style="font-size:16px;font-weight:700;color:#5b616e">TV 9</div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px;letter-spacing:.03em">PS5</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;color:#8a909c;font-size:11.5px;font-weight:600;padding:4px 9px"><span style="width:7px;height:7px;border-radius:50%;background:#9aa2af"></span>Idle</div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px 0">
+                  <span style="font-size:22px;color:#b6bcc6"><i data-lucide="monitor"></i></span>
+                  <button style="display:flex;align-items:center;gap:8px;background:#1e2128;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer"><i data-lucide="play"></i>Start</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ============ 02 · STATION CARD STATES ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">02</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">StationCard</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Card states — reference</h2>
+      <span style="font-size:12.5px;color:#8a909c">One component, six status treatments. Colour + top border carry the state; timer colour reinforces it.</span>
+    </div>
+    <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:22px;display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:#f7f8fa;border:1px dashed #cfd3da;border-radius:9px;padding:13px;height:150px;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px;color:#5b616e">TV 6</span><span style="width:7px;height:7px;border-radius:50%;background:#9aa2af;margin-top:5px"></span></div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#b6bcc6;font-size:20px"><i data-lucide="monitor"></i></div>
+          <button style="background:#1e2128;color:#fff;border:none;border-radius:6px;padding:7px;font-size:12px;font-weight:600;font-family:inherit">Start</button>
+        </div>
+        <div><div style="font-size:12.5px;font-weight:600">Idle</div><div style="font-size:11px;color:#8a909c">Free · start affordance</div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #1a9d6b;border-radius:9px;padding:13px;height:150px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px">TV 1</span><span style="width:7px;height:7px;border-radius:50%;background:#1a9d6b;margin-top:5px"></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums">42:15</div>
+          <div style="font-size:11px;color:#8a909c;margin-top:auto">Ko Aung +3</div>
+        </div>
+        <div><div style="font-size:12.5px;font-weight:600;color:#0f7a52">Active</div><div style="font-size:11px;color:#8a909c">Counting down · green</div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #d9920f;border-radius:9px;padding:13px;height:150px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px">TV 2</span><span style="color:#d9920f;font-size:13px;margin-top:1px"><i data-lucide="alarm-clock"></i></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:#a86616;font-variant-numeric:tabular-nums">07:42</div>
+          <div style="font-size:11px;color:#8a909c;margin-top:auto">Group B</div>
+        </div>
+        <div><div style="font-size:12.5px;font-weight:600;color:#96590a">Warning</div><div style="font-size:11px;color:#8a909c">&lt;10 min · amber</div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:#fff;border:1px solid #f0c9c1;border-top:3px solid #d83a25;border-radius:9px;padding:13px;height:150px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 0 3px rgba(216,58,37,.08)">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px">TV 3</span><span style="color:#d83a25;font-size:13px;margin-top:1px"><i data-lucide="alert-triangle"></i></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:#c2321f;font-variant-numeric:tabular-nums">-03:10</div>
+          <div style="font-size:11px;color:#8a909c;margin-top:auto">Needs action</div>
+        </div>
+        <div><div style="font-size:12.5px;font-weight:600;color:#c2321f">Expired</div><div style="font-size:11px;color:#8a909c">Over time · red glow</div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:#fff;border:1px solid #dcdfe5;border-top:3px solid #3b73c4;border-radius:9px;padding:13px;height:150px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px">TV 4</span><span style="color:#3b73c4;font-size:13px;margin-top:1px"><i data-lucide="pause"></i></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:#5b616e;font-variant-numeric:tabular-nums">18:30</div>
+          <div style="font-size:10.5px;color:#2f5fa8;margin-top:auto">Controller fault</div>
+        </div>
+        <div><div style="font-size:12.5px;font-weight:600;color:#2f5fa8">Paused</div><div style="font-size:11px;color:#8a909c">Frozen + reason · blue</div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:repeating-linear-gradient(45deg,#e7e9ed 0 9px,#eef0f3 9px 18px);border:1px solid #dcdfe5;border-radius:9px;padding:13px;height:150px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:14px;color:#8a909c">TV 8</span><span style="color:#8a909c;font-size:13px;margin-top:1px"><i data-lucide="wrench"></i></span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8a909c;font-size:18px"><i data-lucide="power-off"></i></div>
+        </div>
+        <div><div style="font-size:12.5px;font-weight:600;color:#8a909c">Maintenance</div><div style="font-size:11px;color:#8a909c">Offline · striped</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 03 · START SESSION ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">03</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">modal → /</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Start Session</h2>
+      <span style="font-size:12.5px;color:#8a909c">StartSessionModal · StationPicker · DepositInput — overlays the Floor Dashboard</span>
+    </div>
+    <div style="background:#d9dce1;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;padding:44px 0;background-image:repeating-linear-gradient(0deg,#d2d5db 0 1px,transparent 1px 40px),repeating-linear-gradient(90deg,#d2d5db 0 1px,transparent 1px 40px)">
+      <div style="width:560px;background:#fff;border-radius:12px;box-shadow:0 24px 60px rgba(20,22,28,.28);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #eef0f3">
+          <div><div style="font-size:17px;font-weight:700">Start session</div><div style="font-size:12.5px;color:#8a909c">New tab · base 60 min, extend in 15-min steps</div></div>
+          <span style="color:#8a909c;font-size:18px"><i data-lucide="x"></i></span>
+        </div>
+        <div style="padding:20px 22px;display:flex;flex-direction:column;gap:18px">
+          <div>
+            <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:9px">Console type</div>
+            <div style="display:flex;gap:0;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:9px;padding:4px">
+              <span style="flex:1;text-align:center;padding:10px;border-radius:6px;background:#1e2128;color:#fff;font-weight:600;font-size:14px;font-family:'IBM Plex Mono',monospace">PS5 · 3 free</span>
+              <span style="flex:1;text-align:center;padding:10px;color:#5b616e;font-weight:600;font-size:14px;font-family:'IBM Plex Mono',monospace">PS4 · 2 free</span>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:9px"><span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600">Select stations</span><span style="font-size:11.5px;color:#5b616e">2 selected · one tab</span></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px">
+              <div style="border:2px solid #3b73c4;background:#eef3fa;border-radius:8px;padding:11px 8px;text-align:center;position:relative"><div style="font-weight:700;font-size:14px">TV 1</div><div style="font-size:10.5px;color:#8a909c">PS5</div><span style="position:absolute;top:6px;right:6px;color:#3b73c4;font-size:13px"><i data-lucide="check"></i></span></div>
+              <div style="border:2px solid #3b73c4;background:#eef3fa;border-radius:8px;padding:11px 8px;text-align:center;position:relative"><div style="font-weight:700;font-size:14px">TV 5</div><div style="font-size:10.5px;color:#8a909c">PS5</div><span style="position:absolute;top:6px;right:6px;color:#3b73c4;font-size:13px"><i data-lucide="check"></i></span></div>
+              <div style="border:1px solid #dcdfe5;border-radius:8px;padding:11px 8px;text-align:center"><div style="font-weight:700;font-size:14px">TV 9</div><div style="font-size:10.5px;color:#8a909c">PS5</div></div>
+              <div style="border:1px solid #eef0f3;border-radius:8px;padding:11px 8px;text-align:center;opacity:.45"><div style="font-weight:700;font-size:14px">TV 2</div><div style="font-size:10.5px;color:#8a909c">busy</div></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="flex:1"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:8px">Tab label <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:11px 12px;font-size:14px;color:#1e2128">Ko Aung +3</div></div>
+            <div style="flex:1"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:8px">Prepay deposit</div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:11px 12px;font-size:14px;color:#8a909c;display:flex;justify-content:space-between"><span style="color:#1e2128;font-family:'IBM Plex Mono',monospace">10,000</span><span>MMK</span></div></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-top:1px solid #eef0f3;background:#fafbfc">
+          <span style="font-size:12.5px;color:#5b616e">2 stations × 60 min · deposit 10,000 MMK</span>
+          <div style="display:flex;gap:10px"><button style="background:#fff;border:1px solid #dcdfe5;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:600;font-family:inherit;color:#1e2128">Cancel</button><button style="background:#1e2128;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;display:flex;align-items:center;gap:7px"><i data-lucide="play"></i>Start 2 sessions</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ============ 04 · STATION DETAIL DRAWER ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">04</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">drawer → /</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Station Detail</h2>
+      <span style="font-size:12.5px;color:#8a909c">StationDetailDrawer · TimerDisplay · ExtendControls · PauseControl · EndSessionConfirm — admin-only pause</span>
+    </div>
+    <div style="background:#d9dce1;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden;display:flex;justify-content:flex-end;background-image:repeating-linear-gradient(0deg,#d2d5db 0 1px,transparent 1px 40px),repeating-linear-gradient(90deg,#d2d5db 0 1px,transparent 1px 40px)">
+      <div style="width:470px;background:#fff;box-shadow:-16px 0 50px rgba(20,22,28,.20);display:flex;flex-direction:column;min-height:660px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:20px 22px;border-bottom:1px solid #eef0f3">
+          <div style="display:flex;align-items:center;gap:11px">
+            <div><div style="display:flex;align-items:center;gap:9px"><span style="font-size:19px;font-weight:700">TV 1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px">PS5</span></div><div style="font-size:12px;color:#8a909c;margin-top:3px">Ko Aung +3 · 3,000 MMK / hr</div></div>
+          </div>
+          <span style="color:#8a909c;font-size:18px"><i data-lucide="x"></i></span>
+        </div>
+        <div style="padding:22px;display:flex;flex-direction:column;gap:20px;flex:1">
+          <div style="background:#f7f8fa;border:1px solid #eef0f3;border-radius:10px;padding:18px;text-align:center">
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;color:#0f7a52;font-weight:600;margin-bottom:8px"><span style="width:7px;height:7px;border-radius:50%;background:#1a9d6b"></span>ACTIVE · remaining</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:56px;font-weight:600;letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums">42:15</div>
+            <div style="font-size:12.5px;color:#8a909c;margin-top:8px">Started 8:30 PM · scheduled end 9:45 PM</div>
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:9px">Extend</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+              <button style="border:1px solid #dcdfe5;background:#fff;border-radius:8px;padding:12px 8px;font-family:inherit;cursor:pointer"><div style="font-size:15px;font-weight:700">+15m</div><div style="font-size:11px;color:#8a909c;font-family:'IBM Plex Mono',monospace">+750</div></button>
+              <button style="border:1px solid #dcdfe5;background:#fff;border-radius:8px;padding:12px 8px;font-family:inherit;cursor:pointer"><div style="font-size:15px;font-weight:700">+30m</div><div style="font-size:11px;color:#8a909c;font-family:'IBM Plex Mono',monospace">+1,500</div></button>
+              <button style="border:1px solid #dcdfe5;background:#fff;border-radius:8px;padding:12px 8px;font-family:inherit;cursor:pointer"><div style="font-size:15px;font-weight:700">+1h</div><div style="font-size:11px;color:#8a909c;font-family:'IBM Plex Mono',monospace">+3,000</div></button>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:9px">Pause <span style="display:flex;align-items:center;gap:4px;letter-spacing:0;text-transform:none;font-weight:500;color:#a86616;background:#fbf1df;padding:2px 7px;border-radius:4px;font-size:10px"><i data-lucide="shield"></i>Admin · reason required · audited</span></div>
+            <div style="display:flex;gap:9px"><div style="flex:1;border:1px solid #dcdfe5;border-radius:8px;padding:11px 12px;font-size:13px;color:#8a909c">Reason (e.g. break, glitch)…</div><button style="background:#f1f3f6;border:1px solid #e0e3e8;border-radius:8px;padding:0 18px;font-size:14px;font-weight:600;font-family:inherit;color:#1e2128;display:flex;align-items:center;gap:7px;cursor:pointer"><i data-lucide="pause"></i>Pause</button></div>
+          </div>
+          <div style="border-top:1px solid #eef0f3;padding-top:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600">Orders on this station</span><button style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #dcdfe5;border-radius:7px;padding:7px 12px;font-size:12.5px;font-weight:600;font-family:inherit;color:#1e2128;cursor:pointer"><i data-lucide="plus"></i>Add order</button></div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span>2 × Coca-Cola</span><span style="font-family:'IBM Plex Mono',monospace;color:#5b616e">2,000</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span>1 × Potato Chips</span><span style="font-family:'IBM Plex Mono',monospace;color:#5b616e">1,000</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #eef0f3;padding:16px 22px;background:#fafbfc;display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:11px;color:#8a909c;text-transform:uppercase;letter-spacing:.1em">Station subtotal</div><div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700">15,000 MMK</div></div>
+          <button style="background:#c2321f;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;display:flex;align-items:center;gap:7px;cursor:pointer"><i data-lucide="square"></i>End session</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 05 · ORDER PANEL ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">05</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">reusable</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Order Panel</h2>
+      <span style="font-size:12.5px;color:#8a909c">OrderPanel · ProductGrid · ProductTile · CartList — bilingual names from name_en / name_my</span>
+    </div>
+    <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden;display:flex;min-height:560px">
+      <!-- product side -->
+      <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #eef0f3">
+        <div style="padding:16px 20px;border-bottom:1px solid #eef0f3;display:flex;align-items:center;gap:12px">
+          <div style="display:flex;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:8px;padding:3px;font-size:13px;font-weight:600">
+            <span style="padding:7px 16px;border-radius:6px;background:#1e2128;color:#fff">Snacks</span>
+            <span style="padding:7px 16px;border-radius:6px;color:#5b616e">Drinks</span>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:8px;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:8px;padding:8px 12px;color:#8a909c;font-size:13px"><i data-lucide="search"></i>Search products</div>
+        </div>
+        <div style="padding:18px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div style="border:1px solid #dcdfe5;border-radius:9px;padding:13px;display:flex;flex-direction:column;gap:8px">
+            <div style="height:52px;border-radius:6px;background:repeating-linear-gradient(45deg,#f1f3f6 0 7px,#e9ebef 7px 14px);display:flex;align-items:center;justify-content:center;color:#b6bcc6;font-size:16px"><i data-lucide="cookie"></i></div>
+            <div><div style="font-size:13.5px;font-weight:600;line-height:1.2">Potato Chips</div><div class="mm" style="font-size:12px;color:#8a909c">အာလူးကြော်</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">1,000</span><span style="width:26px;height:26px;border-radius:6px;background:#1e2128;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px"><i data-lucide="plus"></i></span></div>
+          </div>
+          <div style="border:1px solid #dcdfe5;border-radius:9px;padding:13px;display:flex;flex-direction:column;gap:8px">
+            <div style="height:52px;border-radius:6px;background:repeating-linear-gradient(45deg,#f1f3f6 0 7px,#e9ebef 7px 14px);display:flex;align-items:center;justify-content:center;color:#b6bcc6;font-size:16px"><i data-lucide="cookie"></i></div>
+            <div><div style="font-size:13.5px;font-weight:600;line-height:1.2">Instant Noodles</div><div class="mm" style="font-size:12px;color:#8a909c">ခေါက်ဆွဲ</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">1,500</span><span style="width:26px;height:26px;border-radius:6px;background:#1e2128;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px"><i data-lucide="plus"></i></span></div>
+          </div>
+          <div style="border:2px solid #1e2128;border-radius:9px;padding:13px;display:flex;flex-direction:column;gap:8px">
+            <div style="height:52px;border-radius:6px;background:repeating-linear-gradient(45deg,#f1f3f6 0 7px,#e9ebef 7px 14px);display:flex;align-items:center;justify-content:center;color:#b6bcc6;font-size:16px"><i data-lucide="candy"></i></div>
+            <div><div style="font-size:13.5px;font-weight:600;line-height:1.2">Chocolate Bar</div><div class="mm" style="font-size:12px;color:#8a909c">ချောကလက်</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">1,200</span><div style="display:flex;align-items:center;gap:6px;background:#1e2128;border-radius:6px;padding:2px"><span style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px"><i data-lucide="minus"></i></span><span style="color:#fff;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;min-width:12px;text-align:center">2</span><span style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px"><i data-lucide="plus"></i></span></div></div>
+          </div>
+          <div style="border:1px solid #dcdfe5;border-radius:9px;padding:13px;display:flex;flex-direction:column;gap:8px">
+            <div style="height:52px;border-radius:6px;background:repeating-linear-gradient(45deg,#f1f3f6 0 7px,#e9ebef 7px 14px);display:flex;align-items:center;justify-content:center;color:#b6bcc6;font-size:16px"><i data-lucide="cookie"></i></div>
+            <div><div style="font-size:13.5px;font-weight:600;line-height:1.2">Peanuts</div><div class="mm" style="font-size:12px;color:#8a909c">မြေပဲ</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">800</span><span style="width:26px;height:26px;border-radius:6px;background:#1e2128;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px"><i data-lucide="plus"></i></span></div>
+          </div>
+        </div>
+      </div>
+      <!-- cart side -->
+      <div style="width:320px;flex:none;display:flex;flex-direction:column;background:#fafbfc">
+        <div style="padding:16px 20px;border-bottom:1px solid #eef0f3;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600">Cart · TV 1</div>
+        <div style="flex:1;padding:14px 20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13.5px;font-weight:600">Chocolate Bar</div><div style="font-size:11.5px;color:#8a909c">2 × 1,200</div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600">2,400</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13.5px;font-weight:600">Coca-Cola</div><div style="font-size:11.5px;color:#8a909c">2 × 1,000</div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600">2,000</span></div>
+        </div>
+        <div style="border-top:1px solid #eef0f3;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;color:#5b616e">Subtotal</span><span style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700">4,400 MMK</span></div>
+          <button style="background:#1e2128;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><i data-lucide="plus"></i>Add to tab</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ============ 06 · CHECKOUT / BILL ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">06</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /tab/[id]</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Checkout / Bill</h2>
+      <span style="font-size:12.5px;color:#8a909c">BillView · PlaytimeBreakdown · FoodBreakdown · SplitToggle · PaymentSelect · CloseTabButton — print-friendly</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- combined bill -->
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(20,22,28,.04)">
+        <div style="padding:20px 24px;border-bottom:1px solid #eef0f3;display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:17px;font-weight:700">Ko Aung +3</div><div style="font-size:12.5px;color:#8a909c">Tab #A-1042 · 2 stations · opened 8:30 PM</div></div>
+          <div style="display:flex;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:8px;padding:3px;font-size:12.5px;font-weight:600"><span style="padding:6px 13px;border-radius:6px;background:#1e2128;color:#fff">Combined</span><span style="padding:6px 13px;color:#5b616e">Split</span></div>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:18px">
+          <div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:11px"><i data-lucide="timer"></i>Playtime</div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span>TV 1 · PS5 · 2h 15m</span><span style="font-family:'IBM Plex Mono',monospace">6,750</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:14px"><span>TV 5 · PS5 · 1h 30m</span><span style="font-family:'IBM Plex Mono',monospace">4,500</span></div>
+          </div>
+          <div style="border-top:1px solid #eef0f3;padding-top:16px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:11px"><i data-lucide="shopping-cart"></i>Food &amp; drinks</div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span>2 × Chocolate Bar</span><span style="font-family:'IBM Plex Mono',monospace">2,400</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span>4 × Coca-Cola</span><span style="font-family:'IBM Plex Mono',monospace">4,000</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:14px"><span>1 × Potato Chips</span><span style="font-family:'IBM Plex Mono',monospace">1,000</span></div>
+          </div>
+          <div style="border-top:1px solid #eef0f3;padding-top:16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;font-size:14px;color:#5b616e"><span>Subtotal</span><span style="font-family:'IBM Plex Mono',monospace">18,650</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;color:#2f5fa8"><span>Deposit</span><span style="font-family:'IBM Plex Mono',monospace">− 10,000</span></div>
+          </div>
+        </div>
+        <div style="background:#1e2128;padding:18px 24px;display:flex;align-items:center;justify-content:space-between">
+          <span style="color:#c7cbd3;font-size:13px;text-transform:uppercase;letter-spacing:.12em">Grand total</span>
+          <span style="color:#fff;font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700">8,650 MMK</span>
+        </div>
+      </div>
+
+      <!-- payment + split preview -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:20px 22px">
+          <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:12px">Payment method</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px">
+            <div style="border:2px solid #1e2128;border-radius:8px;padding:14px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:7px"><span style="font-size:18px"><i data-lucide="banknote"></i></span><span style="font-size:13px;font-weight:600">Cash</span></div>
+            <div style="border:1px solid #dcdfe5;border-radius:8px;padding:14px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:7px;color:#5b616e"><span style="font-size:18px"><i data-lucide="smartphone"></i></span><span style="font-size:13px;font-weight:600">Mobile</span></div>
+            <div style="border:1px solid #dcdfe5;border-radius:8px;padding:14px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:7px;color:#5b616e"><span style="font-size:18px"><i data-lucide="ellipsis"></i></span><span style="font-size:13px;font-weight:600">Other</span></div>
+          </div>
+          <button style="width:100%;background:#17835a;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:600;font-family:inherit;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><i data-lucide="check-circle-2"></i>Mark paid &amp; close tab</button>
+          <p style="margin:12px 0 0;font-size:12px;color:#8a909c;text-align:center">Closes the tab and frees any still-open stations.</p>
+        </div>
+        <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:20px 22px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:12px"><i data-lucide="split"></i>Split preview — per station</div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1;border:1px solid #eef0f3;border-radius:9px;padding:14px;background:#fafbfc">
+              <div style="font-weight:700;font-size:14px;margin-bottom:9px">TV 1</div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5b616e;margin-bottom:5px"><span>Playtime</span><span style="font-family:'IBM Plex Mono',monospace">6,750</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5b616e;margin-bottom:9px"><span>Orders</span><span style="font-family:'IBM Plex Mono',monospace">3,400</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;border-top:1px solid #eef0f3;padding-top:9px"><span>Total</span><span style="font-family:'IBM Plex Mono',monospace">10,150</span></div>
+            </div>
+            <div style="flex:1;border:1px solid #eef0f3;border-radius:9px;padding:14px;background:#fafbfc">
+              <div style="font-weight:700;font-size:14px;margin-bottom:9px">TV 5</div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5b616e;margin-bottom:5px"><span>Playtime</span><span style="font-family:'IBM Plex Mono',monospace">4,500</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5b616e;margin-bottom:9px"><span>Orders</span><span style="font-family:'IBM Plex Mono',monospace">4,000</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;border-top:1px solid #eef0f3;padding-top:9px"><span>Total</span><span style="font-family:'IBM Plex Mono',monospace">8,500</span></div>
+            </div>
+          </div>
+          <p style="margin:12px 0 0;font-size:12px;color:#8a909c">Tab-level orders divided or assigned by staff at split time; deposit applied to whichever station settles first.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+    <!-- ============ 07 · PRODUCTS ADMIN ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">07</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /admin/products</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Products Admin</h2>
+      <span style="font-size:12.5px;color:#8a909c">ProductTable · ProductForm — bilingual EN / MY · admin only</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px">
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 0.8fr 0.7fr;gap:12px;padding:12px 20px;border-bottom:1px solid #eef0f3;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600">
+          <span>Name</span><span>Category</span><span style="text-align:right">Price</span><span style="text-align:right">Stock</span><span style="text-align:center">Active</span>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 0.8fr 0.7fr;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f4f6;align-items:center">
+          <div><div style="font-size:14px;font-weight:600">Coca-Cola</div><div class="mm" style="font-size:12px;color:#8a909c">ကိုကာကိုလာ</div></div>
+          <span style="font-size:12.5px;color:#5b616e;background:#eef3fa;border:1px solid #dbe6f5;color:#2f5fa8;padding:3px 9px;border-radius:5px;justify-self:start">Drink</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right">1,000</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right;color:#5b616e">48</span>
+          <span style="justify-self:center;width:34px;height:20px;background:#17835a;border-radius:999px;position:relative"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 0.8fr 0.7fr;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f4f6;align-items:center">
+          <div><div style="font-size:14px;font-weight:600">Potato Chips</div><div class="mm" style="font-size:12px;color:#8a909c">အာလူးကြော်</div></div>
+          <span style="font-size:12.5px;background:#f1f3f6;color:#5b616e;padding:3px 9px;border-radius:5px;justify-self:start">Snack</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right">1,000</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right;color:#5b616e">22</span>
+          <span style="justify-self:center;width:34px;height:20px;background:#17835a;border-radius:999px;position:relative"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 0.8fr 0.7fr;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f4f6;align-items:center">
+          <div><div style="font-size:14px;font-weight:600">Energy Drink</div><div class="mm" style="font-size:12px;color:#8a909c">စွမ်းအင်အချိုရည်</div></div>
+          <span style="font-size:12.5px;background:#eef3fa;border:1px solid #dbe6f5;color:#2f5fa8;padding:3px 9px;border-radius:5px;justify-self:start">Drink</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right">2,000</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right;color:#c2321f">3</span>
+          <span style="justify-self:center;width:34px;height:20px;background:#17835a;border-radius:999px;position:relative"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 0.8fr 0.7fr;gap:12px;padding:14px 20px;align-items:center;opacity:.55">
+          <div><div style="font-size:14px;font-weight:600">Instant Noodles</div><div class="mm" style="font-size:12px;color:#8a909c">ခေါက်ဆွဲ</div></div>
+          <span style="font-size:12.5px;background:#f1f3f6;color:#5b616e;padding:3px 9px;border-radius:5px;justify-self:start">Snack</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right">1,500</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;text-align:right;color:#5b616e">—</span>
+          <span style="justify-self:center;width:34px;height:20px;background:#cfd3da;border-radius:999px;position:relative"><span style="position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:16px;align-self:start">
+        <div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px"><i data-lucide="package-plus"></i>New product</div>
+        <div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:7px">Name (EN)</div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 12px;font-size:14px;color:#8a909c">Sprite</div></div>
+        <div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:7px">Name (MY)</div><div class="mm" style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 12px;font-size:14px;color:#8a909c">စပရိုက်</div></div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:7px">Category</div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 12px;font-size:14px;display:flex;justify-content:space-between">Drink <span style="color:#8a909c"><i data-lucide="chevron-down"></i></span></div></div>
+          <div style="flex:1"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:7px">Price</div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 12px;font-size:14px;font-family:'IBM Plex Mono',monospace">1,000</div></div>
+        </div>
+        <button style="background:#1e2128;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer">Save product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 08 · PRICING ADMIN ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">08</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /admin/pricing</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Pricing Admin</h2>
+      <span style="font-size:12.5px;color:#8a909c">PricingForm — new price = new active row; sessions snapshot their rate · admin only</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#fff;background:#1e2128;padding:4px 10px;border-radius:5px">PS5</span><span style="font-size:15px;font-weight:700">Rate card</span></div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Rate per hour</div><div style="font-size:12px;color:#8a909c">Base hourly rate</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">3,000</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Minimum minutes</div><div style="font-size:12px;color:#8a909c">Session floor</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">60</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Extension step</div><div style="font-size:12px;color:#8a909c">Minutes per extend</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">15</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Rate per step</div><div style="font-size:12px;color:#8a909c">Price per extension</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">750</div></div>
+        </div>
+        <button style="width:100%;margin-top:22px;background:#1e2128;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer">Save as new active rate</button>
+      </div>
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#1e2128;background:#f1f3f6;border:1px solid #dcdfe5;padding:4px 10px;border-radius:5px">PS4</span><span style="font-size:15px;font-weight:700">Rate card</span></div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Rate per hour</div><div style="font-size:12px;color:#8a909c">Base hourly rate</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">2,000</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Minimum minutes</div><div style="font-size:12px;color:#8a909c">Session floor</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">60</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Extension step</div><div style="font-size:12px;color:#8a909c">Minutes per extend</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">15</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">Rate per step</div><div style="font-size:12px;color:#8a909c">Price per extension</div></div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;width:140px;text-align:right">500</div></div>
+        </div>
+        <div style="margin-top:22px;background:#fbf1df;border:1px solid #f0e0bf;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#96590a;display:flex;gap:9px"><span style="margin-top:1px"><i data-lucide="history"></i></span><span>Saving keeps the old row for history. Active sessions keep the rate they started on.</span></div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ============ 09 · REPORTS ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">09</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /admin/reports</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Reports</h2>
+      <span style="font-size:12.5px;color:#8a909c">RevenueChart · UtilizationTable · TopProductsList · DateRangePicker · admin only</span>
+    </div>
+    <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:9px">
+          <span style="font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;background:#1e2128;color:#fff">This week</span>
+          <span style="font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;color:#5b616e;border:1px solid #dcdfe5">This month</span>
+          <span style="font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;color:#5b616e;border:1px solid #dcdfe5;display:flex;align-items:center;gap:7px"><i data-lucide="calendar"></i>Custom range</span>
+        </div>
+        <span style="font-size:12.5px;color:#8a909c;font-family:'IBM Plex Mono',monospace">4–10 Aug 2026</span>
+      </div>
+      <!-- KPI cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+        <div style="border:1px solid #eef0f3;border-radius:9px;padding:16px;background:#fafbfc"><div style="font-size:11.5px;color:#8a909c;margin-bottom:8px">Total revenue</div><div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:700">1.24M <span style="font-size:13px;color:#8a909c">MMK</span></div></div>
+        <div style="border:1px solid #eef0f3;border-radius:9px;padding:16px;background:#fafbfc"><div style="font-size:11.5px;color:#8a909c;margin-bottom:8px">Playtime</div><div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:700">862K <span style="font-size:13px;color:#8a909c">· 70%</span></div></div>
+        <div style="border:1px solid #eef0f3;border-radius:9px;padding:16px;background:#fafbfc"><div style="font-size:11.5px;color:#8a909c;margin-bottom:8px">Food &amp; drink</div><div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:700">378K <span style="font-size:13px;color:#8a909c">· 30%</span></div></div>
+        <div style="border:1px solid #eef0f3;border-radius:9px;padding:16px;background:#fafbfc"><div style="font-size:11.5px;color:#8a909c;margin-bottom:8px">Deposits taken</div><div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:700">95K <span style="font-size:13px;color:#8a909c">MMK</span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:20px">
+        <!-- chart -->
+        <div style="border:1px solid #eef0f3;border-radius:9px;padding:18px 20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <span style="font-size:13px;font-weight:600">Daily revenue — playtime vs food</span>
+            <div style="display:flex;gap:14px;font-size:11.5px;color:#5b616e"><span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#1e2128"></span>Playtime</span><span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#9aa2af"></span>Food</span></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:16px;height:180px;padding-top:10px">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:24px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:66px"></div></div><span style="font-size:11px;color:#8a909c">Mon</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:30px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:78px"></div></div><span style="font-size:11px;color:#8a909c">Tue</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:22px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:60px"></div></div><span style="font-size:11px;color:#8a909c">Wed</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:38px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:92px"></div></div><span style="font-size:11px;color:#8a909c">Thu</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:44px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:106px"></div></div><span style="font-size:11px;color:#8a909c">Fri</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:52px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:130px"></div></div><span style="font-size:11px;color:#8a909c">Sat</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;height:150px"><div style="background:#9aa2af;height:46px;border-radius:3px 3px 0 0"></div><div style="background:#1e2128;height:118px"></div></div><span style="font-size:11px;color:#8a909c">Sun</span></div>
+          </div>
+        </div>
+        <!-- top products + utilization -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="border:1px solid #eef0f3;border-radius:9px;padding:16px 18px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px">Top products</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;width:16px">1</span><span style="flex:1;font-size:13px">Coca-Cola</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600">142</span></div>
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;width:16px">2</span><span style="flex:1;font-size:13px">Energy Drink</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600">88</span></div>
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;width:16px">3</span><span style="flex:1;font-size:13px">Potato Chips</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600">74</span></div>
+            </div>
+          </div>
+          <div style="border:1px solid #eef0f3;border-radius:9px;padding:16px 18px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px">Station utilization</div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>TV 1 · PS5</span><span style="font-family:'IBM Plex Mono',monospace;color:#5b616e">78%</span></div><div style="height:6px;background:#eef0f3;border-radius:3px"><div style="width:78%;height:100%;background:#1e2128;border-radius:3px"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>TV 5 · PS5</span><span style="font-family:'IBM Plex Mono',monospace;color:#5b616e">64%</span></div><div style="height:6px;background:#eef0f3;border-radius:3px"><div style="width:64%;height:100%;background:#1e2128;border-radius:3px"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>TV 3 · PS4</span><span style="font-family:'IBM Plex Mono',monospace;color:#5b616e">41%</span></div><div style="height:6px;background:#eef0f3;border-radius:3px"><div style="width:41%;height:100%;background:#9aa2af;border-radius:3px"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 10 · SETTINGS ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">10</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /admin/settings</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Settings</h2>
+      <span style="font-size:12.5px;color:#8a909c">StationConfigTable · StaffTable · LanguageDefault — station config handles the undecided TV count</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px">
+      <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #eef0f3;display:flex;align-items:center;justify-content:space-between"><span style="font-size:15px;font-weight:700">Stations</span><button style="display:flex;align-items:center;gap:6px;background:#1e2128;border:none;border-radius:7px;padding:8px 13px;font-size:12.5px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer"><i data-lucide="plus"></i>Add station</button></div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 0.8fr 1.1fr 0.6fr;gap:10px;padding:11px 20px;border-bottom:1px solid #eef0f3;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#8a909c;font-weight:600"><span>Name</span><span>Console</span><span style="text-align:center">Order</span><span>Status</span><span></span></div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 0.8fr 1.1fr 0.6fr;gap:10px;padding:13px 20px;border-bottom:1px solid #f3f4f6;align-items:center;font-size:14px"><span style="font-weight:600">TV 1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px;justify-self:start">PS5</span><span style="font-family:'IBM Plex Mono',monospace;text-align:center;color:#8a909c">1</span><span style="font-size:12px;color:#0f7a52">Active</span><span style="color:#8a909c;justify-self:center"><i data-lucide="pencil"></i></span></div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 0.8fr 1.1fr 0.6fr;gap:10px;padding:13px 20px;border-bottom:1px solid #f3f4f6;align-items:center;font-size:14px"><span style="font-weight:600">TV 3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#1e2128;background:#f1f3f6;border:1px solid #dcdfe5;padding:2px 7px;border-radius:4px;justify-self:start">PS4</span><span style="font-family:'IBM Plex Mono',monospace;text-align:center;color:#8a909c">3</span><span style="font-size:12px;color:#0f7a52">Active</span><span style="color:#8a909c;justify-self:center"><i data-lucide="pencil"></i></span></div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 0.8fr 1.1fr 0.6fr;gap:10px;padding:13px 20px;align-items:center;font-size:14px"><span style="font-weight:600">TV 8</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#fff;background:#1e2128;padding:2px 7px;border-radius:4px;justify-self:start">PS5</span><span style="font-family:'IBM Plex Mono',monospace;text-align:center;color:#8a909c">8</span><span style="font-size:12px;color:#a86616;display:flex;align-items:center;gap:5px"><i data-lucide="wrench"></i>Maintenance</span><span style="color:#8a909c;justify-self:center"><i data-lucide="pencil"></i></span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid #eef0f3;font-size:15px;font-weight:700">Staff</div>
+          <div style="padding:12px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:11px"><span style="width:30px;height:30px;border-radius:50%;background:#eef0f3;display:flex;align-items:center;justify-content:center;color:#8a909c;font-size:14px"><i data-lucide="user"></i></span><div><div style="font-size:14px;font-weight:600">Su Su</div><div style="font-size:11.5px;color:#8a909c">Admin</div></div></div><span style="width:34px;height:20px;background:#17835a;border-radius:999px;position:relative"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span></div>
+          <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:11px"><span style="width:30px;height:30px;border-radius:50%;background:#eef0f3;display:flex;align-items:center;justify-content:center;color:#8a909c;font-size:14px"><i data-lucide="user"></i></span><div><div style="font-size:14px;font-weight:600">Aung Kyaw</div><div style="font-size:11.5px;color:#8a909c">Staff</div></div></div><span style="width:34px;height:20px;background:#17835a;border-radius:999px;position:relative"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span></div>
+        </div>
+        <div style="background:#fff;border:1px solid #dcdfe5;border-radius:10px;padding:18px 20px">
+          <div style="font-size:15px;font-weight:700;margin-bottom:12px">Default language</div>
+          <div style="display:flex;background:#f1f3f6;border:1px solid #e0e3e8;border-radius:8px;padding:4px;font-size:14px;font-weight:600"><span style="flex:1;text-align:center;padding:9px;border-radius:6px;background:#1e2128;color:#fff">English</span><span class="mm" style="flex:1;text-align:center;padding:9px;border-radius:6px;color:#5b616e">မြန်မာ</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 11 · LOGIN ============ -->
+  <div style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;font-weight:600">11</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a909c;background:#dfe2e7;padding:2px 8px;border-radius:4px">GET /login</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Login</h2>
+      <span style="font-size:12.5px;color:#8a909c">LoginForm · LanguageSwitch — Supabase email/password · language visible pre-auth</span>
+    </div>
+    <div style="background:#23262e;border:1px solid #dcdfe5;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:64px 0;position:relative;background-image:radial-gradient(circle at 1px 1px,#31353d 1px,transparent 0);background-size:26px 26px">
+      <div style="position:absolute;top:20px;right:24px;display:flex;background:#1b1e24;border:1px solid #34383f;border-radius:8px;padding:3px;font-size:12.5px;font-weight:600"><span style="padding:7px 14px;border-radius:6px;background:#3b3f47;color:#fff">EN</span><span class="mm" style="padding:7px 14px;border-radius:6px;color:#9aa0aa">မြန်မာ</span></div>
+      <div style="width:400px;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:36px 34px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:28px">
+          <span style="width:48px;height:48px;border-radius:12px;background:#3b73c4;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:24px">M</span>
+          <div style="text-align:center"><div style="font-size:19px;font-weight:700">MyaThida</div><div style="font-size:12.5px;color:#8a909c">Game shop management · staff sign-in</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:7px">Email</div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:11px 13px;font-size:14px;color:#8a909c;font-family:'IBM Plex Mono',monospace">staff@myathida.app</div></div>
+          <div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a909c;font-weight:600;margin-bottom:7px">Password</div><div style="border:1px solid #dcdfe5;border-radius:8px;padding:11px 13px;font-size:14px;color:#1e2128;letter-spacing:3px">••••••••</div></div>
+          <button style="margin-top:6px;background:#1e2128;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:600;font-family:inherit;color:#fff;cursor:pointer">Sign in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--SCREENS-->
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount(){ this.drawIcons(); }
+  componentDidUpdate(){ this.drawIcons(); }
+  drawIcons(){
+    const run = () => { if (window.lucide && window.lucide.createIcons) window.lucide.createIcons(); };
+    run(); setTimeout(run, 120); setTimeout(run, 500);
+  }
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>
