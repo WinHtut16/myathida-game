@@ -8,12 +8,15 @@ import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { LanguageSwitch } from "./LanguageSwitch";
 
+// Paths are relative to this app's basePath (/admin/game), which Next adds to
+// <Link href> and strips from usePathname() automatically - so these stay
+// unprefixed and the same strings work standalone and behind the hub rewrite.
 const NAV = [
-  { href: "/", key: "nav.floor" as const, icon: LayoutDashboard, super: false, match: (p: string) => p === "/" },
-  { href: "/admin/reports", key: "nav.history" as const, icon: BarChart3, super: false, match: (p: string) => p.startsWith("/admin/reports") },
-  { href: "/admin/products", key: "nav.snacks" as const, icon: Cookie, super: false, match: (p: string) => p.startsWith("/admin/products") },
-  { href: "/admin/pricing", key: "nav.pricing" as const, icon: Tag, super: true, match: (p: string) => p.startsWith("/admin/pricing") },
-  { href: "/admin/settings", key: "nav.settings" as const, icon: Settings, super: false, match: (p: string) => p.startsWith("/admin/settings") },
+  { href: "/floor", key: "nav.floor" as const, icon: LayoutDashboard, super: false, match: (p: string) => p === "/floor" },
+  { href: "/reports", key: "nav.history" as const, icon: BarChart3, super: false, match: (p: string) => p.startsWith("/reports") },
+  { href: "/products", key: "nav.snacks" as const, icon: Cookie, super: false, match: (p: string) => p.startsWith("/products") },
+  { href: "/pricing", key: "nav.pricing" as const, icon: Tag, super: true, match: (p: string) => p.startsWith("/pricing") },
+  { href: "/settings", key: "nav.settings" as const, icon: Settings, super: false, match: (p: string) => p.startsWith("/settings") },
 ];
 
 export function Sidebar() {

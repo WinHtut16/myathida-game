@@ -61,7 +61,7 @@ export default function LoginPage() {
             <div className="text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">{t("login.password")}</div>
             <input type="password" defaultValue="password" className="w-full border border-line rounded-lg px-3 py-2.5 text-sm tracking-[3px] outline-none" />
           </div>
-          <Link href="/" className="mt-1.5 bg-ink text-white rounded-lg py-3 text-sm font-semibold text-center">
+          <Link href="/floor" className="mt-1.5 bg-ink text-white rounded-lg py-3 text-sm font-semibold text-center">
             {t("login.signIn")}
           </Link>
         </div>
