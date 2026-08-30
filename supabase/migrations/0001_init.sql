@@ -1,3 +1,13 @@
+-- ⚠ SUPERSEDED - DO NOT RUN. Kept only as the record of the original design.
+--
+-- This targeted a standalone Supabase project with everything in `public` and
+-- `for all using (true)` RLS. The game shop now lives in the shared futsal
+-- project under its own `game` schema, where "authenticated" also means every
+-- futsal and billiards account - so those blanket policies would be a hole.
+--
+-- The live schema is supabase/game-schema-migration.sql. Its seed section
+-- already contains the floor plan and catalogue that used to live in seed.sql.
+--
 -- MyaThida — initial schema (records + billing model)
 -- Mirrors src/lib/types.ts. Timing/TV control are external (CozyLife).
 

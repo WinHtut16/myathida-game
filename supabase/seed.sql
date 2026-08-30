@@ -1,3 +1,13 @@
+-- ⚠ SUPERSEDED - DO NOT RUN. Kept only as the record of the original design.
+--
+-- This targeted a standalone Supabase project with everything in `public` and
+-- `for all using (true)` RLS. The game shop now lives in the shared futsal
+-- project under its own `game` schema, where "authenticated" also means every
+-- futsal and billiards account - so those blanket policies would be a hole.
+--
+-- The live schema is supabase/game-schema-migration.sql. Its seed section
+-- already contains the floor plan and catalogue that used to live in seed.sql.
+--
 -- Demo seed (optional). Mirrors src/lib/mock/seed.ts.
 -- Superadmin staff row must reference a real auth.users id — create that user
 -- in the Supabase dashboard first, then insert its staff row separately.
