@@ -45,6 +45,14 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              /**
+               * Prefetch off. useAutoRefresh re-runs router.refresh() every 10s
+               * and each pass re-prefetched all five of these, so one open tab
+               * produced 30 extra requests a minute for navigations that are
+               * cheap anyway. It also turned the cached-404 bug into 1018
+               * console errors, which buried the one that mattered.
+               */
+              prefetch={false}
               className={cx(
                 "flex items-center gap-[11px] px-3 py-2.5 rounded-[7px] text-sm",
                 active ? "bg-accent text-white font-medium" : "hover:bg-[#2c3037]",
