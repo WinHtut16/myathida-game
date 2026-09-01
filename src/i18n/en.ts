@@ -108,4 +108,5 @@ export const en = {
   "common.save": "Save",
   "common.viewAs": "View as",
   "common.dismiss": "Dismiss",
+  "common.signedOut": "Not signed in",
 };

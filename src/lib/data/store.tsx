@@ -4,12 +4,11 @@ import { createContext, useContext, useMemo, useReducer, type ReactNode } from "
 import { buildSeed, type AppData } from "@/lib/mock/seed";
 import { computePlaytime, rateFor, snacksTotal } from "@/lib/pricing";
 import type {
-  Locale,
   OrderLine,
+  Staff,
   Pricing,
   Product,
   Session,
-  Staff,
   Station,
   StationView,
   Tier,
@@ -21,10 +20,12 @@ import type {
  * provider to go live (see src/lib/data/repository.ts and README).
  */
 
-interface State extends AppData {
-  locale: Locale;
-  currentUserId: string;
-}
+/**
+ * Demo DATA for the four screens not yet converted. Identity now comes from
+ * SessionProvider and language from LocaleProvider, both resolved on the
+ * server - this store no longer decides who you are or what language you read.
+ */
+interface State extends AppData {}
 
 type Action =
   | { type: "SET_OCCUPIED"; stationId: string; occupied: boolean }
@@ -36,10 +37,12 @@ type Action =
   | { type: "UPSERT_STATION"; station: Station }
   | { type: "CREATE_ADMIN"; name: string; phone: string }
   | { type: "TOGGLE_ADMIN"; id: string }
-  | { type: "SET_LOCALE"; locale: Locale }
-  | { type: "SET_CURRENT_USER"; id: string };
+  ;
 
 const uid = (p: string) => `${p}_${Math.random().toString(36).slice(2, 9)}`;
+
+/** Demo rows need an author; the real one is auth.uid() server-side. */
+const DEMO_AUTHOR = "u_super";
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -83,7 +86,7 @@ function reducer(state: State, action: Action): State {
         total: playtimeTotal + snacks,
         label: action.label,
         orders,
-        createdBy: state.currentUserId,
+        createdBy: DEMO_AUTHOR,
         createdAt: new Date().toISOString(),
       };
       return {
@@ -128,19 +131,13 @@ function reducer(state: State, action: Action): State {
         email: null,
         role: "admin",
         active: true,
-        createdBy: state.currentUserId,
+        createdBy: DEMO_AUTHOR,
       };
       return { ...state, staff: [...state.staff, admin] };
     }
 
     case "TOGGLE_ADMIN":
       return { ...state, staff: state.staff.map((s) => (s.id === action.id ? { ...s, active: !s.active } : s)) };
-
-    case "SET_LOCALE":
-      return { ...state, locale: action.locale };
-
-    case "SET_CURRENT_USER":
-      return { ...state, currentUserId: action.id };
 
     default:
       return state;
@@ -153,18 +150,12 @@ interface StoreContextValue {
   stationViews: StationView[];
   history: Session[];
   pricingFor: (t: Tier) => Pricing;
-  currentUser: () => Staff;
-  isSuperadmin: () => boolean;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => ({
-    ...buildSeed(),
-    locale: "en" as Locale,
-    currentUserId: "u_super",
-  }));
+  const [state, dispatch] = useReducer(reducer, undefined, () => ({ ...buildSeed() }));
 
   const value = useMemo<StoreContextValue>(() => {
     const stationViews: StationView[] = state.stations
@@ -176,16 +167,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         rate: rateFor(state.pricing, station.tier).ratePerHour,
       }));
 
-    const currentUser = () => state.staff.find((s) => s.id === state.currentUserId) ?? state.staff[0];
-
     return {
       state,
       dispatch,
       stationViews,
       history: state.sessions.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       pricingFor: (t) => rateFor(state.pricing, t),
-      currentUser,
-      isSuperadmin: () => currentUser().role === "superadmin",
     };
   }, [state]);
 

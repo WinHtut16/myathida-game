@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Plus, Shield, User, Wrench } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useStore } from "@/lib/data/store";
+import { useCurrentUser } from "@/components/providers/SessionProvider";
+import { DemoNotice } from "@/components/DemoNotice";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { TierBadge } from "@/components/station/TierBadge";
@@ -14,8 +16,8 @@ const TIERS: Tier[] = ["PS4", "PS5", "VIP"];
 
 export default function SettingsPage() {
   const { t } = useT();
-  const { state, dispatch, isSuperadmin } = useStore();
-  const superadmin = isSuperadmin();
+  const { state, dispatch } = useStore();
+  const superadmin = useCurrentUser()?.isSuperadmin ?? false;
   const stations = [...state.stations].sort((a, b) => a.sortOrder - b.sortOrder);
   const admins = state.staff.filter((s) => s.role === "admin");
 
@@ -41,6 +43,7 @@ export default function SettingsPage() {
 
   return (
     <AppShell title={t("nav.settings")}>
+      <DemoNotice />
       <div className="p-5 px-[22px] grid grid-cols-[1.4fr_1fr] gap-4 max-w-[1200px]">
         {/* stations */}
         <div className="bg-surface border border-line rounded-[10px] overflow-hidden self-start">

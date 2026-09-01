@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Cookie, LayoutDashboard, Settings, Tag, User } from "lucide-react";
-import { useStore } from "@/lib/data/store";
+import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { LanguageSwitch } from "./LanguageSwitch";
@@ -22,9 +22,15 @@ const NAV = [
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useT();
-  const { state, currentUser, isSuperadmin, dispatch } = useStore();
-  const user = currentUser();
-  const superadmin = isSuperadmin();
+
+  /**
+   * The real signed-in person, resolved on the server. This decides what the
+   * nav SHOWS; it never decides what is allowed. Hiding the Pricing link from
+   * a plain admin is a courtesy - the database refuses their write either way,
+   * which is the check that actually counts.
+   */
+  const user = useCurrentUser();
+  const superadmin = user?.isSuperadmin ?? false;
 
   return (
     <div className="w-[216px] bg-rail text-[#c7cbd3] flex-none flex flex-col py-[18px]">
@@ -66,34 +72,19 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto px-3 flex flex-col gap-3">
-        {/* demo-only role switcher */}
-        <div className="flex flex-col gap-1.5 px-1">
-          <span className="text-[10px] uppercase tracking-[.12em] text-[#7d838e]">{t("common.viewAs")}</span>
-          <div className="flex bg-[#1b1e24] rounded-lg p-[3px] text-[11.5px] font-semibold">
-            {state.staff
-              .filter((s) => s.role === "superadmin" || s.active)
-              .slice(0, 2)
-              .map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => dispatch({ type: "SET_CURRENT_USER", id: s.id })}
-                  className={cx("flex-1 text-center py-1.5 rounded-md", user.id === s.id ? "bg-[#3b3f47] text-white" : "text-[#9aa0aa]")}
-                >
-                  {t(s.role === "superadmin" ? "role.superadmin" : "role.admin")}
-                </button>
-              ))}
-          </div>
-        </div>
-
         <LanguageSwitch variant="dark" />
 
         <div className="flex items-center gap-2.5 px-3 py-2.5 border-t border-[#34383f]">
           <span className="w-[30px] h-[30px] rounded-full bg-[#3b3f47] flex items-center justify-center text-[#c7cbd3]">
             <User size={15} />
           </span>
-          <div className="leading-[1.15]">
-            <div className="text-white text-[13px] font-medium">{user.name}</div>
-            <div className="text-[10.5px] text-[#7d838e]">{t(user.role === "superadmin" ? "role.superadmin" : "role.admin")}</div>
+          <div className="leading-[1.15] min-w-0">
+            <div className="text-white text-[13px] font-medium truncate">
+              {user?.name ?? t("common.signedOut")}
+            </div>
+            <div className="text-[10.5px] text-[#7d838e]">
+              {user ? t(user.isSuperadmin ? "role.superadmin" : "role.admin") : "—"}
+            </div>
           </div>
         </div>
       </div>

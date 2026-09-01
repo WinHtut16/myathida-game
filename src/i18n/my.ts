@@ -100,4 +100,5 @@ export const my: Record<string, string> = {
   "common.save": "သိမ်း",
   "common.viewAs": "ကြည့်ရှုအဖြစ်",
   "common.dismiss": "ပိတ်မည်",
+  "common.signedOut": "အကောင့်ဝင်မထားပါ",
 };

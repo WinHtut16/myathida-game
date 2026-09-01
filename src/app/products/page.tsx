@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, PackagePlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useStore } from "@/lib/data/store";
+import { DemoNotice } from "@/components/DemoNotice";
 import { localizedName, useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { formatMMK } from "@/lib/format";
@@ -39,6 +40,7 @@ export default function ProductsPage() {
 
   return (
     <AppShell title={t("nav.snacks")}>
+      <DemoNotice />
       <div className="p-5 px-[22px] grid grid-cols-[1.6fr_1fr] gap-4 max-w-[1200px]">
         {/* table */}
         <div className="bg-surface border border-line rounded-[10px] overflow-hidden self-start">

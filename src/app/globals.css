@@ -1,4 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Myanmar:wght@400;500;600&display=swap");
+/* Fonts are loaded by next/font in app/layout.tsx and served from our own
+   origin. Do not re-add an @import from fonts.googleapis.com: the hub's CSP
+   is style-src/font-src 'self' and would refuse it, and it would put the
+   shop's fonts on a CDN reached across the customer's ISP. */
 
 @tailwind base;
 @tailwind components;
@@ -21,13 +24,13 @@ body {
 body {
   background: theme("colors.app-bg");
   color: theme("colors.text.DEFAULT");
-  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 /* Myanmar Unicode text helper (mirrors .mm in the design handoff) */
 .mm {
-  font-family: "Noto Sans Myanmar", "IBM Plex Sans", sans-serif;
+  font-family: var(--font-mm), var(--font-sans), sans-serif;
 }
 
 /* tabular figures for all timers / money */

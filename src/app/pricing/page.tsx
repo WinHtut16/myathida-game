@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useStore } from "@/lib/data/store";
+import { useCurrentUser } from "@/components/providers/SessionProvider";
+import { DemoNotice } from "@/components/DemoNotice";
 import { useT } from "@/i18n";
 import { TierBadge } from "@/components/station/TierBadge";
 import type { Pricing, Tier } from "@/lib/types";
@@ -11,9 +13,10 @@ const TIERS: Tier[] = ["PS4", "PS5", "VIP"];
 
 export default function PricingPage() {
   const { t } = useT();
-  const { state, isSuperadmin } = useStore();
+  const { state } = useStore();
+  const superadmin = useCurrentUser()?.isSuperadmin ?? false;
 
-  if (!isSuperadmin()) {
+  if (!superadmin) {
     return (
       <AppShell title={t("nav.pricing")}>
         <div className="p-8 text-text-muted text-sm">{t("settings.superOnly")}</div>
@@ -23,6 +26,7 @@ export default function PricingPage() {
 
   return (
     <AppShell title={t("nav.pricing")}>
+      <DemoNotice />
       <div className="p-5 px-[22px] grid grid-cols-3 gap-4 max-w-[1100px]">
         {TIERS.map((tier) => {
           const p = state.pricing.find((x) => x.tier === tier)!;

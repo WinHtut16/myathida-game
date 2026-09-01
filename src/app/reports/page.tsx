@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Receipt, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useStore } from "@/lib/data/store";
+import { DemoNotice } from "@/components/DemoNotice";
 import { useT } from "@/i18n";
 import { formatDateTime, formatDuration, formatMMK, formatMMKUnit } from "@/lib/format";
 import { TierBadge } from "@/components/station/TierBadge";
@@ -34,6 +35,7 @@ export default function HistoryPage() {
 
   return (
     <AppShell title={t("history.title")}>
+      <DemoNotice />
       <div className="p-5 px-[22px] max-w-[1100px] flex flex-col gap-4">
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-3.5">
