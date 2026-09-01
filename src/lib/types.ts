@@ -73,6 +73,9 @@ export interface Session {
   orders: OrderLine[];
   createdBy: string;
   createdAt: string; // ISO
+  /** Set when the session was corrected. The row is kept and its charge zeroed. */
+  voidReason: string | null;
+  voidedAt: string | null;
 }
 
 /** Station joined with derived floor state — what the occupancy board renders. */

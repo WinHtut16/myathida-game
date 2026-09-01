@@ -160,4 +160,11 @@ export const my: Record<string, string> = {
   "account.password": "စကားဝှက်",
   "account.passwordHint": "သင့်အကောင့်ဝင်ရန် အချက်အလက်ကို လုပ်ငန်းအားလုံးတွင် အတူတူသုံးသဖြင့် စကားဝှက်ကို ပင်မ admin panel တွင် ပြောင်းရပါမည်။",
   "account.passwordLink": "admin panel တွင် ပြောင်းရန်",
+
+  "reports.corrected": "ပြင်ဆင်ပြီး",
+  "reports.correct": "ဤဆက်ရှင်ကို ပြင်ဆင်ရန်",
+  "reports.correctReason": "ဘာကြောင့် ပြင်ဆင်ရသနည်း။",
+  "reports.correctReasonHint": "၁၉ မိနစ်အစား ၉၀ ရိုက်မိသည်",
+  "reports.correctConfirm": "ပြင်ဆင်မည်",
+  "reports.returnSnacks": "အစားအသောက်များကို လက်ကျန်သို့ ပြန်ထည့်မည် (မထုတ်ပေးရသေးမှသာ)",
 };

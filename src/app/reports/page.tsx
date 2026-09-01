@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { getReports, isPeriod, type Period, type ReportsData } from "@/lib/data/reports";
+import { getCurrentUser } from "@/lib/data/session";
 import { ColumnChart, RankedBars } from "@/components/reports/charts";
 import { StatTile } from "@/components/reports/StatTile";
 import { SessionTable } from "@/components/reports/SessionTable";
@@ -35,7 +36,7 @@ export default async function ReportsPage({
 }) {
   const params = await searchParams;
   const period: Period = isPeriod(params.period) ? params.period : "7d";
-  const [data, { t }] = await Promise.all([getReports(period), getT()]);
+  const [data, { t }, user] = await Promise.all([getReports(period), getT(), getCurrentUser()]);
 
   if (!data.ok) {
     return (
@@ -57,7 +58,7 @@ export default async function ReportsPage({
 
   return (
     <AppShell title={t("reports.title")} subtitle={t(LABEL_KEYS[period])} right={<PeriodTabs active={period} t={t} />}>
-      <Body data={data} t={t} />
+      <Body data={data} t={t} canCorrect={user?.isSuperadmin ?? false} />
     </AppShell>
   );
 }
@@ -81,7 +82,7 @@ function PeriodTabs({ active, t }: { active: Period; t: T }) {
   );
 }
 
-function Body({ data, t }: { data: ReportsData; t: T }) {
+function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: boolean }) {
   const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames } = data;
 
   // Sparkline for the hero tile: the daily revenue already computed, tail-end.
@@ -168,7 +169,7 @@ function Body({ data, t }: { data: ReportsData; t: T }) {
         </Card>
       </div>
 
-      <SessionTable sessions={sessions} staffNames={staffNames} />
+      <SessionTable sessions={sessions} staffNames={staffNames} canCorrect={canCorrect} />
     </div>
   );
 }

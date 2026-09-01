@@ -133,28 +133,40 @@ export async function setProductActiveAction(
 export async function setStockAction(
   id: string,
   stock: number | null,
+  note?: string,
 ): Promise<ActionResult> {
   if (stock !== null && (!Number.isInteger(stock) || stock < 0)) {
     return { ok: false, message: "Stock must be a whole number, zero or more." };
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .update({ stock })
-    .eq("id", id)
-    .select("id");
+
+  /**
+   * Through game.set_stock() rather than a table update, so the change lands
+   * in game.stock_movements with a delta and an author. products.stock alone
+   * answers "how many are there" and nothing else - when the count disagrees
+   * with the shelf, and eventually it will, a bare integer offers no way to
+   * find out why.
+   */
+  const { error } = await supabase.rpc("set_stock", {
+    p_product_id: id,
+    p_stock: stock,
+    p_note: note ?? null,
+  });
 
   if (error) {
     console.error("[catalogue] stock write failed", {
       id, stock, code: error.code, message: error.message,
       details: error.details, hint: error.hint,
     });
+    if (error.code === "42883") {
+      return {
+        ok: false,
+        message:
+          "Stock tracking is not set up yet. Run supabase/game-corrections-migration.sql in the futsal Supabase project.",
+      };
+    }
     return { ok: false, message: explain(error.code, error.message) };
-  }
-  if (!data || data.length === 0) {
-    console.warn("[catalogue] stock write affected 0 rows (RLS)", { id });
-    return { ok: false, message: DENIED };
   }
 
   revalidatePath("/products");

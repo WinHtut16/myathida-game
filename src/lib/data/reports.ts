@@ -110,6 +110,8 @@ interface SessionRow {
   label: string | null;
   created_by: string;
   created_at: string;
+  void_reason: string | null;
+  voided_at: string | null;
   order_lines: {
     product_id: string | null;
     product_name: string;
@@ -155,7 +157,7 @@ export async function getReports(period: Period): Promise<ReportsResult> {
   let query = supabase
     .from("sessions")
     .select(
-      "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,order_lines(product_id,product_name,qty,unit_price,line_total)",
+      "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,order_lines(product_id,product_name,qty,unit_price,line_total)",
     )
     .order("created_at", { ascending: false })
     .limit(ROW_CAP);
@@ -213,6 +215,8 @@ export async function getReports(period: Period): Promise<ReportsResult> {
       orders,
       createdBy: r.created_by,
       createdAt: r.created_at,
+      voidReason: r.void_reason,
+      voidedAt: r.voided_at,
     };
   });
 

@@ -168,4 +168,11 @@ export const en = {
   "account.password": "Password",
   "account.passwordHint": "Your sign-in is shared across all the businesses you have access to, so your password is changed in the main admin panel rather than here.",
   "account.passwordLink": "Change it in the admin panel",
+
+  "reports.corrected": "Corrected",
+  "reports.correct": "Correct this session",
+  "reports.correctReason": "Why is this being corrected?",
+  "reports.correctReasonHint": "Typed 90 instead of 19 minutes",
+  "reports.correctConfirm": "Correct it",
+  "reports.returnSnacks": "Put the snacks back into stock (only if nothing was served)",
 };
