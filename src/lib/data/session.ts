@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { getStaffDirectory } from "./staff-directory";
 import type { Role } from "@/lib/types";
 
 /**
@@ -26,13 +27,6 @@ export interface CurrentUser {
   isSuperadmin: boolean;
 }
 
-interface DirectoryRow {
-  id: string;
-  name: string;
-  role: string;
-  active: boolean;
-}
-
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (!isSupabaseConfigured()) return null;
 
@@ -45,18 +39,10 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     return null;
   }
 
-  const { data, error } = await supabase.rpc("staff_directory");
-  if (error) {
-    console.error("[session] staff_directory failed", {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-    });
-    return null;
-  }
+  const directory = await getStaffDirectory();
+  if (!directory) return null;
 
-  const me = (data as DirectoryRow[] | null)?.find((r) => r.id === auth.user.id);
+  const me = directory.find((r) => r.id === auth.user.id);
 
   // Signed in, but with no game.staff row - the same gap that makes recording
   // a session fail on the created_by foreign key. Returning null lets the

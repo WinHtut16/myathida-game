@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { getStaffDirectory } from "./staff-directory";
 import type { OrderLine, Session, Tier } from "@/lib/types";
 
 /**
@@ -161,7 +162,7 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
   if (from) query = query.gte("created_at", from.toISOString());
 
-  const [sessionsRes, staffRes] = await Promise.all([query, supabase.rpc("staff_directory")]);
+  const [sessionsRes, directory] = await Promise.all([query, getStaffDirectory()]);
 
   if (sessionsRes.error) {
     console.error("[reports] sessions read failed", {
@@ -183,19 +184,10 @@ export async function getReports(period: Period): Promise<ReportsResult> {
     };
   }
 
-  // A staff-directory failure costs names, not numbers - so it degrades to
-  // showing ids rather than failing the whole screen.
-  if (staffRes.error) {
-    console.error("[reports] staff_directory failed", {
-      code: staffRes.error.code,
-      message: staffRes.error.message,
-    });
-  }
-
+  // A staff-directory failure costs names, not numbers, so it degrades to
+  // showing "unknown staff" rather than failing the whole screen.
   const staffNames: Record<string, string> = {};
-  for (const row of (staffRes.data as { id: string; name: string }[] | null) ?? []) {
-    staffNames[row.id] = row.name;
-  }
+  for (const row of directory ?? []) staffNames[row.id] = row.name;
 
   const rows = (sessionsRes.data as SessionRow[] | null) ?? [];
   const all: Session[] = rows.map((r) => {
