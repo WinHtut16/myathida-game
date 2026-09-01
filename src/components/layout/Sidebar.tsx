@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Cookie, LayoutDashboard, Settings, Tag, User } from "lucide-react";
+import { BarChart3, Cookie, Database, LayoutDashboard, Settings, Tag, User } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
@@ -17,6 +17,7 @@ const NAV = [
   { href: "/products", key: "nav.snacks" as const, icon: Cookie, super: false, match: (p: string) => p.startsWith("/products") },
   { href: "/pricing", key: "nav.pricing" as const, icon: Tag, super: true, match: (p: string) => p.startsWith("/pricing") },
   { href: "/settings", key: "nav.settings" as const, icon: Settings, super: false, match: (p: string) => p.startsWith("/settings") },
+  { href: "/export", key: "nav.export" as const, icon: Database, super: true, match: (p: string) => p.startsWith("/export") },
 ];
 
 export function Sidebar() {
