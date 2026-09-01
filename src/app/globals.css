@@ -47,3 +47,20 @@ body {
     scrollbar-width: none;
   }
 }
+
+/* Catalogue form inputs. Previously a <style jsx global> block inside the
+   products page, which tied a global style to one screen's lifetime; it is a
+   plain class now so Pricing and Settings can use the same control. */
+.cat-input {
+  width: 100%;
+  border: 1px solid #dcdfe5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+.cat-input:disabled {
+  background: #f7f8fa;
+  color: #8a909c;
+}

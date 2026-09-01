@@ -144,4 +144,10 @@ export const en = {
   "reports.truncated": "Showing the most recent 5,000 sessions. Older ones are excluded from these figures.",
   "reports.unavailable": "Reports are not available yet",
   "common.close": "Close",
+
+  "catalogue.unavailable": "This screen is not ready yet",
+  "products.none": "No products yet. Add the first one on the right.",
+  "products.superOnly": "Only a superadmin can add or change products. You can still see what is on sale and how much stock is left.",
+  "pricing.futureOnly": "Affects future sessions only. Sessions already recorded keep the rate they were charged at.",
+  "pricing.saved": "Saved",
 };
