@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import type { Locale } from "@/lib/types";
+import { LOCALE_COOKIE } from "./config";
 
 /**
  * UI language.
@@ -16,7 +17,7 @@ import type { Locale } from "@/lib/types";
  * works before the account has a game.staff row. game.staff.preferred_lang
  * exists for making it follow a person between devices later.
  */
-export const LOCALE_COOKIE = "game_locale";
+export { LOCALE_COOKIE } from "./config";
 
 interface LocaleValue {
   locale: Locale;

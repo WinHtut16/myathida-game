@@ -4,7 +4,8 @@ import { IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Myanmar } from "next/font/googl
 import "./globals.css";
 import { StoreProvider } from "@/lib/data/store";
 import { SessionProvider } from "@/components/providers/SessionProvider";
-import { LocaleProvider, LOCALE_COOKIE } from "@/i18n/LocaleProvider";
+import { LocaleProvider } from "@/i18n/LocaleProvider";
+import { LOCALE_COOKIE } from "@/i18n/config";
 import { getCurrentUser } from "@/lib/data/session";
 import type { Locale } from "@/lib/types";
 

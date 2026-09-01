@@ -1,147 +1,194 @@
-"use client";
-
-import { useState } from "react";
-import { Receipt, X } from "lucide-react";
+import Link from "next/link";
+import { TriangleAlert } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { useStore } from "@/lib/data/store";
-import { DemoNotice } from "@/components/DemoNotice";
-import { useT } from "@/i18n";
-import { formatDateTime, formatDuration, formatMMK, formatMMKUnit } from "@/lib/format";
-import { TierBadge } from "@/components/station/TierBadge";
-import type { Session } from "@/lib/types";
+import { getReports, isPeriod, type Period, type ReportsData } from "@/lib/data/reports";
+import { ColumnChart, RankedBars } from "@/components/reports/charts";
+import { StatTile } from "@/components/reports/StatTile";
+import { SessionTable } from "@/components/reports/SessionTable";
+import { formatMMK } from "@/lib/format";
+import { getT } from "@/i18n/server";
+import type { MessageKey } from "@/i18n";
 
-export default function HistoryPage() {
-  const { t } = useT();
-  const { history, state } = useStore();
-  const [receipt, setReceipt] = useState<Session | null>(null);
+/**
+ * Reports: a SERVER component reading the real `game` schema.
+ *
+ * The period filter is a set of links driving ?period=, not client state.
+ * That keeps the whole screen server-rendered - each choice is a fresh render
+ * with fresh figures, it survives a reload, and it can be bookmarked or sent
+ * to the owner as a URL. No client JS is spent on a four-item filter.
+ */
+export const dynamic = "force-dynamic";
 
-  const today = new Date().toDateString();
-  const todays = history.filter((s) => new Date(s.createdAt).toDateString() === today);
-  const revenue = todays.reduce((sum, s) => sum + s.total, 0);
+const LABEL_KEYS: Record<Period, MessageKey> = {
+  today: "reports.today",
+  "7d": "reports.d7",
+  "30d": "reports.d30",
+  all: "reports.all",
+};
 
-  const topSnacks = Object.values(
-    history
-      .flatMap((s) => s.orders)
-      .reduce<Record<string, { name: string; qty: number }>>((acc, o) => {
-        acc[o.productName] = acc[o.productName] ?? { name: o.productName, qty: 0 };
-        acc[o.productName].qty += o.qty;
-        return acc;
-      }, {}),
-  )
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 3);
+type T = (k: MessageKey) => string;
 
-  const userName = (id: string) => state.staff.find((u) => u.id === id)?.name ?? "—";
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const params = await searchParams;
+  const period: Period = isPeriod(params.period) ? params.period : "7d";
+  const [data, { t }] = await Promise.all([getReports(period), getT()]);
+
+  if (!data.ok) {
+    return (
+      <AppShell title={t("reports.title")}>
+        <div className="p-6">
+          <div className="max-w-[560px] bg-surface border border-line rounded-xl p-5 flex items-start gap-3">
+            <span className="w-8 h-8 rounded-lg bg-[#fdf3f1] text-[#8a3324] flex items-center justify-center flex-none">
+              <TriangleAlert size={17} />
+            </span>
+            <div>
+              <div className="font-bold text-[15px] mb-1">{t("reports.unavailable")}</div>
+              <p className="text-[13.5px] text-text-secondary leading-relaxed m-0">{data.message}</p>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
-    <AppShell title={t("history.title")}>
-      <DemoNotice />
-      <div className="p-5 px-[22px] max-w-[1100px] flex flex-col gap-4">
-        {/* KPIs */}
-        <div className="grid grid-cols-3 gap-3.5">
-          <Kpi label={t("history.today")} value={`${todays.length}`} sub={t("history.sessions")} />
-          <Kpi label={t("history.revenue")} value={formatMMK(revenue)} sub="MMK" />
-          <div className="border border-line-faint rounded-[9px] p-4 bg-[#fafbfc]">
-            <div className="text-[11.5px] text-text-muted mb-2">{t("history.topSnacks")}</div>
-            <div className="flex flex-col gap-1">
-              {topSnacks.length === 0 && <span className="text-[13px] text-text-muted">—</span>}
-              {topSnacks.map((s, i) => (
-                <div key={s.name} className="flex justify-between text-[12.5px]">
-                  <span>
-                    {i + 1}. {s.name}
-                  </span>
-                  <span className="font-mono">{s.qty}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* history table */}
-        <div className="bg-surface border border-line rounded-[10px] overflow-hidden">
-          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_.8fr_.6fr] gap-3 p-3 px-5 border-b border-line-faint text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold">
-            <span>{t("history.when")}</span>
-            <span>{t("history.tv")}</span>
-            <span className="text-right">{t("history.duration")}</span>
-            <span className="text-right">{t("history.snacks")}</span>
-            <span className="text-right">{t("history.total")}</span>
-            <span />
-          </div>
-          {history.length === 0 && <div className="p-6 text-text-muted text-sm">{t("history.none")}</div>}
-          {history.map((s) => (
-            <div key={s.id} className="grid grid-cols-[1.4fr_1fr_1fr_1fr_.8fr_.6fr] gap-3 p-3.5 px-5 border-b border-line-hair items-center text-sm">
-              <div>
-                <div>{formatDateTime(s.createdAt)}</div>
-                <div className="text-[11.5px] text-text-muted">
-                  {t("history.by")} {userName(s.createdBy)}
-                  {s.label ? ` · ${s.label}` : ""}
-                </div>
-              </div>
-              <span className="flex items-center gap-2">
-                {s.stationName} <TierBadge tier={s.tier} />
-              </span>
-              <span className="text-right font-mono">{formatDuration(s.minutes)}</span>
-              <span className="text-right font-mono text-text-secondary">{s.snacksTotal ? formatMMK(s.snacksTotal) : "—"}</span>
-              <span className="text-right font-mono font-semibold">{formatMMK(s.total)}</span>
-              <button onClick={() => setReceipt(s)} className="justify-self-center text-text-muted" aria-label="receipt">
-                <Receipt size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {receipt && <ReceiptModal session={receipt} onClose={() => setReceipt(null)} />}
+    <AppShell title={t("reports.title")} subtitle={t(LABEL_KEYS[period])} right={<PeriodTabs active={period} t={t} />}>
+      <Body data={data} t={t} />
     </AppShell>
   );
 }
 
-function Kpi({ label, value, sub }: { label: string; value: string; sub: string }) {
+function PeriodTabs({ active, t }: { active: Period; t: T }) {
   return (
-    <div className="border border-line-faint rounded-[9px] p-4 bg-[#fafbfc]">
-      <div className="text-[11.5px] text-text-muted mb-2">{label}</div>
-      <div className="font-mono text-[23px] font-bold">
-        {value} <span className="text-[13px] text-text-muted">{sub}</span>
-      </div>
+    <div className="flex bg-line-faint border border-line-soft rounded-lg p-[3px] text-[12.5px] font-semibold">
+      {(Object.keys(LABEL_KEYS) as Period[]).map((p) => (
+        <Link
+          key={p}
+          href={`/reports?period=${p}`}
+          prefetch={false}
+          className={`px-3 py-1.5 rounded-md ${
+            p === active ? "bg-ink text-white" : "text-text-secondary"
+          }`}
+        >
+          {t(LABEL_KEYS[p])}
+        </Link>
+      ))}
     </div>
   );
 }
 
-function ReceiptModal({ session, onClose }: { session: Session; onClose: () => void }) {
-  const { t } = useT();
+function Body({ data, t }: { data: ReportsData; t: T }) {
+  const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames } = data;
+
+  // Sparkline for the hero tile: the daily revenue already computed, tail-end.
+  const spark = byDay.slice(-12).map((d) => d.value);
+  const busiest = [...byHour].sort((a, b) => b.value - a.value)[0];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
-      <div className="w-[420px] max-w-full bg-surface rounded-xl shadow-modal overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-[18px] px-[22px] border-b border-line-faint">
-          <div className="flex items-center gap-2">
-            <span className="text-[17px] font-bold">{session.stationName}</span>
-            <TierBadge tier={session.tier} />
-          </div>
-          <button onClick={onClose} className="text-text-muted">
-            <X size={18} />
-          </button>
+    <div className="p-5 px-[22px] max-w-[1180px] flex flex-col gap-4">
+      {data.truncated && (
+        <div className="text-[12.5px] text-status-warn-ink bg-status-warn-bg border border-[#e8d9b4] rounded-lg px-3.5 py-2.5">
+          {t("reports.truncated")}
         </div>
-        <div className="p-[22px] flex flex-col gap-3">
-          <div className="text-[12.5px] text-text-muted">{formatDateTime(session.createdAt)}</div>
-          <Row label={`${t("history.duration")} · ${formatDuration(session.minutes)}`} value={formatMMK(session.playtimeTotal)} />
-          {session.orders.map((o) => (
-            <Row key={o.productId} label={`${o.qty} × ${o.productName}`} value={formatMMK(o.lineTotal)} muted />
-          ))}
-        </div>
-        <div className="bg-ink p-4 px-[22px] flex items-center justify-between">
-          <span className="text-[#c7cbd3] text-[13px] uppercase tracking-[.12em]">{t("history.total")}</span>
-          <span className="text-white font-mono text-[22px] font-bold">{formatMMKUnit(session.total)}</span>
-        </div>
+      )}
+
+      {/* ── headline figures ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-4 gap-3">
+        <StatTile
+          t={t}
+          tone="hero"
+          label={t("reports.revenue")}
+          value={formatMMK(totals.revenue)}
+          unit="MMK"
+          current={totals.revenue}
+          previous={previous?.revenue ?? null}
+          spark={spark}
+        />
+        <StatTile
+          t={t}
+          label={t("reports.sessions")}
+          value={String(totals.sessions)}
+          current={totals.sessions}
+          previous={previous?.sessions ?? null}
+        />
+        <StatTile
+          t={t}
+          label={t("reports.avgPerSession")}
+          value={formatMMK(totals.avgPerSession)}
+          unit="MMK"
+          current={totals.avgPerSession}
+          previous={previous?.avgPerSession ?? null}
+        />
+        <StatTile
+          t={t}
+          label={t("reports.snacksDrinks")}
+          value={formatMMK(totals.snacks)}
+          unit="MMK"
+          current={totals.snacks}
+          previous={previous?.snacks ?? null}
+        />
       </div>
+
+      {/* ── trend + peak hours ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3.5">
+        <Card
+          title={t("reports.byDay")}
+          note={byDay.length > 1 ? `${byDay.length} ${t("reports.days")}` : undefined}
+        >
+          <ColumnChart data={byDay} emptyLabel={t("reports.noSessions")} highlightLast />
+        </Card>
+        <Card
+          title={t("reports.byHour")}
+          note={busiest && busiest.value > 0 ? `${t("reports.peak")} ${busiest.label}:00` : undefined}
+        >
+          <ColumnChart data={byHour} emptyLabel={t("reports.noSessions")} />
+        </Card>
+      </div>
+
+      {/* ── where the money comes from ───────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3.5">
+        <Card title={t("reports.byStation")}>
+          <RankedBars data={byStation} emptyLabel={t("reports.noSessions")} />
+        </Card>
+        <Card title={t("reports.topSnacks")}>
+          <RankedBars
+            data={topSnacks.map((s) => ({
+              key: s.name,
+              label: s.name,
+              value: s.qty,
+              note: `· ${formatMMK(s.revenue)}`,
+            }))}
+            emptyLabel={t("reports.noSnacks")}
+            format={(n) => `${n}`}
+          />
+        </Card>
+      </div>
+
+      <SessionTable sessions={sessions} staffNames={staffNames} />
     </div>
   );
 }
 
-function Row({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
+function Card({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex justify-between text-sm">
-      <span className={muted ? "text-text-secondary" : ""}>{label}</span>
-      <span className="font-mono">{value}</span>
+    <div className="bg-surface border border-line rounded-[11px] p-[18px]">
+      <div className="flex items-baseline justify-between mb-3.5">
+        <h2 className="text-[13.5px] font-bold m-0">{title}</h2>
+        {note && <span className="text-[11.5px] text-text-muted font-mono">{note}</span>}
+      </div>
+      {children}
     </div>
   );
 }
