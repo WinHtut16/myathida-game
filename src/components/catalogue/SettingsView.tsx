@@ -245,7 +245,7 @@ function StationRow({
               }),
             )
           }
-          className="border border-line rounded-md px-2 py-1 text-[13px] bg-white w-[90px] disabled:opacity-45"
+          className="field !py-1 !px-2 !text-[13px] w-[104px] disabled:opacity-45"
         >
           {TIERS.map((tr) => (
             <option key={tr} value={tr}>

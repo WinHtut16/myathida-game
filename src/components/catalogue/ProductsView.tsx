@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, PackagePlus, TriangleAlert, Check, X } from "lucide-react";
+import { PackagePlus, TriangleAlert, Check, X } from "lucide-react";
 import {
   upsertProductAction,
   setProductActiveAction,
@@ -182,21 +182,17 @@ export function ProductsView({
           </Field>
           <div className="flex gap-3">
             <Field label={t("products.category")} className="flex-1">
-              <div className="relative">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
-                  disabled={!canEdit || pending}
-                  className="cat-input appearance-none pr-8"
-                >
-                  <option value="drink">{t("cat.drink")}</option>
-                  <option value="snack">{t("cat.snack")}</option>
-                </select>
-                <ChevronDown
-                  size={15}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-                />
-              </div>
+              {/* The caret comes from the global select.cat-input rule now,
+                  so this no longer draws its own on top of it. */}
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                disabled={!canEdit || pending}
+                className="cat-input"
+              >
+                <option value="drink">{t("cat.drink")}</option>
+                <option value="snack">{t("cat.snack")}</option>
+              </select>
             </Field>
             <Field label={t("products.price")} className="flex-1">
               <input

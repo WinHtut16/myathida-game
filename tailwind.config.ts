@@ -47,9 +47,9 @@ const config: Config = {
         success: "#17835a",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
-        mm: ["var(--font-mm)", "var(--font-sans)", "sans-serif"],
+        sans: ["var(--font-sans, system-ui)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono, ui-monospace)", "ui-monospace", "monospace"],
+        mm: ["var(--font-mm, var(--font-sans, system-ui))", "system-ui", "sans-serif"],
       },
       boxShadow: {
         card: "0 1px 2px rgba(20,22,28,.04)",

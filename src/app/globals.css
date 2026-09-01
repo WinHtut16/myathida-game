@@ -24,13 +24,19 @@ body {
 body {
   background: theme("colors.app-bg");
   color: theme("colors.text.DEFAULT");
-  font-family: var(--font-sans), system-ui, sans-serif;
+  /* Fallback INSIDE var(). Written as `var(--font-sans), system-ui` the whole
+     declaration is invalid when the variable is empty - and CSS then falls all
+     the way back to the UA default, which is Times New Roman, not system-ui.
+     Measured: with next/font stubbed out, every element resolved to
+     "Times New Roman". So a failed font fetch would not degrade gracefully,
+     it would make the whole app look broken. */
+  font-family: var(--font-sans, system-ui), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 /* Myanmar Unicode text helper (mirrors .mm in the design handoff) */
 .mm {
-  font-family: var(--font-mm), var(--font-sans), sans-serif;
+  font-family: var(--font-mm, var(--font-sans, system-ui)), system-ui, sans-serif;
 }
 
 /* tabular figures for all timers / money */
@@ -63,4 +69,57 @@ body {
 .cat-input:disabled {
   background: #f7f8fa;
   color: #8a909c;
+}
+
+/* ── Form controls inherit the page font ────────────────────────────────────
+   Browsers do NOT inherit font-family into input, select, textarea or button;
+   they fall back to the OS UI font. So every dropdown, text box and button in
+   this app was rendering in a different typeface from the text beside it,
+   which reads as the page being broken rather than as a styling choice. One
+   rule fixes all 57 of them.
+
+   font-size is deliberately NOT inherited here - the components set their own
+   sizes, and forcing inheritance would resize every control at once. */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Native select chrome is the other half of the problem: the OS arrow and
+   bevel look nothing like the rest of the UI. appearance:none removes it and
+   an inline SVG caret replaces it, so a dropdown matches a text field.
+   padding-right leaves room for the caret so long option text cannot run
+   underneath it. */
+select.cat-input,
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a909c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+
+/* Shared control, so Settings and Backup stop hand-rolling their own. */
+.field {
+  width: 100%;
+  border: 1px solid #dcdfe5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+.field:disabled {
+  background: #f7f8fa;
+  color: #8a909c;
+}
+.field:focus {
+  border-color: #3b73c4;
+}
+.cat-input:focus {
+  border-color: #3b73c4;
 }
