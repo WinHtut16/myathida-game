@@ -150,4 +150,9 @@ export const en = {
   "products.superOnly": "Only a superadmin can add or change products. You can still see what is on sale and how much stock is left.",
   "pricing.futureOnly": "Affects future sessions only. Sessions already recorded keep the rate they were charged at.",
   "pricing.saved": "Saved",
+
+  "settings.noStaff": "Nobody has access to the game shop yet.",
+  "settings.inactive": "Removed",
+  "settings.manageStaffHint": "People are added and removed in the main admin panel, where their account and their access to each business are set up together.",
+  "settings.manageStaffLink": "Manage staff",
 };

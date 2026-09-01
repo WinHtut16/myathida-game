@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-import type { Pricing, Product, Tier } from "@/lib/types";
+import type { Pricing, Product, Station, Tier } from "@/lib/types";
 
 /** Server reads for the catalogue screens (Snacks, Pricing). */
 
@@ -88,5 +88,44 @@ export async function getPricing(): Promise<CatalogueResult<Pricing[]>> {
     data: (data as PricingRow[])
       .map((p) => ({ tier: p.tier, ratePerHour: Number(p.rate_per_hour), minMinutes: p.min_minutes }))
       .sort((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier)),
+  };
+}
+
+interface StationRow {
+  id: string;
+  name: string;
+  tier: Tier;
+  status: Station["status"];
+  occupied: boolean;
+  sort_order: number;
+}
+
+/** The floor plan, for the Settings screen. Includes stations in maintenance. */
+export async function getStations(): Promise<CatalogueResult<Station[]>> {
+  if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("stations")
+    .select("id,name,tier,status,occupied,sort_order")
+    .order("sort_order");
+
+  if (error) {
+    console.error("[catalogue] stations read failed", {
+      code: error.code, message: error.message, details: error.details, hint: error.hint,
+    });
+    return { ok: false, message: explainRead(error.code, error.message) };
+  }
+
+  return {
+    ok: true,
+    data: (data as StationRow[]).map((s) => ({
+      id: s.id,
+      name: s.name,
+      tier: s.tier,
+      status: s.status,
+      occupied: s.occupied,
+      sortOrder: s.sort_order,
+    })),
   };
 }

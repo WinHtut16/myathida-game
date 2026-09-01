@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Myanmar } from "next/font/google";
 import "./globals.css";
-import { StoreProvider } from "@/lib/data/store";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
 import { LOCALE_COOKIE } from "@/i18n/config";
@@ -61,14 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={`${sans.variable} ${mono.variable} ${myanmar.variable}`}>
       <body>
         <LocaleProvider initial={locale}>
-          <SessionProvider user={user}>
-            {/*
-              StoreProvider now carries ONLY the demo data for the four screens
-              that are not converted yet - no identity, no language. It goes
-              when the last of them is done.
-            */}
-            <StoreProvider>{children}</StoreProvider>
-          </SessionProvider>
+          <SessionProvider user={user}>{children}</SessionProvider>
         </LocaleProvider>
       </body>
     </html>
