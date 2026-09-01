@@ -6,7 +6,7 @@ import { BarChart3, Cookie, LayoutDashboard, Settings, Tag, User } from "lucide-
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
-import { LanguageSwitch } from "./LanguageSwitch";
+import { SidebarFooter } from "./SidebarFooter";
 
 // Paths are relative to this app's basePath (/admin/game), which Next adds to
 // <Link href> and strips from usePathname() automatically - so these stay
@@ -71,23 +71,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto px-3 flex flex-col gap-3">
-        <LanguageSwitch variant="dark" />
+      <SidebarFooter />
 
-        <div className="flex items-center gap-2.5 px-3 py-2.5 border-t border-[#34383f]">
-          <span className="w-[30px] h-[30px] rounded-full bg-[#3b3f47] flex items-center justify-center text-[#c7cbd3]">
-            <User size={15} />
-          </span>
-          <div className="leading-[1.15] min-w-0">
-            <div className="text-white text-[13px] font-medium truncate">
-              {user?.name ?? t("common.signedOut")}
-            </div>
-            <div className="text-[10.5px] text-[#7d838e]">
-              {user ? t(user.isSuperadmin ? "role.superadmin" : "role.admin") : "—"}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

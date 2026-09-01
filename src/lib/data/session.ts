@@ -39,8 +39,29 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     return null;
   }
 
-  const directory = await getStaffDirectory();
+  /**
+   * Rank is asked of game.is_superadmin() directly, not read off the
+   * directory row.
+   *
+   * The directory used to answer "admin" for a global superadmin: it read rank
+   * from app_access alone, and a global superadmin holds no per-business grant
+   * because they outrank the grants entirely. game-profile-migration.sql fixes
+   * the directory, but this is the authoritative source either way - it is the
+   * same function the RLS policies enforce with, so the badge in the sidebar
+   * and the permission the database applies can never disagree.
+   */
+  const [directory, superRes] = await Promise.all([
+    getStaffDirectory(),
+    supabase.rpc("is_superadmin"),
+  ]);
   if (!directory) return null;
+
+  if (superRes.error) {
+    console.error("[session] is_superadmin failed", {
+      code: superRes.error.code,
+      message: superRes.error.message,
+    });
+  }
 
   const me = directory.find((r) => r.id === auth.user.id);
 
@@ -49,6 +70,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   // shell say so rather than inventing a name.
   if (!me || !me.active) return null;
 
-  const role: Role = me.role === "superadmin" ? "superadmin" : "admin";
-  return { id: me.id, name: me.name, role, isSuperadmin: role === "superadmin" };
+  // Denies on a failed lookup rather than assuming rank - never invert this.
+  const isSuperadmin = superRes.error ? me.role === "superadmin" : superRes.data === true;
+  const role: Role = isSuperadmin ? "superadmin" : "admin";
+  return { id: me.id, name: me.name, role, isSuperadmin };
 }

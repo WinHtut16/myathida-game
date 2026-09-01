@@ -147,4 +147,17 @@ export const my: Record<string, string> = {
   "settings.inactive": "ဖယ်ရှားပြီး",
   "settings.manageStaffHint": "ဝန်ထမ်းများကို ပင်မ admin panel တွင် ထည့်/ဖယ် လုပ်ပါသည်။ အကောင့်နှင့် လုပ်ငန်းတစ်ခုချင်းစီ၏ ဝင်ခွင့်ကို အတူတကွ သတ်မှတ်ပါသည်။",
   "settings.manageStaffLink": "ဝန်ထမ်း စီမံရန်",
+
+  "nav.allBusinesses": "လုပ်ငန်းအားလုံး",
+  "nav.signOut": "ထွက်မည်",
+  "account.title": "ကျွန်ုပ်၏ အကောင့်",
+  "account.yourDetails": "သင့်အချက်အလက်",
+  "account.detailsHint": "ဆိုင်အတွင်း သင့်ကို မည်သို့မြင်ရမည်ကို သတ်မှတ်ပါ။",
+  "account.displayName": "ပြသမည့်အမည်",
+  "account.displayNameHint": "သင်မှတ်တမ်းတင်သော ဆက်ရှင်တိုင်းတွင် ပေါ်မည်ဖြစ်၍ ဝင်ငွေကို ပြန်လည်ခြေရာခံနိုင်ပါသည်။",
+  "account.language": "ဖတ်ရှုမည့်ဘာသာစကား",
+  "account.save": "သိမ်းမည်",
+  "account.password": "စကားဝှက်",
+  "account.passwordHint": "သင့်အကောင့်ဝင်ရန် အချက်အလက်ကို လုပ်ငန်းအားလုံးတွင် အတူတူသုံးသဖြင့် စကားဝှက်ကို ပင်မ admin panel တွင် ပြောင်းရပါမည်။",
+  "account.passwordLink": "admin panel တွင် ပြောင်းရန်",
 };

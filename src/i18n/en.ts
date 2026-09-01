@@ -155,4 +155,17 @@ export const en = {
   "settings.inactive": "Removed",
   "settings.manageStaffHint": "People are added and removed in the main admin panel, where their account and their access to each business are set up together.",
   "settings.manageStaffLink": "Manage staff",
+
+  "nav.allBusinesses": "All businesses",
+  "nav.signOut": "Sign out",
+  "account.title": "My account",
+  "account.yourDetails": "Your details",
+  "account.detailsHint": "How you appear to the rest of the shop.",
+  "account.displayName": "Display name",
+  "account.displayNameHint": "Shown on every session you record, so the takings can be traced back to you.",
+  "account.language": "Reading language",
+  "account.save": "Save changes",
+  "account.password": "Password",
+  "account.passwordHint": "Your sign-in is shared across all the businesses you have access to, so your password is changed in the main admin panel rather than here.",
+  "account.passwordLink": "Change it in the admin panel",
 };
