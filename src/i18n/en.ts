@@ -192,4 +192,11 @@ export const en = {
   "export.pickRange": "Pick both a start and an end date.",
   "export.superOnly": "Only a superadmin can download the shop’s data.",
   "export.snapshotNote": "Prices, stock, stations and staff are always included in full, whatever period you pick — they are current state, and a date-limited copy could not be restored from.",
+
+  "stock.title": "Recent stock changes",
+  "stock.none": "No stock changes recorded yet.",
+  "stock.sale": "Sold",
+  "stock.restock": "Restocked",
+  "stock.adjustment": "Adjusted",
+  "stock.voidReturn": "Returned (correction)",
 };

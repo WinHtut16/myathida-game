@@ -129,3 +129,72 @@ export async function getStations(): Promise<CatalogueResult<Station[]>> {
     })),
   };
 }
+
+export interface StockMovement {
+  id: string;
+  productName: string;
+  change: number;
+  reason: "sale" | "restock" | "adjustment" | "void_return";
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+interface MovementRow {
+  id: string;
+  change: number;
+  reason: StockMovement["reason"];
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  products: { name_en: string } | null;
+}
+
+/**
+ * Recent stock changes.
+ *
+ * The ledger existed for a while with nothing reading it, which is the worst
+ * of both worlds - the writes cost something and answered nobody. This is the
+ * screen that makes it worth having: when the shelf count disagrees with the
+ * app, this is where you find out whether it was sold, restocked or corrected.
+ */
+export async function getStockMovements(
+  limit = 40,
+): Promise<CatalogueResult<StockMovement[]>> {
+  if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("stock_movements")
+    .select("id,change,reason,note,created_by,created_at,products(name_en)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[catalogue] stock movements read failed", {
+      code: error.code, message: error.message, details: error.details, hint: error.hint,
+    });
+    // 42P01: the table is missing, i.e. the corrections migration has not run.
+    if (error.code === "42P01") {
+      return {
+        ok: false,
+        message:
+          "Stock history is not set up yet. Run supabase/game-corrections-migration.sql in the futsal Supabase project.",
+      };
+    }
+    return { ok: false, message: explainRead(error.code, error.message) };
+  }
+
+  return {
+    ok: true,
+    data: (data as unknown as MovementRow[]).map((m) => ({
+      id: m.id,
+      productName: m.products?.name_en ?? "Deleted product",
+      change: m.change,
+      reason: m.reason,
+      note: m.note,
+      createdBy: m.created_by,
+      createdAt: m.created_at,
+    })),
+  };
+}
