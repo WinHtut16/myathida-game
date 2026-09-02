@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, Grid2x2, User } from "lucide-react";
+import { LogOut, Grid2x2, User, ScrollText } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { useT } from "@/i18n";
@@ -41,6 +41,19 @@ export function SidebarFooter() {
 
   return (
     <div className="mt-auto px-3 flex flex-col gap-2.5">
+      {/* Superadmins only, pre-filtered to the shop. The audit_log select
+          policy already scopes a game-only superadmin to game rows, so an
+          unfiltered link would just look like the filter was broken. */}
+      {user?.isSuperadmin && (
+        <a
+          href="/admin/audit?app=game"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] text-[#9aa0aa] hover:bg-[#2c3037] hover:text-[#c7cbd3]"
+        >
+          <ScrollText size={15} />
+          {t("nav.auditLog")}
+        </a>
+      )}
+
       <a
         href="/admin/apps"
         className="flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] text-[#9aa0aa] hover:bg-[#2c3037] hover:text-[#c7cbd3]"

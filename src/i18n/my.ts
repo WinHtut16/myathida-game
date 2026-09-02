@@ -149,6 +149,7 @@ export const my: Record<string, string> = {
   "settings.manageStaffLink": "ဝန်ထမ်း စီမံရန်",
 
   "nav.allBusinesses": "လုပ်ငန်းအားလုံး",
+  "nav.auditLog": "လုပ်ဆောင်မှု မှတ်တမ်း",
   "nav.signOut": "ထွက်မည်",
   "account.title": "ကျွန်ုပ်၏ အကောင့်",
   "account.yourDetails": "သင့်အချက်အလက်",

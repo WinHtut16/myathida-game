@@ -157,6 +157,7 @@ export const en = {
   "settings.manageStaffLink": "Manage staff",
 
   "nav.allBusinesses": "All businesses",
+  "nav.auditLog": "Audit log",
   "nav.signOut": "Sign out",
   "account.title": "My account",
   "account.yourDetails": "Your details",
