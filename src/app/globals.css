@@ -3,12 +3,72 @@
    is style-src/font-src 'self' and would refuse it, and it would put the
    shop's fonts on a CDN reached across the customer's ISP. */
 
+/* Shared MyaThida admin-suite contract — byte-identical in PointSystem_AkoATP
+   and Billiards_MyaThida. See DESIGN.md. Defines the structural scales
+   (spacing, radius, shadow, type, z-index, motion, container widths), the
+   neutral + semantic color set, the per-app `data-app` accent block
+   (activated below by data-app="game" on <html>), and the html[lang="my"]
+   Burmese rule. Do not duplicate its variables in this file. */
+@import "../../design/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: light;
+
+  /* This app's existing palette, still literal hex, now named as CSS custom
+     properties so tailwind.config.ts references var(--game-*) instead of a
+     hardcoded value repeated in two files. Deliberately kept in a --game-*
+     namespace, separate from the shared --color-* vocabulary above — this
+     is a mechanical hex-to-var pass, not yet a retarget onto the shared
+     semantic colors (success/warning/danger/info). That reconciliation is
+     real design work (Game's 5-state status vocabulary vs. the shared
+     4-state one) and belongs to the screen-pattern pass, not this wiring
+     step. --color-surface is the one exception: it's literally #ffffff in
+     both places already, so it points straight at the shared token. */
+  --game-rail: #23262e;
+  --game-ink: #1e2128;
+  --game-canvas: #e9ebef;
+  --game-app-bg: #eef0f3;
+
+  --game-line: #dcdfe5;
+  --game-line-soft: #e0e3e8;
+  --game-line-faint: #eef0f3;
+  --game-line-hair: #f3f4f6;
+
+  --game-text: #1e2128;
+  --game-text-secondary: #5b616e;
+  /* Darkened from the original #8a909c: that value cleared only ~3.4:1
+     against white, below the 4.5:1 body-text floor. Same hue family. */
+  --game-text-muted: #6b7280;
+  --game-text-faint: #b6bcc6;
+
+  --game-accent: #3b73c4;
+  --game-accent2: #2f5fa8;
+  --game-success: #17835a;
+
+  --game-status-idle: #9aa2af;
+  --game-status-active: #1a9d6b;
+  --game-status-active-ink: #0f7a52;
+  --game-status-active-bg: #e7f4ee;
+  --game-status-warn: #d9920f;
+  --game-status-warn-ink: #96590a;
+  --game-status-warn-deep: #a86616;
+  --game-status-warn-bg: #fbf1df;
+  --game-status-expired: #d83a25;
+  --game-status-expired-ink: #c2321f;
+  --game-status-expired-bd: #f0c9c1;
+  --game-status-paused: #3b73c4;
+  --game-status-paused-ink: #2f5fa8;
+  --game-status-paused-bg: #e9eff8;
+
+  --game-shadow-card: 0 1px 2px rgba(20, 22, 28, 0.04);
+  --game-shadow-panel: 0 1px 2px rgba(20, 22, 28, 0.04), 0 10px 30px rgba(20, 22, 28, 0.06);
+  --game-shadow-modal: 0 24px 60px rgba(20, 22, 28, 0.28);
+  --game-shadow-drawer: -16px 0 50px rgba(20, 22, 28, 0.2);
+  --game-shadow-expired: 0 0 0 3px rgba(216, 58, 37, 0.08);
 }
 
 * {
@@ -24,20 +84,19 @@ body {
 body {
   background: theme("colors.app-bg");
   color: theme("colors.text.DEFAULT");
-  /* Fallback INSIDE var(). Written as `var(--font-sans), system-ui` the whole
-     declaration is invalid when the variable is empty - and CSS then falls all
-     the way back to the UA default, which is Times New Roman, not system-ui.
-     Measured: with next/font stubbed out, every element resolved to
-     "Times New Roman". So a failed font fetch would not degrade gracefully,
-     it would make the whole app look broken. */
-  font-family: var(--font-sans, system-ui), system-ui, sans-serif;
+  /* Fallback INSIDE var(). Written as `var(--font-plex-sans), system-ui` the
+     whole declaration is invalid when the variable is empty - and CSS then
+     falls all the way back to the UA default, which is Times New Roman, not
+     system-ui. Measured: with next/font stubbed out, every element resolved
+     to "Times New Roman". So a failed font fetch would not degrade
+     gracefully, it would make the whole app look broken. */
+  font-family: var(--font-plex-sans, system-ui), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Myanmar Unicode text helper (mirrors .mm in the design handoff) */
-.mm {
-  font-family: var(--font-mm, var(--font-sans, system-ui)), system-ui, sans-serif;
-}
+/* Myanmar Unicode text helper: .mm / .my and html[lang="my"] now come from
+   design/tokens.css (imported above) — it adds line-height/letter-spacing
+   tuning this app's own version didn't have. */
 
 /* tabular figures for all timers / money */
 .tnum {
@@ -59,16 +118,16 @@ body {
    plain class now so Pricing and Settings can use the same control. */
 .cat-input {
   width: 100%;
-  border: 1px solid #dcdfe5;
+  border: 1px solid var(--game-line);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
   outline: none;
-  background: #fff;
+  background: var(--color-surface);
 }
 .cat-input:disabled {
   background: #f7f8fa;
-  color: #8a909c;
+  color: var(--game-text-muted);
 }
 
 /* ── Form controls inherit the page font ────────────────────────────────────
@@ -98,7 +157,7 @@ select.field {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 34px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a909c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 11px center;
 }
@@ -106,20 +165,20 @@ select.field {
 /* Shared control, so Settings and Backup stop hand-rolling their own. */
 .field {
   width: 100%;
-  border: 1px solid #dcdfe5;
+  border: 1px solid var(--game-line);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
   outline: none;
-  background: #fff;
+  background: var(--color-surface);
 }
 .field:disabled {
   background: #f7f8fa;
-  color: #8a909c;
+  color: var(--game-text-muted);
 }
 .field:focus {
-  border-color: #3b73c4;
+  border-color: var(--game-accent);
 }
 .cat-input:focus {
-  border-color: #3b73c4;
+  border-color: var(--game-accent);
 }

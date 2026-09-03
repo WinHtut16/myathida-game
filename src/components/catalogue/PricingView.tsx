@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { updatePricingAction } from "@/app/actions/catalogue";
 import { TierBadge } from "@/components/station/TierBadge";
 import { useT } from "@/i18n";
@@ -25,15 +26,9 @@ export function PricingView({ pricing, canEdit }: { pricing: Pricing[]; canEdit:
   return (
     <>
       {error && (
-        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg border border-[#e5b8b0] bg-[#fdf3f1] px-4 py-3 text-[13px] text-[#8a3324]">
-          <TriangleAlert size={16} className="mt-px flex-none" />
-          <div className="flex-1">{error}</div>
-          <button onClick={() => setError(null)} className="font-semibold underline underline-offset-2">
-            {t("common.dismiss")}
-          </button>
-        </div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} className="mx-4 sm:mx-5 mt-4" />
       )}
-      <div className="p-5 px-[22px] grid grid-cols-3 gap-4 max-w-[1100px]">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-[1100px]">
         {pricing.map((p) => (
           <RateCard key={p.tier} pricing={p} canEdit={canEdit} onError={setError} />
         ))}
@@ -57,7 +52,6 @@ function RateCard({
     ratePerHour: pricing.ratePerHour,
     minMinutes: pricing.minMinutes,
   });
-  const [saved, setSaved] = useState(false);
 
   const dirty =
     draft.ratePerHour !== pricing.ratePerHour || draft.minMinutes !== pricing.minMinutes;
@@ -67,8 +61,7 @@ function RateCard({
       const r = await updatePricingAction(pricing.tier, draft.ratePerHour, draft.minMinutes);
       if (r.ok) {
         onError(null);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        toast.success(t("pricing.saved"));
       } else {
         onError(r.message ?? "Could not save.");
       }
@@ -118,9 +111,7 @@ function RateCard({
       >
         {pending
           ? t("record.saving")
-          : saved
-            ? t("pricing.saved")
-            : `${t("pricing.save")} · ${formatMMK(draft.ratePerHour)}/hr`}
+          : `${t("pricing.save")} · ${formatMMK(draft.ratePerHour)}/hr`}
       </button>
     </div>
   );

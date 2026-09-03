@@ -178,6 +178,7 @@ export const en = {
   "reports.returnSnacks": "Put the snacks back into stock (only if nothing was served)",
 
   "nav.export": "Backup",
+  "nav.more": "More",
   "export.title": "Download a backup",
   "export.intro": "Everything the shop has recorded, as an Excel file: sessions, order lines, stock movements, prices, stations and staff. One sheet each.",
   "export.scopeAll": "Everything",

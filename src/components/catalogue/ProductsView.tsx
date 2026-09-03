@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PackagePlus, TriangleAlert, Check, X } from "lucide-react";
+import { PackagePlus, Check, X } from "lucide-react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   upsertProductAction,
   setProductActiveAction,
@@ -68,18 +69,15 @@ export function ProductsView({
   return (
     <>
       {error && (
-        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg border border-[#e5b8b0] bg-[#fdf3f1] px-4 py-3 text-[13px] text-[#8a3324]">
-          <TriangleAlert size={16} className="mt-px flex-none" />
-          <div className="flex-1">{error}</div>
-          <button onClick={() => setError(null)} className="font-semibold underline underline-offset-2">
-            {t("common.dismiss")}
-          </button>
-        </div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} className="mx-4 sm:mx-5 mt-4" />
       )}
 
-      <div className="p-5 px-[22px] grid grid-cols-[1.6fr_1fr] gap-4 max-w-[1200px]">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 max-w-[1200px]">
         <div className="bg-surface border border-line rounded-[10px] overflow-hidden self-start">
-          <div className="grid grid-cols-[2fr_1fr_1fr_.9fr_.7fr] gap-3 p-3 px-5 border-b border-line-faint text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold">
+          {/* Real table from md up; each row below md collapses to a two-line
+              card instead — same list, no columns squeezed unreadable at
+              phone width. See DESIGN.md's list pattern. */}
+          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_.9fr_.7fr] gap-3 p-3 px-5 border-b border-line-faint text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold">
             <span>{t("products.name")}</span>
             <span>{t("products.category")}</span>
             <span className="text-right">{t("products.price")}</span>
@@ -97,60 +95,67 @@ export function ProductsView({
             <div
               key={p.id}
               className={cx(
-                "grid grid-cols-[2fr_1fr_1fr_.9fr_.7fr] gap-3 p-3.5 px-5 border-b border-line-hair items-center last:border-0",
+                "flex flex-col gap-2 p-3.5 px-4",
+                "md:grid md:grid-cols-[2fr_1fr_1fr_.9fr_.7fr] md:gap-3 md:px-5 md:items-center",
+                "border-b border-line-hair last:border-0",
                 !p.active && "opacity-55",
               )}
             >
-              <div className="min-w-0">
-                <div className="text-sm font-semibold truncate">{localizedName(locale, p)}</div>
-                <div className="mm text-xs text-text-muted truncate">{p.nameMy}</div>
-              </div>
-              <span
-                className={cx(
-                  "text-[12.5px] px-2.5 py-[3px] rounded-md justify-self-start",
-                  p.category === "drink"
-                    ? "bg-[#eef3fa] border border-[#dbe6f5] text-accent2"
-                    : "bg-line-faint text-text-secondary",
-                )}
-              >
-                {t(p.category === "drink" ? "cat.drink" : "cat.snack")}
-              </span>
-              <span className="font-mono text-[13.5px] text-right">{formatMMK(p.price)}</span>
-
-              <StockCell
-                product={p}
-                canEdit={canEdit}
-                editing={editingStock === p.id}
-                disabled={pending}
-                onEdit={() => setEditingStock(p.id)}
-                onCancel={() => setEditingStock(null)}
-                onSave={(v) => {
-                  setEditingStock(null);
-                  run(() => setStockAction(p.id, v));
-                }}
-              />
-
-              <button
-                onClick={() => run(() => setProductActiveAction(p.id, !p.active))}
-                disabled={!canEdit || pending}
-                aria-label={`${p.active ? "Delist" : "Relist"} ${p.nameEn}`}
-                className={cx(
-                  "justify-self-center w-[34px] h-5 rounded-full relative transition-colors disabled:opacity-45",
-                  p.active ? "bg-success" : "bg-line",
-                )}
-              >
+              <div className="flex items-start justify-between gap-3 md:contents">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate">{localizedName(locale, p)}</div>
+                  <div className="mm text-xs text-text-muted truncate">{p.nameMy}</div>
+                </div>
                 <span
                   className={cx(
-                    "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                    p.active ? "right-0.5" : "left-0.5",
+                    "text-[12.5px] px-2.5 py-[3px] rounded-md justify-self-start flex-none",
+                    p.category === "drink"
+                      ? "bg-[#eef3fa] border border-[#dbe6f5] text-accent2"
+                      : "bg-line-faint text-text-secondary",
                   )}
+                >
+                  {t(p.category === "drink" ? "cat.drink" : "cat.snack")}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 md:contents">
+                <span className="font-mono text-[13.5px] md:text-right">{formatMMK(p.price)}</span>
+
+                <StockCell
+                  product={p}
+                  canEdit={canEdit}
+                  editing={editingStock === p.id}
+                  disabled={pending}
+                  onEdit={() => setEditingStock(p.id)}
+                  onCancel={() => setEditingStock(null)}
+                  onSave={(v) => {
+                    setEditingStock(null);
+                    run(() => setStockAction(p.id, v));
+                  }}
                 />
-              </button>
+
+                <button
+                  onClick={() => run(() => setProductActiveAction(p.id, !p.active))}
+                  disabled={!canEdit || pending}
+                  aria-label={`${p.active ? "Delist" : "Relist"} ${p.nameEn}`}
+                  className={cx(
+                    "justify-self-center w-[34px] h-5 rounded-full relative transition-colors disabled:opacity-45 flex-none",
+                    p.active ? "bg-success" : "bg-line",
+                  )}
+                >
+                  <span
+                    className={cx(
+                      "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                      p.active ? "right-0.5" : "left-0.5",
+                    )}
+                  />
+                </button>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-surface border border-line rounded-[10px] p-[22px] flex flex-col gap-4 self-start">
+        <div className="bg-surface border border-line rounded-[10px] p-4 sm:p-[22px] flex flex-col gap-4 self-start">
           <div className="text-[15px] font-bold flex items-center gap-2">
             <PackagePlus size={18} />
             {t("products.new")}

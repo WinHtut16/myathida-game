@@ -31,8 +31,11 @@ export function SkeletonCard({ children }: { children?: React.ReactNode }) {
 }
 
 export function TileRow({ count = 4 }: { count?: number }) {
+  // Mirrors the real headline-figures grid, which is 2 columns below lg and
+  // `count` columns from lg up. See DESIGN.md - loading state matches the
+  // real layout exactly.
   return (
-    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${count}, minmax(0,1fr))` }}>
+    <div className={`grid grid-cols-2 gap-3 ${count === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="bg-surface border border-line rounded-[11px] p-4 px-[18px]">
           <Bar w="52%" h={10} />
@@ -93,14 +96,14 @@ export function TableCard({ rows = 6 }: { rows?: number }) {
         {Array.from({ length: rows }).map((_, i) => (
           <div
             key={i}
-            className="grid grid-cols-[1.5fr_1fr_.8fr_.9fr_.9fr_.5fr] gap-3 px-[18px] py-3.5 border-b border-line-hair last:border-0 items-center"
+            className="flex flex-col gap-2 px-[18px] py-3.5 md:grid md:grid-cols-[1.5fr_1fr_.8fr_.9fr_.9fr_.5fr] md:gap-3 md:items-center border-b border-line-hair last:border-0"
           >
             <Bar w="76%" h={12} />
-            <Bar w="52%" h={12} />
-            <Bar w="44%" h={12} />
-            <Bar w="44%" h={12} />
-            <Bar w="56%" h={12} />
-            <Bar w="16px" h={12} />
+            <div className="hidden md:block"><Bar w="52%" h={12} /></div>
+            <div className="hidden md:block"><Bar w="44%" h={12} /></div>
+            <div className="hidden md:block"><Bar w="44%" h={12} /></div>
+            <div className="hidden md:block"><Bar w="56%" h={12} /></div>
+            <div className="hidden md:block"><Bar w="16px" h={12} /></div>
           </div>
         ))}
       </div>
@@ -111,7 +114,7 @@ export function TableCard({ rows = 6 }: { rows?: number }) {
 /** The floor board is a grid of station tiles. */
 export function TileGrid({ count = 10 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-4 gap-4 max-w-[1200px]">
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-[1200px]">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="bg-surface border border-line rounded-[10px] p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between">

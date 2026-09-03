@@ -9,41 +9,73 @@ smart-plug app to run each TV's timer and switch it on/off). So this system has
 **no live countdown and no hardware control** — staff record a completed session
 (TV, duration, snacks) and the app computes the total and saves it to history.
 
-Built from the Claude Design handoff in `docs/design-handoff/`. Design spec:
-`docs/MyaThida_System_Design.md`.
+Originally built from the Claude Design handoff in `docs/design-handoff/`
+(design spec: `docs/MyaThida_System_Design.md`, superseded in part — see its
+top note). Current design conventions live in [DESIGN.md](DESIGN.md), shared
+verbatim with the two sibling apps below.
+
+**Design/UI work:** see [DESIGN.md](DESIGN.md) first — the pattern contract
+shared byte-identical with `PointSystem_AkoATP` and `Billiards_MyaThida`
+(button order, nav model, screen shapes, container widths, i18n rules).
+Shared tokens live in `design/tokens.css`. After editing either, copy it to
+the other two repos and run `node scripts/check-design-sync.mjs`.
+
+## Multi-business admin portal
+
+This app is not a standalone site. It's a Next.js multi-zone deployment
+served from the **futsal app's origin** under `/admin/game`, which rewrites
+to this deployment. `basePath: "/admin/game"` in `next.config.mjs` makes both
+pages and `_next` assets live under that prefix — running this repo standalone
+serves `/admin/game/floor`, not `/`. Same origin is the point: one session
+cookie covers all three businesses (futsal, billiards, game) with no custom
+domain. See `next.config.mjs` for the full rationale and gotchas
+(trailing-slash redirects, Server Action CSRF origins).
 
 ## Stack
 
-- **Next.js 14** (App Router) + **React 18** + **TypeScript**
-- **Tailwind CSS** — design tokens in `tailwind.config.ts`
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS** — design tokens in `tailwind.config.ts` + `design/tokens.css`
 - **lucide-react** icons
-- **Supabase** (Postgres + Auth) — schema in `supabase/`, not yet wired
+- **Supabase** (Postgres + Auth) — fully wired via `src/lib/data/*` (reads)
+  and `src/app/actions/*` (writes), all server-side only. No browser Supabase
+  client — see the note in `src/lib/data/` about Myanmar mobile networks
+  blocking `*.supabase.co` at the ISP level.
 
 ## Running it
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:3000/admin/game/floor
 npm run build
 npm run typecheck
 ```
 
-Runs on an in-memory mock dataset (`src/lib/mock/seed.ts`) — no backend needed.
-A demo **role switcher** (superadmin / admin) sits at the bottom of the sidebar.
+Requires Supabase env vars pointing at the shared futsal project (see
+`PointSystem_AkoATP/CLAUDE.md` for the schema setup order). There is no
+mock/demo data source and no role switcher — sign-in happens on the hub
+(`/admin/login`); this app reads the resulting session.
 
 ## What it does
 
-- **Floor** — occupancy board of all stations. Toggle each TV Occupied/Free by
-  hand, or hit **Record session**.
-- **Record session** — pick the TV (auto-fills tier + rate), enter the duration,
-  add snacks → live total → save. Recording frees the TV.
-- **History** — every recorded session, today's totals, top snacks, and a
-  per-session receipt.
-- **Snacks** — manage the snack/drink price list (bilingual).
-- **Pricing** *(superadmin)* — per-tier rate cards.
-- **Settings** — station config (tier, maintenance), **admin accounts**
-  *(superadmin)*, default language.
-- **Login** — email+password (superadmin) or phone+password (admin).
+- **Floor** (`/floor`) — occupancy board of all stations. Toggle each TV
+  Occupied/Free by hand, or hit **Record session**.
+- **Record session** — pick the TV (auto-fills tier + rate), enter the
+  duration, add snacks → live total → save. Recording frees the TV.
+- **Reports** (`/reports`) — revenue/session history, charts, per-session
+  receipts. Superadmin can correct a wrongly-recorded session.
+- **Products** (`/products`) — snack/drink price list + stock ledger,
+  bilingual. Superadmin edits; all staff can view.
+- **Pricing** (`/pricing`, superadmin) — per-tier rate cards.
+- **Settings** (`/settings`) — floor plan (station tier/maintenance,
+  superadmin edits), staff roster (read-only — staff CRUD lives on the hub
+  at `/admin/staff`), default reading language.
+- **Account** (`/account`) — own display name + reading language; password
+  change links out to the hub.
+- **Export** (`/export`, superadmin) — full-shop `.xlsx` backup.
+
+Sign-in is **not** implemented in this repo — `/login` is a vestigial static
+page. Real authentication happens on the hub at `/admin/login`; this app
+reads the resulting session via `getCurrentUser()`.
 
 ## Pricing
 
@@ -60,54 +92,51 @@ minimum (default 30 min):
 
 ## Roles
 
-- **Superadmin** — created by hand in the Supabase dashboard (email + password).
-  Manages tier pricing, station config, and admin accounts.
-- **Admin** — created **in-app** by a superadmin (phone + password). Records
-  sessions, toggles occupancy, manages snacks.
+Two roles, resolved server-side via `is_superadmin()` RPC against the shared
+`app_access` grants (not stored in this app):
+
+- **Superadmin** — manages tier pricing, station config; superadmin-only nav
+  items (`/pricing`, `/export`) are hidden from admins, not just disabled.
+- **Admin** — records sessions, toggles occupancy, views (not edits) menu
+  and pricing. Staff accounts are created on the hub, not here.
+
+The UI principle throughout: role decides what to **show**, never what is
+**allowed** — every write is re-checked server-side regardless of what the
+client rendered.
 
 ## Project layout
 
 ```
 src/
-  app/                 routes (App Router)
-    page.tsx           Floor / occupancy board
-    admin/reports      Session History
-    admin/products     Snacks
-    admin/pricing      Tier pricing (superadmin)
-    admin/settings     Stations + Admins + language
-    login              dual-mode sign-in
+  app/                 routes (App Router; basePath /admin/game supplies the prefix)
+    floor/             occupancy board
+    reports/           session history + charts
+    products/          snack/drink catalogue + stock
+    pricing/           tier pricing (superadmin)
+    settings/          stations + language
+    account/           own profile
+    export/            xlsx backup (superadmin)
+    api/export/        xlsx generation endpoint
+    login/             vestigial — real sign-in is on the hub
   components/
-    layout/            Sidebar, AppShell, LanguageSwitch
-    station/           StationTile, TierBadge
+    layout/            AppShell, Sidebar, SidebarFooter, LanguageSwitch
+    station/           StationTile, TierBadge, FloorBoard
     session/           RecordSessionModal
+    reports/           StatTile, hand-rolled SVG charts, SessionTable
+    catalogue/         ProductsView, PricingView, SettingsView, AccountView, ExportPanel
   lib/
-    types.ts           domain types (mirror the DB schema)
-    pricing.ts         per-minute proration + totals
+    data/              server-side Supabase reads
+    hooks/             useAutoRefresh polling (no Realtime — see zone notes)
+    ui.ts              class-join helper + tier styling
     format.ts          MMK currency + date/time formatting
-    ui.ts              helpers + tier styling
-    mock/seed.ts       demo dataset (7 PS4 + 2 PS5 + VIP)
-    data/store.tsx     in-memory client store (React context) — the live source
-    data/repository.ts data-access contract to implement against Supabase
-    supabase/client.ts Supabase wiring stub
-  i18n/                en.ts / my.ts dictionaries + useT hook
+  actions/             server actions (writes)
+  i18n/                en.ts / my.ts dictionaries + useT/getT
+design/
+  tokens.css           shared design tokens (see DESIGN.md)
 supabase/
-  migrations/0001_init.sql   schema + RLS
-  seed.sql                   optional demo seed
-docs/                        design spec + original handoff bundle
+  migrations/          schema + RLS (applied to the shared futsal project)
+docs/                  design spec + original handoff bundle (partially superseded)
 ```
-
-## Going live on Supabase
-
-1. Create a project; run `supabase/migrations/0001_init.sql` (optionally `seed.sql`).
-2. `npm install @supabase/supabase-js`, fill `.env.local` from `.env.example`,
-   set `NEXT_PUBLIC_DATA_SOURCE=supabase`.
-3. Implement the `Repository` interface (`src/lib/data/repository.ts`) against
-   Supabase and swap `StoreProvider` to hydrate from it.
-4. Auth: **email+password for superadmins** (created in the dashboard),
-   **phone+password for admins**. The "add admin" action needs Supabase's
-   **service-role** key, so it must run server-side (a Next.js route handler /
-   server action or a Supabase Edge Function) — never in the browser. Gate
-   `/admin/pricing`, station config, and admin management to `role = superadmin`.
 
 ## Out of scope
 

@@ -6,7 +6,7 @@ export default async function Loading() {
   const { t } = await getT();
   return (
     <AppShell title={t("floor.title")}>
-      <div className="flex-1 overflow-auto p-5 px-[22px]">
+      <div className="flex-1 overflow-auto p-4 sm:p-5 px-4 sm:px-[22px]">
         <TileGrid />
       </div>
     </AppShell>

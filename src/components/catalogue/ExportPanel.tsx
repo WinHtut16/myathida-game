@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Loader2, TriangleAlert, Database } from "lucide-react";
+import { Download, Loader2, Database } from "lucide-react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 
@@ -75,13 +76,7 @@ export function ExportPanel() {
   return (
     <div className="p-5 px-[22px] max-w-[640px] flex flex-col gap-4">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-[#e5b8b0] bg-[#fdf3f1] px-4 py-3 text-[13px] text-[#8a3324]">
-          <TriangleAlert size={16} className="mt-px flex-none" />
-          <div className="flex-1">{error}</div>
-          <button onClick={() => setError(null)} className="font-semibold underline underline-offset-2">
-            {t("common.dismiss")}
-          </button>
-        </div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} />
       )}
 
       <div className="bg-surface border border-line rounded-[11px] p-[22px]">

@@ -1,0 +1,235 @@
+/* ============================================================================
+   MYATHIDA ADMIN SUITE -- SHARED DESIGN TOKENS
+   ============================================================================
+
+   This file is BYTE-IDENTICAL in all three repos:
+
+     PointSystem_AkoATP/design/tokens.css   (hub,      /admin/*)
+     Billiards_MyaThida/design/tokens.css   (zone,     /admin/billiards/*)
+     MyaThida_Game/design/tokens.css        (zone,     /admin/game/*)
+
+   Edit one, copy to the other two, then run scripts/check-design-sync.mjs in
+   each repo. The script exits non-zero if the copies have drifted.
+
+   WHY A COPIED FILE AND NOT A PACKAGE: the three apps straddle a Tailwind
+   v3 / v4 boundary (hub v3.4, billiards v4, game v3.4). A Tailwind preset
+   cannot cross that boundary; CSS custom properties can. Each app maps these
+   vars its own way -- v3 via tailwind.config.ts colors, v4 via @theme inline.
+
+   STRUCTURE IS SHARED, COLOR IDENTITY IS PER-APP. Everything under STRUCTURE
+   is identical everywhere. The per-app block at the bottom is selected by
+   <html data-app="futsal|billiards|game"> and is the only place a business
+   asserts its own hue.
+   ============================================================================ */
+
+:root {
+  /* ==========================================================================
+     STRUCTURE -- identical in all three apps
+     ========================================================================== */
+
+  /* --- Spacing. 4px base. Use these, not arbitrary px. ------------------- */
+  --space-1:  0.25rem;   /*  4px */
+  --space-2:  0.5rem;    /*  8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.25rem;   /* 20px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+
+  /* --- Radii ------------------------------------------------------------- */
+  --r-sm:  6px;    /* chips, tight pills */
+  --r-md:  10px;   /* buttons, inputs, nav items */
+  --r-lg:  14px;   /* cards, list rows */
+  --r-xl:  20px;   /* dialogs, panels */
+  --r-2xl: 28px;   /* auth cards, mobile sheet top corners */
+  --r-full: 9999px;
+
+  /* --- Elevation. Each carries a 1px hairline ring so a card needs no
+         separate border declaration. ------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(15, 40, 28, 0.05), 0 0 0 1px rgba(15, 40, 28, 0.04);
+  --shadow-md: 0 2px 8px rgba(15, 40, 28, 0.06), 0 0 0 1px rgba(15, 40, 28, 0.04);
+  --shadow-lg: 0 12px 32px -8px rgba(15, 40, 28, 0.18), 0 2px 6px rgba(15, 40, 28, 0.06);
+
+  /* --- Type. Fixed rem steps, ratio roughly 1.15-1.2. Product UI, not a
+         landing page: no clamp(), no fluid headings. Base is 14px because
+         these are dense admin surfaces. ------------------------------------ */
+  --text-2xs:  0.6875rem;  /* 11px  table head, dense metadata */
+  --text-xs:   0.75rem;    /* 12px  helper text, timestamps */
+  --text-sm:   0.8125rem;  /* 13px  secondary body, list subtitles */
+  --text-base: 0.875rem;   /* 14px  body, buttons, inputs, labels */
+  --text-md:   0.9375rem;  /* 15px  list row titles */
+  --text-lg:   1.0625rem;  /* 17px  card headings, page title on mobile */
+  --text-xl:   1.25rem;    /* 20px  page title */
+  --text-2xl:  1.5rem;     /* 24px  auth headings */
+  --text-3xl:  1.875rem;   /* 30px  KPI numbers */
+
+  --leading-tight:  1.25;
+  --leading-snug:   1.4;
+  --leading-normal: 1.55;
+  --leading-my:     1.7;   /* Burmese needs more leading than Latin */
+
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --tracking-tight: -0.01em;
+  --tracking-label:  0.02em;
+  --tracking-caps:   0.08em;  /* uppercase group labels only */
+
+  /* --- Font stacks. The var(--font-*) inner names are supplied by
+         next/font in each app's root layout. Admin surfaces across all three
+         apps use IBM Plex Sans; the hub's customer-facing (site) group keeps
+         its own Sora/Manrope brand and does not read these. ---------------- */
+  --font-sans: var(--font-plex-sans), var(--font-noto-my), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-my:   var(--font-noto-my), "Myanmar Text", "Pyidaungsu", "Padauk", system-ui, sans-serif;
+
+  /* --- Layout. One 3-step container scale replaces the nine ad-hoc
+         max-widths the three apps grew independently. --------------------- */
+  --w-form:      640px;   /* single-column forms, settings, account */
+  --w-list:      960px;   /* list + detail screens */
+  --w-dashboard: 1200px;  /* dashboards, reports, floor boards */
+
+  --sidebar-w:           248px;  /* desktop, expanded */
+  --sidebar-w-collapsed:  68px;  /* desktop, collapsed */
+  --topbar-h:             56px;
+  --bottomnav-h:          64px;  /* excludes safe-area inset */
+  --tap-min:              44px;  /* minimum touch target, phone-primary */
+
+  /* --- Z-index. Semantic scale. Never write a bare number. --------------- */
+  --z-dropdown:  10;
+  --z-sticky:    20;
+  --z-nav:       30;   /* sidebar, bottom nav */
+  --z-backdrop:  40;
+  --z-modal:     50;
+  --z-toast:     60;
+  --z-tooltip:   70;
+
+  /* --- Motion. Product UI: 150-250ms, ease-out, no bounce. --------------- */
+  --dur-fast:   120ms;
+  --dur-base:   180ms;
+  --dur-slow:   240ms;
+  --ease-out:   cubic-bezier(0.165, 0.84, 0.44, 1);  /* ease-out-quart */
+
+  /* --- Neutrals + semantic state. Shared: only the brand accent is
+         per-app. Muted text is deliberately dark enough to clear 4.5:1 on
+         --color-surface; do not lighten it "for elegance". ---------------- */
+  --color-background:   oklch(0.985 0.005 95);
+  --color-surface:      #ffffff;
+  --color-surface-alt:  oklch(0.965 0.008 95);
+  --color-line:         oklch(0.90 0.008 95);
+  --color-line-strong:  oklch(0.80 0.010 95);
+
+  --color-text-primary: oklch(0.22 0.015 156);  /* headings */
+  --color-text:         oklch(0.32 0.015 156);  /* body */
+  --color-text-muted:   oklch(0.55 0.012 156);  /* secondary, ~4.9:1 on white */
+  --color-text-faint:   oklch(0.70 0.010 156);  /* decorative only, never body */
+
+  /* success/warning/info darkened during Phase 5 verify: the original L
+     values (0.58/0.72/0.58) read fine as accents but failed as text —
+     2.2-4.2:1 on white and on their own -soft tint, both under the 4.5:1
+     body-text floor (measured: text-warning on warning-soft was 2.24:1).
+     These now clear ~5:1 on white and on -soft. Danger was already fine
+     (4.62/5.31) and is unchanged. Same hue, so nothing about "which color
+     means what" changes, only that the ink is now dark enough to read. */
+  --color-success:      oklch(0.50 0.130 152);
+  --color-success-soft: oklch(0.96 0.040 152);
+  --color-warning:      oklch(0.50 0.130 75);
+  --color-warning-soft: oklch(0.96 0.045 80);
+  --color-danger:       oklch(0.55 0.180 27);
+  --color-danger-soft:  oklch(0.96 0.030 27);
+  --color-info:         oklch(0.50 0.140 240);
+  --color-info-soft:    oklch(0.96 0.030 240);
+
+  /* Focus ring. Inherits the per-app accent below. */
+  --ring-w: 2px;
+  --ring-offset: 2px;
+}
+
+/* ============================================================================
+   PER-APP THEME -- the only place a business asserts its own identity.
+   Selected by data-app on <html>. Each app sets exactly one value and
+   ignores the other two blocks; the file stays identical everywhere so the
+   sync check is a plain byte diff.
+
+   Hues are the ones already registered in PointSystem_AkoATP/lib/apps.ts --
+   the app chooser and audit-log chips already paint with them. Do not invent
+   new ones here without changing that file too.
+   ============================================================================ */
+
+/* Futsal -- hub. Deep pitch green #0b4327, gold accent. */
+:root,
+html[data-app="futsal"] {
+  --color-primary:      oklch(0.34 0.075 156);
+  --color-primary-dark: oklch(0.24 0.060 156);
+  --color-primary-soft: oklch(0.94 0.030 156);
+  --color-on-primary:   #ffffff;
+  --color-accent:       oklch(0.78 0.135 78);
+  --color-accent-soft:  oklch(0.95 0.045 80);
+  --color-on-accent:    #1a1408;
+  --color-ring:         var(--color-primary);
+}
+
+/* Billiards -- cue-club oxblood #8a3324, brass accent. */
+html[data-app="billiards"] {
+  --color-primary:      oklch(0.43 0.120 33);
+  --color-primary-dark: oklch(0.32 0.095 33);
+  --color-primary-soft: oklch(0.95 0.030 33);
+  --color-on-primary:   #ffffff;
+  --color-accent:       oklch(0.72 0.105 82);
+  --color-accent-soft:  oklch(0.95 0.040 82);
+  --color-on-accent:    #1a1408;
+  --color-ring:         var(--color-primary);
+}
+
+/* Game shop -- console blue #2f5fd0, amber accent. */
+html[data-app="game"] {
+  --color-primary:      oklch(0.50 0.190 265);
+  --color-primary-dark: oklch(0.38 0.150 265);
+  --color-primary-soft: oklch(0.95 0.035 265);
+  --color-on-primary:   #ffffff;
+  --color-accent:       oklch(0.76 0.130 70);
+  --color-accent-soft:  oklch(0.95 0.045 70);
+  --color-on-accent:    #1a1408;
+  --color-ring:         var(--color-primary);
+}
+
+/* ============================================================================
+   BURMESE SCRIPT
+   Set once at the root rather than sprinkled per element. Burmese glyphs are
+   taller and stack diacritics, so Latin leading crowds them; this is the rule
+   the hub applied 34 times by hand, the game shop applied via .mm, and
+   billiards never applied at all.
+   ============================================================================ */
+
+html[lang="my"] {
+  font-family: var(--font-my);
+  line-height: var(--leading-my);
+  letter-spacing: 0;
+}
+
+/* For a Burmese string inside an otherwise-English page (a bilingual data
+   row, a language toggle label). Both class names exist because both are
+   already in use across the three repos. */
+.my,
+.mm {
+  font-family: var(--font-my);
+  line-height: var(--leading-my);
+  letter-spacing: 0;
+}
+
+/* ============================================================================
+   REDUCED MOTION -- not optional.
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}

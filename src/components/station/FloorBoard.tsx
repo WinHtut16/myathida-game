@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Search, TriangleAlert } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StationTile } from "@/components/station/StationTile";
 import { RecordSessionModal } from "@/components/session/RecordSessionModal";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useT } from "@/i18n";
 import { fill } from "@/lib/ui";
@@ -54,38 +55,32 @@ export function FloorBoard({
       subtitle={fill(t("floor.summary"), { n: stations.length, o: occupied })}
       contentClassName="flex flex-col"
       right={
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-line-faint border border-line-soft rounded-lg px-3 py-2 text-text-muted text-[13px] w-[180px]">
-            <Search size={14} />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 bg-line-faint border border-line-soft rounded-lg px-3 py-2 text-text-muted text-[13px] w-[120px] sm:w-[180px]">
+            <Search size={14} className="flex-none" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("floor.search")}
-              className="bg-transparent outline-none flex-1 text-ink"
+              className="bg-transparent outline-none flex-1 min-w-0 text-ink"
             />
           </div>
           <button
             onClick={() => openRecord(null)}
-            className="flex items-center gap-2 bg-ink text-white rounded-lg px-4 py-[11px] text-sm font-semibold"
+            className="flex items-center gap-2 bg-ink text-white rounded-lg px-3 sm:px-4 py-[11px] text-sm font-semibold whitespace-nowrap"
           >
-            <Plus size={15} />
-            {t("floor.record")}
+            <Plus size={15} className="flex-none" />
+            <span className="hidden sm:inline">{t("floor.record")}</span>
           </button>
         </div>
       }
     >
       {error && (
-        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg border border-[#e5b8b0] bg-[#fdf3f1] px-4 py-3 text-[13px] text-[#8a3324]">
-          <TriangleAlert size={16} className="mt-px flex-none" />
-          <div className="flex-1">{error}</div>
-          <button onClick={() => setError(null)} className="font-semibold underline underline-offset-2">
-            {t("common.dismiss")}
-          </button>
-        </div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} className="mx-4 sm:mx-5 mt-4" />
       )}
 
-      <div className="flex-1 overflow-auto p-5 px-[22px]">
-        <div className="grid grid-cols-4 gap-4 max-w-[1200px]">
+      <div className="flex-1 overflow-auto p-4 sm:p-5 px-4 sm:px-[22px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-[1200px]">
           {filtered.map((v) => (
             <StationTile
               key={v.station.id}

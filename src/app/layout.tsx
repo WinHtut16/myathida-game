@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Myanmar } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
@@ -23,24 +24,28 @@ import type { Locale } from "@/lib/types";
  * Noto Sans Myanmar matters most here: it is what renders Burmese, and it is
  * the one nobody would notice was missing until a staff member did.
  */
+// Var names match the shared admin-suite convention (design/tokens.css,
+// same as PointSystem_AkoATP and Billiards_MyaThida) so the underlying font
+// files line up across all three apps even though this file still wires
+// Tailwind's sans/mono/mm keys to them directly (see tailwind.config.ts).
 const sans = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
+  variable: "--font-plex-sans",
   display: "swap",
 });
 
 const mono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
-  variable: "--font-mono",
+  variable: "--font-plex-mono",
   display: "swap",
 });
 
 const myanmar = Noto_Sans_Myanmar({
   subsets: ["myanmar"],
   weight: ["400", "500", "600"],
-  variable: "--font-mm",
+  variable: "--font-noto-my",
   display: "swap",
 });
 
@@ -57,11 +62,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale: Locale = stored === "my" ? "my" : "en";
 
   return (
-    <html lang={locale} className={`${sans.variable} ${mono.variable} ${myanmar.variable}`}>
+    <html lang={locale} data-app="game" className={`${sans.variable} ${mono.variable} ${myanmar.variable}`}>
       <body>
         <LocaleProvider initial={locale}>
           <SessionProvider user={user}>{children}</SessionProvider>
         </LocaleProvider>
+        {/* Shared toast placement — see DESIGN.md. */}
+        <Toaster position="bottom-center" />
       </body>
     </html>
   );

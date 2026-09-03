@@ -95,12 +95,12 @@ export function RecordSessionModal({
   const activeProducts = products.filter((p) => p.active);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/40 p-3 sm:p-6" onClick={onClose}>
       <div
         className="w-[620px] max-w-full max-h-[86vh] bg-surface rounded-xl shadow-modal overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-[18px] px-[22px] border-b border-line-faint">
+        <div className="flex items-center justify-between p-4 sm:p-[18px] px-4 sm:px-[22px] border-b border-line-faint">
           <div>
             <div className="text-[17px] font-bold">{t("record.title")}</div>
             <div className="text-[12.5px] text-text-muted">{t("record.subtitle")}</div>

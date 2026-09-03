@@ -6,13 +6,13 @@ export default async function Loading() {
   const { t } = await getT();
   return (
     <AppShell title={t("reports.title")}>
-      <div className="p-5 px-[22px] max-w-[1180px] flex flex-col gap-4">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] max-w-[1180px] flex flex-col gap-4">
         <TileRow />
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           <ChartCard />
           <ChartCard />
         </div>
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           <ListCard />
           <ListCard />
         </div>

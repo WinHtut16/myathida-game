@@ -65,13 +65,13 @@ export default async function ReportsPage({
 
 function PeriodTabs({ active, t }: { active: Period; t: T }) {
   return (
-    <div className="flex bg-line-faint border border-line-soft rounded-lg p-[3px] text-[12.5px] font-semibold">
+    <div className="flex bg-line-faint border border-line-soft rounded-lg p-[3px] text-[12px] sm:text-[12.5px] font-semibold">
       {(Object.keys(LABEL_KEYS) as Period[]).map((p) => (
         <Link
           key={p}
           href={`/reports?period=${p}`}
           prefetch={false}
-          className={`px-3 py-1.5 rounded-md ${
+          className={`px-2 sm:px-3 py-1.5 rounded-md whitespace-nowrap ${
             p === active ? "bg-ink text-white" : "text-text-secondary"
           }`}
         >
@@ -90,7 +90,7 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
   const busiest = [...byHour].sort((a, b) => b.value - a.value)[0];
 
   return (
-    <div className="p-5 px-[22px] max-w-[1180px] flex flex-col gap-4">
+    <div className="p-4 sm:p-5 px-4 sm:px-[22px] max-w-[1180px] flex flex-col gap-4">
       {data.truncated && (
         <div className="text-[12.5px] text-status-warn-ink bg-status-warn-bg border border-[#e8d9b4] rounded-lg px-3.5 py-2.5">
           {t("reports.truncated")}
@@ -98,7 +98,7 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
       )}
 
       {/* ── headline figures ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatTile
           t={t}
           tone="hero"
@@ -135,7 +135,7 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
       </div>
 
       {/* ── trend + peak hours ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
         <Card
           title={t("reports.byDay")}
           note={byDay.length > 1 ? `${byDay.length} ${t("reports.days")}` : undefined}
@@ -151,7 +151,7 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
       </div>
 
       {/* ── where the money comes from ───────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
         <Card title={t("reports.byStation")}>
           <RankedBars data={byStation} emptyLabel={t("reports.noSessions")} />
         </Card>

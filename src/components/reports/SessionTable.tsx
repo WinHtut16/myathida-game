@@ -27,7 +27,7 @@ export function SessionTable({
 }) {
   const { t } = useT();
   const [receipt, setReceipt] = useState<Session | null>(null);
-  const cols = "grid-cols-[1.5fr_1fr_.8fr_.9fr_.9fr_.5fr]";
+  const cols = "md:grid-cols-[1.5fr_1fr_.8fr_.9fr_.9fr_.5fr]";
 
   return (
     <div className="bg-surface border border-line rounded-[11px] overflow-hidden">
@@ -38,8 +38,10 @@ export function SessionTable({
         </span>
       </div>
 
+      {/* Real table from md up; below md each row collapses to a stacked
+          card — see DESIGN.md's list pattern. */}
       <div
-        className={`grid ${cols} gap-3 px-[18px] py-2.5 border-y border-line-faint text-[10.5px] tracking-[.1em] uppercase text-text-muted font-semibold`}
+        className={`hidden md:grid ${cols} gap-3 px-[18px] py-2.5 border-y border-line-faint text-[10.5px] tracking-[.1em] uppercase text-text-muted font-semibold`}
       >
         <span>{t("reports.when")}</span>
         <span>{t("reports.station")}</span>
@@ -58,7 +60,7 @@ export function SessionTable({
       {sessions.map((s) => (
         <div
           key={s.id}
-          className={`grid ${cols} gap-3 px-[18px] py-3 border-b border-line-hair items-center text-[13.5px] last:border-0 ${
+          className={`flex flex-col gap-2 px-[18px] py-3 md:grid ${cols} md:gap-3 md:items-center border-b border-line-hair text-[13.5px] last:border-0 ${
             s.voidReason ? "bg-[#fcfbf7]" : ""
           }`}
         >
@@ -78,24 +80,26 @@ export function SessionTable({
             <span className="truncate">{s.stationName}</span>
             <TierBadge tier={s.tier} />
           </span>
-          <span className="text-right font-mono">{formatDuration(s.minutes)}</span>
-          <span className="text-right font-mono text-text-secondary">
-            {s.snacksTotal ? formatMMK(s.snacksTotal) : "—"}
-          </span>
-          <span
-            className={`text-right font-mono font-semibold ${
-              s.voidReason ? "text-text-muted line-through" : ""
-            }`}
-          >
-            {formatMMK(s.total)}
-          </span>
-          <button
-            onClick={() => setReceipt(s)}
-            className="justify-self-center text-text-muted hover:text-ink"
-            aria-label={`Receipt for ${s.stationName} at ${formatDateTime(s.createdAt)}`}
-          >
-            <Receipt size={16} />
-          </button>
+          <div className="flex items-center justify-between gap-3 md:contents">
+            <span className="font-mono md:text-right">{formatDuration(s.minutes)}</span>
+            <span className="font-mono text-text-secondary md:text-right">
+              {s.snacksTotal ? formatMMK(s.snacksTotal) : "—"}
+            </span>
+            <span
+              className={`font-mono font-semibold md:text-right ${
+                s.voidReason ? "text-text-muted line-through" : ""
+              }`}
+            >
+              {formatMMK(s.total)}
+            </span>
+            <button
+              onClick={() => setReceipt(s)}
+              className="justify-self-center text-text-muted hover:text-ink flex-none"
+              aria-label={`Receipt for ${s.stationName} at ${formatDateTime(s.createdAt)}`}
+            >
+              <Receipt size={16} />
+            </button>
+          </div>
         </div>
       ))}
 
@@ -134,14 +138,14 @@ function ReceiptModal({
     });
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/40 p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="w-[420px] max-w-full bg-surface rounded-xl shadow-modal overflow-hidden"
+        className="w-[420px] max-w-full max-h-[90vh] overflow-y-auto bg-surface rounded-xl shadow-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-[18px] px-[22px] border-b border-line-faint">
+        <div className="flex items-center justify-between p-4 sm:p-[18px] px-4 sm:px-[22px] border-b border-line-faint">
           <div className="flex items-center gap-2">
             <span className="text-[17px] font-bold">{session.stationName}</span>
             <TierBadge tier={session.tier} />

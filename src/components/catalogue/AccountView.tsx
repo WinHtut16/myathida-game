@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, KeyRound, TriangleAlert, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import { KeyRound, ExternalLink } from "lucide-react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { updateOwnProfileAction } from "@/app/actions/profile";
 import { useLocale } from "@/i18n/LocaleProvider";
 import { useT } from "@/i18n";
@@ -20,7 +22,6 @@ export function AccountView({
   const [name, setName] = useState(initialName);
   const [draftLocale, setDraftLocale] = useState<Locale>(locale);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const dirty = name.trim() !== initialName || draftLocale !== locale;
@@ -36,20 +37,13 @@ export function AccountView({
       // Mirror the saved language into the cookie the UI reads, so the change
       // shows immediately instead of on the next sign-in.
       setLocale(draftLocale);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      toast.success(t("pricing.saved"));
     });
 
   return (
     <div className="p-5 px-[22px] max-w-[620px] flex flex-col gap-4">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-[#e5b8b0] bg-[#fdf3f1] px-4 py-3 text-[13px] text-[#8a3324]">
-          <TriangleAlert size={16} className="mt-px flex-none" />
-          <div className="flex-1">{error}</div>
-          <button onClick={() => setError(null)} className="font-semibold underline underline-offset-2">
-            {t("common.dismiss")}
-          </button>
-        </div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} />
       )}
 
       <div className="bg-surface border border-line rounded-[11px] p-[22px]">
@@ -101,12 +95,6 @@ export function AccountView({
           >
             {pending ? t("record.saving") : t("account.save")}
           </button>
-          {saved && (
-            <span className="flex items-center gap-1.5 text-[13px] text-status-active-ink">
-              <Check size={15} />
-              {t("pricing.saved")}
-            </span>
-          )}
           <span className="ml-auto text-[12px] text-text-muted">
             {t(role === "superadmin" ? "role.superadmin" : "role.admin")}
           </span>

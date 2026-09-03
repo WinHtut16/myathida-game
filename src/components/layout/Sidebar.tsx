@@ -34,7 +34,7 @@ export function Sidebar() {
   const superadmin = user?.isSuperadmin ?? false;
 
   return (
-    <div className="w-[216px] bg-rail text-[#c7cbd3] flex-none flex flex-col py-[18px]">
+    <div className="hidden md:flex md:flex-col w-[216px] bg-rail text-[#c7cbd3] flex-none py-[18px]">
       <div className="px-5 pb-5 flex items-center gap-2.5 border-b border-[#34383f] mb-3">
         <span className="w-[30px] h-[30px] rounded-[7px] bg-accent flex items-center justify-center text-white font-mono font-bold text-[15px]">
           M

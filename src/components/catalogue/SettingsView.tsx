@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Shield, User, Wrench, TriangleAlert, ExternalLink } from "lucide-react";
+import { Plus, Shield, User, Wrench, ExternalLink } from "lucide-react";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { upsertStationAction, setStationStatusAction } from "@/app/actions/stations";
 import { TierBadge } from "@/components/station/TierBadge";
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch";
@@ -51,16 +52,10 @@ export function SettingsView({
   return (
     <>
       {error && (
-        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg border border-[#e5b8b0] bg-[#fdf3f1] px-4 py-3 text-[13px] text-[#8a3324]">
-          <TriangleAlert size={16} className="mt-px flex-none" />
-          <div className="flex-1">{error}</div>
-          <button onClick={() => setError(null)} className="font-semibold underline underline-offset-2">
-            {t("common.dismiss")}
-          </button>
-        </div>
+        <ErrorBanner message={error} onDismiss={() => setError(null)} className="mx-4 sm:mx-5 mt-4" />
       )}
 
-      <div className="p-5 px-[22px] grid grid-cols-[1.4fr_1fr] gap-4 max-w-[1200px]">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 max-w-[1200px]">
         {/* ── floor plan ────────────────────────────────────────────────── */}
         <div className="bg-surface border border-line rounded-[10px] overflow-hidden self-start">
           <div className="p-4 px-5 border-b border-line-faint flex items-center justify-between">
@@ -77,7 +72,7 @@ export function SettingsView({
             )}
           </div>
 
-          <div className="grid grid-cols-[1.3fr_1fr_1.1fr] gap-2.5 p-2.5 px-5 border-b border-line-faint text-[11px] tracking-[.09em] uppercase text-text-muted font-semibold">
+          <div className="hidden md:grid grid-cols-[1.3fr_1fr_1.1fr] gap-2.5 p-2.5 px-5 border-b border-line-faint text-[11px] tracking-[.09em] uppercase text-text-muted font-semibold">
             <span>{t("products.name")}</span>
             <span>{t("settings.tier")}</span>
             <span>{t("settings.status")}</span>
@@ -211,7 +206,7 @@ function StationRow({
   };
 
   return (
-    <div className="grid grid-cols-[1.3fr_1fr_1.1fr] gap-2.5 p-3 px-5 border-b border-line-hair items-center text-sm last:border-0">
+    <div className="flex flex-wrap items-center gap-2.5 p-3 px-4 md:grid md:grid-cols-[1.3fr_1fr_1.1fr] md:px-5 border-b border-line-hair text-sm last:border-0">
       {canEdit ? (
         <input
           value={name}
@@ -228,7 +223,7 @@ function StationRow({
           className="font-semibold border border-transparent hover:border-line focus:border-line rounded-md px-2 py-1 -ml-2 outline-none bg-transparent w-full"
         />
       ) : (
-        <span className="font-semibold">{station.name}</span>
+        <span className="font-semibold w-full md:w-auto">{station.name}</span>
       )}
 
       {canEdit ? (

@@ -6,7 +6,7 @@ export default async function Loading() {
   const { t } = await getT();
   return (
     <AppShell title={t("nav.pricing")}>
-      <div className="p-5 px-[22px] grid grid-cols-3 gap-4 max-w-[1100px]">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-[1100px]">
         <SkeletonCard><Bar w="40%" h={12} /><div className="mt-4"><Bar w="70%" h={26} /></div><div className="mt-4"><Bar h={34} /></div></SkeletonCard>
         <SkeletonCard><Bar w="40%" h={12} /><div className="mt-4"><Bar w="70%" h={26} /></div><div className="mt-4"><Bar h={34} /></div></SkeletonCard>
         <SkeletonCard><Bar w="40%" h={12} /><div className="mt-4"><Bar w="70%" h={26} /></div><div className="mt-4"><Bar h={34} /></div></SkeletonCard>
