@@ -42,10 +42,22 @@ const nextConfig = {
      * rewrite those disagree - the browser sends the futsal origin, while this
      * deployment sees its own host - and every action fails the CSRF check
      * with no useful error. Listing the hub origin is what makes them work.
+     *
+     * HUB_HOSTS is how the hub moves without a code change. Myanmar operators
+     * block *.vercel.app wholesale - vercel.com loads, an unrelated
+     * *.vercel.app does not - so the portal has to live on a domain we own,
+     * and this list has to follow it. Set HUB_HOSTS on this Vercel project to
+     * a comma-separated list, e.g. "myathida.com,www.myathida.com". The
+     * vercel.app host stays below: it is still how this is reached from
+     * outside Myanmar and during the switchover.
+     *
+     * Read at BUILD time, so a change here needs a redeploy of THIS zone, not
+     * just the hub. Forget that and every screen loads while every Save fails.
      */
     serverActions: {
       allowedOrigins: [
         "myathida-futsal.vercel.app",
+        ...(process.env.HUB_HOSTS?.split(",").map((h) => h.trim()).filter(Boolean) ?? []),
         ...(process.env.ZONE_SELF_HOST ? [process.env.ZONE_SELF_HOST] : []),
       ],
     },
