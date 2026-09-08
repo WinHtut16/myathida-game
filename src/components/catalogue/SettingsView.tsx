@@ -255,17 +255,17 @@ function StationRow({
       )}
 
       {canEdit ? (
-        <div className="flex w-full md:w-[176px] bg-line-faint border border-line-soft rounded-md p-[3px] text-2xs font-semibold justify-self-start">
+        <div className="flex w-full md:w-auto bg-line-faint border border-line-soft rounded-md p-[3px] text-2xs font-semibold justify-self-start">
           <button
             onClick={() => !maint || onRun(() => setStationStatusAction(station.id, "available"))}
             disabled={disabled}
             aria-pressed={!maint}
             className={cx(
-              "flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 transition-colors disabled:opacity-45",
+              "flex-1 md:flex-none flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 md:px-3 py-1.5 transition-colors disabled:opacity-45",
               !maint ? "bg-status-active-bg text-status-active-ink" : "text-text-muted hover:text-text",
             )}
           >
-            <CircleCheck size={12} />
+            <CircleCheck size={12} className="flex-none" />
             {t("settings.available")}
           </button>
           <button
@@ -273,11 +273,11 @@ function StationRow({
             disabled={disabled}
             aria-pressed={maint}
             className={cx(
-              "flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 transition-colors disabled:opacity-45",
+              "flex-1 md:flex-none flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 md:px-3 py-1.5 transition-colors disabled:opacity-45",
               maint ? "bg-status-warn-bg text-status-warn-deep" : "text-text-muted hover:text-text",
             )}
           >
-            <Wrench size={12} />
+            <Wrench size={12} className="flex-none" />
             {t("floor.maintenance")}
           </button>
         </div>
