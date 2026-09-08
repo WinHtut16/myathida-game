@@ -23,7 +23,7 @@ export function ErrorBanner({
   return (
     <div
       className={cx(
-        "flex items-start gap-2.5 rounded-lg border border-danger-soft bg-danger-soft px-4 py-3 text-[13px] text-danger",
+        "flex items-start gap-2.5 rounded-lg border border-danger-soft bg-danger-soft px-4 py-3 text-sm text-danger",
         className,
       )}
     >

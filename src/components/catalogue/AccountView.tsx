@@ -46,12 +46,12 @@ export function AccountView({
         <ErrorBanner message={error} onDismiss={() => setError(null)} />
       )}
 
-      <div className="bg-surface border border-line rounded-[11px] p-[22px]">
-        <h2 className="text-[15px] font-bold m-0 mb-1">{t("account.yourDetails")}</h2>
-        <p className="text-[12.5px] text-text-muted m-0 mb-5">{t("account.detailsHint")}</p>
+      <div className="bg-surface border border-line rounded-lg p-[22px]">
+        <h2 className="text-md font-bold m-0 mb-1">{t("account.yourDetails")}</h2>
+        <p className="text-xs text-text-muted m-0 mb-5">{t("account.detailsHint")}</p>
 
         <label className="block mb-4">
-          <span className="block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+          <span className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
             {t("account.displayName")}
           </span>
           <input
@@ -60,16 +60,16 @@ export function AccountView({
             disabled={pending}
             className="cat-input"
           />
-          <span className="block text-[11.5px] text-text-muted mt-1.5">
+          <span className="block text-2xs text-text-muted mt-1.5">
             {t("account.displayNameHint")}
           </span>
         </label>
 
         <div className="mb-5">
-          <span className="block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+          <span className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
             {t("account.language")}
           </span>
-          <div className="flex bg-line-faint border border-line-soft rounded-lg p-[3px] text-[12.5px] font-semibold w-[180px]">
+          <div className="flex bg-line-faint border border-line-soft rounded-md p-[3px] text-xs font-semibold w-[180px]">
             {(["en", "my"] as Locale[]).map((l) => (
               <button
                 key={l}
@@ -78,7 +78,7 @@ export function AccountView({
                 className={cx(
                   "flex-1 text-center rounded-md px-3.5 py-1.5",
                   l === "my" && "mm",
-                  draftLocale === l ? "bg-ink text-white" : "text-text-secondary",
+                  draftLocale === l ? "bg-accent text-white" : "text-text-secondary",
                 )}
               >
                 {l === "en" ? "EN" : "မြန်မာ"}
@@ -91,11 +91,11 @@ export function AccountView({
           <button
             onClick={save}
             disabled={pending || !dirty || !name.trim()}
-            className="bg-ink text-white rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-45"
+            className="bg-accent text-white rounded-md hover:bg-accent-strong transition-colors px-5 py-2.5 text-sm font-semibold disabled:opacity-45"
           >
             {pending ? t("record.saving") : t("account.save")}
           </button>
-          <span className="ml-auto text-[12px] text-text-muted">
+          <span className="ml-auto text-xs text-text-muted">
             {t(role === "superadmin" ? "role.superadmin" : "role.admin")}
           </span>
         </div>
@@ -107,19 +107,19 @@ export function AccountView({
         account it does not own - so it points at the one place that does.
         Plain <a>: /admin/profile is outside this app's basePath.
       */}
-      <div className="bg-surface border border-line rounded-[11px] p-[22px]">
+      <div className="bg-surface border border-line rounded-lg p-[22px]">
         <div className="flex items-center gap-2.5 mb-2">
           <span className="w-8 h-8 rounded-lg bg-line-faint flex items-center justify-center text-text-muted">
             <KeyRound size={16} />
           </span>
-          <h2 className="text-[15px] font-bold m-0">{t("account.password")}</h2>
+          <h2 className="text-md font-bold m-0">{t("account.password")}</h2>
         </div>
-        <p className="text-[12.5px] text-text-secondary leading-relaxed m-0 mb-3">
+        <p className="text-xs text-text-secondary leading-relaxed m-0 mb-3">
           {t("account.passwordHint")}
         </p>
         <a
           href="/admin/profile"
-          className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-accent2 hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent2 hover:underline"
         >
           {t("account.passwordLink")}
           <ExternalLink size={13} />

@@ -56,18 +56,18 @@ export function FloorBoard({
       contentClassName="flex flex-col"
       right={
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 bg-line-faint border border-line-soft rounded-lg px-3 py-2 text-text-muted text-[13px] w-[120px] sm:w-[180px]">
+          <div className="flex items-center gap-2 bg-surface border border-line rounded-md px-3 py-2 text-text-muted text-sm w-[120px] sm:w-[180px]">
             <Search size={14} className="flex-none" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("floor.search")}
-              className="bg-transparent outline-none flex-1 min-w-0 text-ink"
+              className="bg-transparent outline-none flex-1 min-w-0 text-text"
             />
           </div>
           <button
             onClick={() => openRecord(null)}
-            className="flex items-center gap-2 bg-ink text-white rounded-lg px-3 sm:px-4 py-[11px] text-sm font-semibold whitespace-nowrap"
+            className="flex items-center gap-2 bg-accent text-white rounded-md px-3 sm:px-4 py-[11px] text-sm font-semibold whitespace-nowrap hover:bg-accent-strong transition-colors"
           >
             <Plus size={15} className="flex-none" />
             <span className="hidden sm:inline">{t("floor.record")}</span>

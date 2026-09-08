@@ -18,6 +18,7 @@ export const en = {
   "floor.markFree": "Mark free",
   "floor.maintenance": "Maintenance",
   "floor.perHour": "{r}/hr",
+  "floor.hourUnit": "hr",
 
   // record session
   "record.title": "Record session",

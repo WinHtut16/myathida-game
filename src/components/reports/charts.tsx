@@ -20,9 +20,13 @@ import { formatMMK } from "@/lib/format";
  * and hairline recessive axes.
  */
 
-/** Validated against the app surface: passes lightness, chroma and 3:1 contrast. */
-const MARK = "#3b73c4";
-const MARK_QUIET = "#c3d4ec";
+/** Chart ink rides the palette: the brand blue for the active mark, its soft
+ * tint for the recessive one. Both resolve from globals.css --game-* so the
+ * charts move with the rest of the app instead of pinning two more hex
+ * literals here. */
+const MARK = "var(--game-accent)";
+const MARK_QUIET = "var(--game-accent-soft)";
+const AXIS = "var(--game-line-soft)";
 
 function niceMax(v: number): number {
   if (v <= 0) return 1;
@@ -32,7 +36,7 @@ function niceMax(v: number): number {
 
 export function EmptyPlot({ label }: { label: string }) {
   return (
-    <div className="h-[132px] flex items-center justify-center text-[13px] text-text-muted">
+    <div className="h-[132px] flex items-center justify-center text-sm text-text-muted">
       {label}
     </div>
   );
@@ -74,7 +78,7 @@ export function ColumnChart({
         aria-label={`${data.length} buckets, maximum ${formatMMK(max)} ${unit}`}
       >
         {/* recessive baseline; gridlines omitted because values are labelled */}
-        <line x1="0" y1={PLOT} x2="100" y2={PLOT} stroke="#e0e3e8" strokeWidth="1"
+        <line x1="0" y1={PLOT} x2="100" y2={PLOT} stroke={AXIS} strokeWidth="1"
               vectorEffect="non-scaling-stroke" />
         {data.map((d, i) => {
           const h = d.value === 0 ? 0 : Math.max(2, (d.value / max) * (PLOT - 4));
@@ -104,7 +108,7 @@ export function ColumnChart({
         {data.map((d, i) => (
           <div
             key={d.key}
-            className="text-[10px] text-text-muted text-center font-mono"
+            className="text-2xs text-text-muted text-center tabular-nums"
             style={{ width: `${slot}%` }}
           >
             {/* thin out labels so they never collide */}
@@ -141,16 +145,16 @@ export function RankedBars({
         const pct = max > 0 ? Math.max(1.5, (d.value / max) * 100) : 0;
         return (
           <div key={d.key} className="flex items-center gap-3" title={`${d.label} — ${format(d.value)}`}>
-            <div className="w-[106px] flex-none text-[12.5px] text-text-secondary truncate">
+            <div className="w-[106px] flex-none text-xs text-text-secondary truncate">
               {d.label}
             </div>
-            <div className="flex-1 h-[18px] bg-line-faint rounded-[3px] overflow-hidden">
+            <div className="flex-1 h-[18px] bg-line-faint rounded-sm overflow-hidden">
               <div
-                className="h-full rounded-r-[4px]"
+                className="h-full rounded-r-sm"
                 style={{ width: `${pct}%`, background: MARK }}
               />
             </div>
-            <div className="w-[104px] flex-none text-right font-mono text-[12.5px] font-semibold">
+            <div className="w-[104px] flex-none text-right tabular-nums text-xs font-semibold">
               {format(d.value)}
               {d.note && <span className="text-text-muted font-normal"> {d.note}</span>}
             </div>

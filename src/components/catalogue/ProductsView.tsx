@@ -73,11 +73,11 @@ export function ProductsView({
       )}
 
       <div className="p-4 sm:p-5 px-4 sm:px-[22px] grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 max-w-[1200px]">
-        <div className="bg-surface border border-line rounded-[10px] overflow-hidden self-start">
+        <div className="bg-surface border border-line rounded-md overflow-hidden self-start">
           {/* Real table from md up; each row below md collapses to a two-line
               card instead — same list, no columns squeezed unreadable at
               phone width. See DESIGN.md's list pattern. */}
-          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_.9fr_.7fr] gap-3 p-3 px-5 border-b border-line-faint text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold">
+          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_.9fr_.7fr] gap-3 p-3 px-5 border-b border-line-faint text-2xs tracking-caps uppercase text-text-muted font-semibold">
             <span>{t("products.name")}</span>
             <span>{t("products.category")}</span>
             <span className="text-right">{t("products.price")}</span>
@@ -86,7 +86,7 @@ export function ProductsView({
           </div>
 
           {products.length === 0 && (
-            <div className="px-5 py-10 text-center text-text-muted text-[13px]">
+            <div className="px-5 py-10 text-center text-text-muted text-sm">
               {t("products.none")}
             </div>
           )}
@@ -108,9 +108,9 @@ export function ProductsView({
                 </div>
                 <span
                   className={cx(
-                    "text-[12.5px] px-2.5 py-[3px] rounded-md justify-self-start flex-none",
+                    "text-xs px-2.5 py-[3px] rounded-md justify-self-start flex-none",
                     p.category === "drink"
-                      ? "bg-[#eef3fa] border border-[#dbe6f5] text-accent2"
+                      ? "bg-accent-soft border border-accent-soft text-accent2"
                       : "bg-line-faint text-text-secondary",
                   )}
                 >
@@ -119,7 +119,7 @@ export function ProductsView({
               </div>
 
               <div className="flex items-center justify-between gap-3 md:contents">
-                <span className="font-mono text-[13.5px] md:text-right">{formatMMK(p.price)}</span>
+                <span className="tabular-nums text-sm md:text-right">{formatMMK(p.price)}</span>
 
                 <StockCell
                   product={p}
@@ -155,14 +155,14 @@ export function ProductsView({
           ))}
         </div>
 
-        <div className="bg-surface border border-line rounded-[10px] p-4 sm:p-[22px] flex flex-col gap-4 self-start">
-          <div className="text-[15px] font-bold flex items-center gap-2">
+        <div className="bg-surface border border-line rounded-md p-4 sm:p-[22px] flex flex-col gap-4 self-start">
+          <div className="text-md font-bold flex items-center gap-2">
             <PackagePlus size={18} />
             {t("products.new")}
           </div>
 
           {!canEdit && (
-            <p className="text-[12.5px] text-text-muted m-0 leading-relaxed">
+            <p className="text-xs text-text-muted m-0 leading-relaxed">
               {t("products.superOnly")}
             </p>
           )}
@@ -207,14 +207,14 @@ export function ProductsView({
                 onChange={(e) => setPrice(Number(e.target.value) || 0)}
                 placeholder="1,000"
                 disabled={!canEdit || pending}
-                className="cat-input font-mono"
+                className="cat-input tabular-nums"
               />
             </Field>
           </div>
           <button
             onClick={save}
             disabled={!canEdit || pending || !nameEn.trim()}
-            className="bg-ink text-white rounded-lg py-3 text-sm font-semibold disabled:opacity-45"
+            className="bg-accent text-white rounded-md hover:bg-accent-strong transition-colors py-3 text-sm font-semibold disabled:opacity-45"
           >
             {pending ? t("record.saving") : t("products.save")}
           </button>
@@ -255,7 +255,7 @@ function StockCell({
         onClick={onEdit}
         disabled={!canEdit || disabled}
         className={cx(
-          "font-mono text-[13.5px] text-right disabled:cursor-default",
+          "tabular-nums text-sm text-right disabled:cursor-default",
           low ? "text-status-expired-ink font-semibold" : "text-text-secondary",
           canEdit && "hover:underline underline-offset-2",
         )}
@@ -277,7 +277,7 @@ function StockCell({
           if (e.key === "Enter") onSave(draft === "" ? null : Number(draft));
           if (e.key === "Escape") onCancel();
         }}
-        className="w-[54px] border border-line rounded-md px-1.5 py-1 font-mono text-[13px] text-right outline-none"
+        className="w-[54px] border border-line rounded-md px-1.5 py-1 tabular-nums text-sm text-right outline-none"
       />
       <button onClick={() => onSave(draft === "" ? null : Number(draft))} className="text-success" aria-label="Save stock">
         <Check size={15} />
@@ -300,7 +300,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <div className="text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+      <div className="text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
         {label}
       </div>
       {children}

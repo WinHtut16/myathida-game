@@ -44,7 +44,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
     >
       <div className={cx("w-[420px] max-w-full max-h-[86vh] overflow-auto bg-surface rounded-xl shadow-modal", className)}>
         <div className="flex items-center justify-between p-[18px] px-[22px] border-b border-line-faint">
-          <h2 id={titleId} className="text-[17px] font-bold">{title}</h2>
+          <h2 id={titleId} className="text-lg font-bold">{title}</h2>
           <button
             onClick={onClose}
             className="rounded-lg p-1 text-text-muted hover:bg-line-faint"

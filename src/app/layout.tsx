@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Myanmar } from "next/font/google";
+import { Inter, Space_Grotesk, Noto_Sans_Myanmar } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
@@ -24,21 +24,23 @@ import type { Locale } from "@/lib/types";
  * Noto Sans Myanmar matters most here: it is what renders Burmese, and it is
  * the one nobody would notice was missing until a staff member did.
  */
-// Var names match the shared admin-suite convention (design/tokens.css,
-// same as PointSystem_AkoATP and Billiards_MyaThida) so the underlying font
-// files line up across all three apps even though this file still wires
-// Tailwind's sans/mono/mm keys to them directly (see tailwind.config.ts).
-const sans = IBM_Plex_Sans({
+// This zone runs its own type identity: Inter for UI/body, Space Grotesk for
+// the numbers and headings that need to carry weight (rates, totals, KPIs).
+// IBM Plex Mono — which used to render every figure — is gone; the shared
+// admin face (IBM Plex Sans) is traded here for Inter, which holds up better
+// at the 13-14px dense-table sizes this app lives at. Noto Sans Myanmar is
+// unchanged and still owns every Burmese glyph via html[lang="my"].
+const ui = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-plex-sans",
+  variable: "--font-ui",
   display: "swap",
 });
 
-const mono = IBM_Plex_Mono({
+const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-mono",
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -62,7 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale: Locale = stored === "my" ? "my" : "en";
 
   return (
-    <html lang={locale} data-app="game" className={`${sans.variable} ${mono.variable} ${myanmar.variable}`}>
+    <html lang={locale} data-app="game" className={`${ui.variable} ${display.variable} ${myanmar.variable}`}>
       <body>
         <LocaleProvider initial={locale}>
           <SessionProvider user={user}>{children}</SessionProvider>

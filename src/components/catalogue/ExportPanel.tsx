@@ -79,18 +79,18 @@ export function ExportPanel() {
         <ErrorBanner message={error} onDismiss={() => setError(null)} />
       )}
 
-      <div className="bg-surface border border-line rounded-[11px] p-[22px]">
+      <div className="bg-surface border border-line rounded-lg p-[22px]">
         <div className="flex items-center gap-2.5 mb-1.5">
           <span className="w-8 h-8 rounded-lg bg-line-faint flex items-center justify-center text-text-muted">
             <Database size={16} />
           </span>
-          <h2 className="text-[15px] font-bold m-0">{t("export.title")}</h2>
+          <h2 className="text-md font-bold m-0">{t("export.title")}</h2>
         </div>
-        <p className="text-[12.5px] text-text-secondary leading-relaxed m-0 mb-5">
+        <p className="text-xs text-text-secondary leading-relaxed m-0 mb-5">
           {t("export.intro")}
         </p>
 
-        <div className="flex bg-line-faint border border-line-soft rounded-lg p-[3px] text-[12.5px] font-semibold mb-4">
+        <div className="flex bg-line-faint border border-line-soft rounded-md p-[3px] text-xs font-semibold mb-4">
           {(["all", "month", "range"] as Scope[]).map((s) => (
             <button
               key={s}
@@ -98,7 +98,7 @@ export function ExportPanel() {
               disabled={busy}
               className={cx(
                 "flex-1 text-center rounded-md px-3 py-1.5",
-                scope === s ? "bg-ink text-white" : "text-text-secondary",
+                scope === s ? "bg-accent text-white" : "text-text-secondary",
               )}
             >
               {t(
@@ -111,7 +111,7 @@ export function ExportPanel() {
         {scope === "month" && (
           <div className="flex gap-3 mb-4">
             <label className="flex-1">
-              <span className="block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+              <span className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
                 {t("export.month")}
               </span>
               <select
@@ -128,7 +128,7 @@ export function ExportPanel() {
               </select>
             </label>
             <label className="flex-1">
-              <span className="block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+              <span className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
                 {t("export.year")}
               </span>
               <select
@@ -150,7 +150,7 @@ export function ExportPanel() {
         {scope === "range" && (
           <div className="flex gap-3 mb-4">
             <label className="flex-1">
-              <span className="block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+              <span className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
                 {t("export.from")}
               </span>
               <input
@@ -162,7 +162,7 @@ export function ExportPanel() {
               />
             </label>
             <label className="flex-1">
-              <span className="block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold mb-1.5">
+              <span className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
                 {t("export.to")}
               </span>
               <input
@@ -179,13 +179,13 @@ export function ExportPanel() {
         <button
           onClick={download}
           disabled={busy}
-          className="flex items-center gap-2 bg-ink text-white rounded-lg px-5 py-3 text-sm font-semibold disabled:opacity-45"
+          className="flex items-center gap-2 bg-accent text-white rounded-md hover:bg-accent-strong transition-colors px-5 py-3 text-sm font-semibold disabled:opacity-45"
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
           {busy ? t("export.building") : t("export.download")}
         </button>
 
-        <p className="text-[11.5px] text-text-muted leading-relaxed mt-4 mb-0">
+        <p className="text-2xs text-text-muted leading-relaxed mt-4 mb-0">
           {t("export.snapshotNote")}
         </p>
       </div>

@@ -34,18 +34,18 @@ export function StockHistory({
   const { t } = useT();
 
   return (
-    <div className="bg-surface border border-line rounded-[10px] overflow-hidden">
+    <div className="bg-surface border border-line rounded-md overflow-hidden">
       <div className="flex items-center gap-2 p-4 px-5 border-b border-line-faint">
         <History size={16} className="text-text-muted" />
-        <span className="text-[15px] font-bold">{t("stock.title")}</span>
+        <span className="text-md font-bold">{t("stock.title")}</span>
       </div>
 
       {message && (
-        <div className="px-5 py-6 text-[13px] text-text-muted">{message}</div>
+        <div className="px-5 py-6 text-sm text-text-muted">{message}</div>
       )}
 
       {!message && movements.length === 0 && (
-        <div className="px-5 py-8 text-center text-[13px] text-text-muted">
+        <div className="px-5 py-8 text-center text-sm text-text-muted">
           {t("stock.none")}
         </div>
       )}
@@ -55,13 +55,13 @@ export function StockHistory({
         return (
           <div
             key={m.id}
-            className="grid grid-cols-[1.4fr_.9fr_.7fr_1fr] gap-3 px-5 py-2.5 border-b border-line-hair items-center text-[13px] last:border-0"
+            className="grid grid-cols-[1.4fr_.9fr_.7fr_1fr] gap-3 px-5 py-2.5 border-b border-line-hair items-center text-sm last:border-0"
           >
             <span className="font-medium truncate">{m.productName}</span>
-            <span className="text-text-secondary text-[12.5px]">{t(REASON_KEY[m.reason])}</span>
+            <span className="text-text-secondary text-xs">{t(REASON_KEY[m.reason])}</span>
             <span
               className={cx(
-                "font-mono font-semibold text-right",
+                "tabular-nums font-semibold text-right",
                 up ? "text-status-active-ink" : "text-text-secondary",
               )}
             >
@@ -70,7 +70,7 @@ export function StockHistory({
                 {Math.abs(m.change)}
               </span>
             </span>
-            <span className="text-[11.5px] text-text-muted text-right truncate">
+            <span className="text-2xs text-text-muted text-right truncate">
               {formatDateTime(m.createdAt)}
               {m.createdBy && staffNames[m.createdBy] ? ` · ${staffNames[m.createdBy]}` : ""}
             </span>

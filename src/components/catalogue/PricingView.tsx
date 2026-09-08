@@ -73,10 +73,10 @@ function RateCard({
   ];
 
   return (
-    <div className="bg-surface border border-line rounded-[10px] p-6">
+    <div className="bg-surface border border-line rounded-md p-6">
       <div className="flex items-center gap-2.5 mb-5">
         <TierBadge tier={pricing.tier} />
-        <span className="text-[15px] font-bold">{t("pricing.rateCard")}</span>
+        <span className="text-md font-bold">{t("pricing.rateCard")}</span>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -94,20 +94,20 @@ function RateCard({
               onChange={(e) =>
                 setDraft((d) => ({ ...d, [r.key]: Number(e.target.value) || 0 }))
               }
-              className="border border-line rounded-lg px-3.5 py-2.5 font-mono text-[15px] font-semibold w-[120px] text-right outline-none disabled:bg-[#f7f8fa] disabled:text-text-muted"
+              className="border border-line rounded-md px-3.5 py-2.5 font-display text-md font-semibold tabular-nums tracking-tight w-[120px] text-right outline-none disabled:bg-surface-sunken disabled:text-text-muted"
             />
           </div>
         ))}
       </div>
 
-      <div className="mt-3.5 text-[11.5px] text-text-muted leading-relaxed">
+      <div className="mt-3.5 text-2xs text-text-muted leading-relaxed">
         {t("pricing.futureOnly")}
       </div>
 
       <button
         onClick={save}
         disabled={!canEdit || pending || !dirty}
-        className="w-full mt-4 bg-ink text-white rounded-lg py-3 text-sm font-semibold disabled:opacity-45"
+        className="w-full mt-4 bg-accent text-white rounded-md hover:bg-accent-strong transition-colors py-3 text-sm font-semibold disabled:opacity-45"
       >
         {pending
           ? t("record.saving")

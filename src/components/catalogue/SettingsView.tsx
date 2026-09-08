@@ -57,14 +57,14 @@ export function SettingsView({
 
       <div className="p-4 sm:p-5 px-4 sm:px-[22px] grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 max-w-[1200px]">
         {/* ── floor plan ────────────────────────────────────────────────── */}
-        <div className="bg-surface border border-line rounded-[10px] overflow-hidden self-start">
+        <div className="bg-surface border border-line rounded-md overflow-hidden self-start">
           <div className="p-4 px-5 border-b border-line-faint flex items-center justify-between">
-            <span className="text-[15px] font-bold">{t("settings.stations")}</span>
+            <span className="text-md font-bold">{t("settings.stations")}</span>
             {canEdit && (
               <button
                 onClick={addStation}
                 disabled={pending}
-                className="flex items-center gap-1.5 bg-ink text-white rounded-[7px] px-3 py-2 text-[12.5px] font-semibold disabled:opacity-45"
+                className="flex items-center gap-1.5 bg-accent text-white rounded-md hover:bg-accent-strong transition-colors px-3 py-2 text-xs font-semibold disabled:opacity-45"
               >
                 <Plus size={14} />
                 {t("settings.addStation")}
@@ -72,7 +72,7 @@ export function SettingsView({
             )}
           </div>
 
-          <div className="hidden md:grid grid-cols-[1.3fr_1fr_1.1fr] gap-2.5 p-2.5 px-5 border-b border-line-faint text-[11px] tracking-[.09em] uppercase text-text-muted font-semibold">
+          <div className="hidden md:grid grid-cols-[1.3fr_1fr_1.1fr] gap-2.5 p-2.5 px-5 border-b border-line-faint text-2xs tracking-caps uppercase text-text-muted font-semibold">
             <span>{t("products.name")}</span>
             <span>{t("settings.tier")}</span>
             <span>{t("settings.status")}</span>
@@ -92,11 +92,11 @@ export function SettingsView({
 
         {/* ── people + language ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-4">
-          <div className="bg-surface border border-line rounded-[10px] overflow-hidden">
+          <div className="bg-surface border border-line rounded-md overflow-hidden">
             <div className="p-4 px-5 border-b border-line-faint flex items-center justify-between">
-              <span className="text-[15px] font-bold">{t("settings.admins")}</span>
+              <span className="text-md font-bold">{t("settings.admins")}</span>
               {!canEdit && (
-                <span className="flex items-center gap-1 text-[11px] text-text-muted">
+                <span className="flex items-center gap-1 text-2xs text-text-muted">
                   <Shield size={12} />
                   {t("settings.superOnly")}
                 </span>
@@ -104,7 +104,7 @@ export function SettingsView({
             </div>
 
             {staff.length === 0 && (
-              <div className="px-5 py-8 text-center text-[13px] text-text-muted">
+              <div className="px-5 py-8 text-center text-sm text-text-muted">
                 {t("settings.noStaff")}
               </div>
             )}
@@ -123,14 +123,14 @@ export function SettingsView({
                   </span>
                   <div className="min-w-0">
                     <div className="text-sm font-semibold truncate">{st.name}</div>
-                    <div className="text-[11.5px] text-text-muted truncate">
+                    <div className="text-2xs text-text-muted truncate">
                       {t(st.role === "superadmin" ? "role.superadmin" : "role.admin")}
                       {st.phone ? ` · ${st.phone}` : st.email ? ` · ${st.email}` : ""}
                     </div>
                   </div>
                 </div>
                 {!st.active && (
-                  <span className="text-[11px] text-text-muted flex-none">
+                  <span className="text-2xs text-text-muted flex-none">
                     {t("settings.inactive")}
                   </span>
                 )}
@@ -148,13 +148,13 @@ export function SettingsView({
               A plain <a>, not next/link: this app has basePath /admin/game, and
               Link would prepend it and send them to /admin/game/admin/staff.
             */}
-            <div className="p-4 px-5 bg-[#fafbfc] border-t border-line-faint">
-              <p className="text-[12px] text-text-secondary leading-relaxed m-0 mb-2.5">
+            <div className="p-4 px-5 bg-surface-sunken border-t border-line-faint">
+              <p className="text-xs text-text-secondary leading-relaxed m-0 mb-2.5">
                 {t("settings.manageStaffHint")}
               </p>
               <a
                 href="/admin/staff"
-                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-accent2 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent2 hover:underline"
               >
                 {t("settings.manageStaffLink")}
                 <ExternalLink size={13} />
@@ -162,8 +162,8 @@ export function SettingsView({
             </div>
           </div>
 
-          <div className="bg-surface border border-line rounded-[10px] p-[18px] px-5">
-            <div className="text-[15px] font-bold mb-3">{t("settings.defaultLanguage")}</div>
+          <div className="bg-surface border border-line rounded-md p-[18px] px-5">
+            <div className="text-md font-bold mb-3">{t("settings.defaultLanguage")}</div>
             <LanguageSwitch variant="light" />
           </div>
         </div>
@@ -240,7 +240,7 @@ function StationRow({
               }),
             )
           }
-          className="field !py-1 !px-2 !text-[13px] w-[104px] disabled:opacity-45"
+          className="field !py-1 !px-2 !text-sm w-[104px] disabled:opacity-45"
         >
           {TIERS.map((tr) => (
             <option key={tr} value={tr}>

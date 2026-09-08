@@ -20,7 +20,7 @@ export function Badge({ children, variant = "neutral" }: BadgeProps) {
   };
 
   return (
-    <span className={cx("inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold", variants[variant])}>
+    <span className={cx("inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold", variants[variant])}>
       {children}
     </span>
   );

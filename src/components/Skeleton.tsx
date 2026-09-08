@@ -26,7 +26,7 @@ export function Bar({ w = "100%", h = 12 }: { w?: string; h?: number }) {
 
 export function SkeletonCard({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-line rounded-[11px] p-[18px]">{children}</div>
+    <div className="bg-surface border border-line rounded-lg p-[18px]">{children}</div>
   );
 }
 
@@ -37,7 +37,7 @@ export function TileRow({ count = 4 }: { count?: number }) {
   return (
     <div className={`grid grid-cols-2 gap-3 ${count === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-surface border border-line rounded-[11px] p-4 px-[18px]">
+        <div key={i} className="bg-surface border border-line rounded-lg p-4 px-[18px]">
           <Bar w="52%" h={10} />
           <div className="mt-3">
             <Bar w="72%" h={22} />
@@ -88,7 +88,7 @@ export function ListCard({ rows = 5 }: { rows?: number }) {
 
 export function TableCard({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="bg-surface border border-line rounded-[11px] overflow-hidden">
+    <div className="bg-surface border border-line rounded-lg overflow-hidden">
       <div className="p-[18px]">
         <Bar w="26%" h={12} />
       </div>
@@ -116,7 +116,7 @@ export function TileGrid({ count = 10 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-[1200px]">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-surface border border-line rounded-[10px] p-4 flex flex-col gap-3">
+        <div key={i} className="bg-surface border border-line rounded-lg p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <Bar w="42%" h={15} />
             <Bar w="34px" h={15} />

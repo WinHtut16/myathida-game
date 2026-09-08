@@ -29,8 +29,8 @@ export function AppShell({
         {/* h-[var(--topbar-h)]: same 56px as the hub and the POS. See DESIGN.md. */}
         <header className="h-[var(--topbar-h)] bg-surface border-b border-line-soft flex items-center justify-between px-[22px] flex-none">
           <div className="flex items-baseline gap-3.5 min-w-0">
-            <h1 className="text-[17px] md:text-[19px] font-bold m-0 truncate">{title}</h1>
-            {subtitle && <span className="hidden sm:inline text-[13px] text-text-muted font-mono">{subtitle}</span>}
+            <h1 className="text-lg md:text-xl font-bold m-0 truncate">{title}</h1>
+            {subtitle && <span className="hidden sm:inline text-sm text-text-muted tabular-nums">{subtitle}</span>}
           </div>
           {right}
         </header>

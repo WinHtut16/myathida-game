@@ -34,14 +34,14 @@ export function Sidebar() {
   const superadmin = user?.isSuperadmin ?? false;
 
   return (
-    <div className="hidden md:flex md:flex-col w-[216px] bg-rail text-[#c7cbd3] flex-none py-[18px]">
-      <div className="px-5 pb-5 flex items-center gap-2.5 border-b border-[#34383f] mb-3">
-        <span className="w-[30px] h-[30px] rounded-[7px] bg-accent flex items-center justify-center text-white font-mono font-bold text-[15px]">
+    <div className="hidden md:flex md:flex-col w-[216px] bg-rail text-rail-text flex-none py-[18px]">
+      <div className="px-5 pb-5 flex items-center gap-2.5 border-b border-rail-line mb-3">
+        <span className="w-[30px] h-[30px] rounded-md bg-accent flex items-center justify-center text-white font-display font-bold text-md">
           M
         </span>
         <div className="leading-[1.1]">
-          <div className="text-white font-semibold text-[14.5px]">MyaThida</div>
-          <div className="text-[10.5px] text-[#7d838e] font-mono">{t("brand.tagline")}</div>
+          <div className="text-white font-semibold text-base">MyaThida</div>
+          <div className="text-2xs text-rail-faint font-semibold tracking-caps">{t("brand.tagline")}</div>
         </div>
       </div>
 
@@ -61,8 +61,8 @@ export function Sidebar() {
                */
               prefetch={false}
               className={cx(
-                "flex items-center gap-[11px] px-3 py-2.5 rounded-[7px] text-sm",
-                active ? "bg-accent text-white font-medium" : "hover:bg-[#2c3037]",
+                "flex items-center gap-[11px] px-3 py-2.5 rounded-md text-sm transition-colors",
+                active ? "bg-accent text-white font-medium" : "hover:bg-rail-hover",
               )}
             >
               <Icon size={17} />

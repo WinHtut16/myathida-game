@@ -3,7 +3,6 @@
 import { CircleDot, Circle, ClipboardList, Wrench } from "lucide-react";
 import { setOccupiedAction } from "@/app/actions/floor";
 import { useT } from "@/i18n";
-import { fill } from "@/lib/ui";
 import { formatMMK } from "@/lib/format";
 import type { StationView } from "@/lib/types";
 import { cx } from "@/lib/ui";
@@ -42,11 +41,15 @@ export function StationTile({
   if (maint) {
     return (
       <div
-        className="border border-line rounded-[10px] p-4 flex flex-col gap-3"
-        style={{ background: "repeating-linear-gradient(45deg,#e7e9ed 0 11px,#eef0f3 11px 22px)" }}
+        className="rounded-lg p-4 flex flex-col gap-3 border border-status-warn-bd shadow-card"
+        style={{
+          borderTop: "4px solid var(--game-status-warn)",
+          background:
+            "repeating-linear-gradient(45deg, var(--game-status-warn-bg) 0 11px, var(--color-surface) 11px 22px)",
+        }}
       >
         <Header name={station.name} tier={station.tier} nameClass="text-text-muted" />
-        <div className="flex-1 flex items-center justify-center gap-2 py-6 text-text-muted text-[12.5px] font-medium">
+        <div className="flex-1 flex items-center justify-center gap-2 py-6 text-status-warn-deep text-xs font-semibold">
           <Wrench size={15} />
           {t("floor.maintenance")}
         </div>
@@ -56,24 +59,30 @@ export function StationTile({
 
   return (
     <div
-      className={cx(
-        "bg-surface rounded-[10px] p-4 flex flex-col gap-3 border shadow-card",
-        occupied ? "border-status-active" : "border-line",
-      )}
-      style={occupied ? { borderTop: "3px solid #1a9d6b" } : { borderTop: "3px solid transparent" }}
+      className="rounded-lg p-4 flex flex-col gap-3 border border-line bg-surface shadow-card"
+      style={{
+        borderTop: occupied
+          ? "4px solid var(--game-status-active)"
+          : "4px solid var(--game-line)",
+      }}
     >
       <Header name={station.name} tier={station.tier} />
 
-      <div className="text-[13px] text-text-muted font-mono">{fill(t("floor.perHour"), { r: formatMMK(rate) })}</div>
+      <div className="flex items-baseline gap-1">
+        <span className="font-display text-xl font-semibold tabular-nums tracking-tight text-text">
+          {formatMMK(rate)}
+        </span>
+        <span className="text-2xs font-medium text-text-muted">/{t("floor.hourUnit")}</span>
+      </div>
 
       <button
         onClick={toggleOccupied}
         disabled={disabled}
         className={cx(
-          "flex items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-semibold border disabled:opacity-60",
+          "flex items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold border disabled:opacity-60 transition-colors",
           occupied
-            ? "bg-status-active-bg text-status-active-ink border-transparent"
-            : "bg-line-faint text-text-secondary border-line-soft",
+            ? "bg-status-active-ink text-white border-transparent"
+            : "bg-surface text-text-secondary border-line hover:border-line-strong",
         )}
       >
         {occupied ? <CircleDot size={14} /> : <Circle size={14} />}
@@ -82,7 +91,7 @@ export function StationTile({
 
       <button
         onClick={onRecord}
-        className="flex items-center justify-center gap-2 bg-ink text-white rounded-lg py-2.5 text-[13px] font-semibold"
+        className="flex items-center justify-center gap-2 bg-accent text-white rounded-md py-2.5 text-sm font-semibold hover:bg-accent-strong transition-colors"
       >
         <ClipboardList size={15} />
         {t("floor.record")}

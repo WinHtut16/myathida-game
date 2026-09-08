@@ -18,57 +18,84 @@
 :root {
   color-scheme: light;
 
-  /* This app's existing palette, still literal hex, now named as CSS custom
-     properties so tailwind.config.ts references var(--game-*) instead of a
-     hardcoded value repeated in two files. Deliberately kept in a --game-*
-     namespace, separate from the shared --color-* vocabulary above — this
-     is a mechanical hex-to-var pass, not yet a retarget onto the shared
-     semantic colors (success/warning/danger/info). That reconciliation is
-     real design work (Game's 5-state status vocabulary vs. the shared
-     4-state one) and belongs to the screen-pattern pass, not this wiring
-     step. --color-surface is the one exception: it's literally #ffffff in
-     both places already, so it points straight at the shared token. */
-  --game-rail: #23262e;
-  --game-ink: #1e2128;
-  --game-canvas: #e9ebef;
-  --game-app-bg: #eef0f3;
+  /* This app's local palette, in the --game-* namespace kept separate from the
+     shared --color-* contract above. Retuned from the original flat-grey hex
+     set to oklch ramps that carry a faint console-blue hue (265) — the same
+     hue the shared token file already assigns this zone via data-app="game".
+     The point: the neutrals should read as a deliberate cool grey, not as an
+     absence of color, and the four line greys (which used to sit within 20
+     units of each other, one of them byte-identical to the page background)
+     should actually separate.
 
-  --game-line: #dcdfe5;
-  --game-line-soft: #e0e3e8;
-  --game-line-faint: #eef0f3;
-  --game-line-hair: #f3f4f6;
+     Contrast floor is unchanged: --game-text-muted keeps L 0.55, the value
+     DESIGN.md / design/tokens.css document as ~4.9:1 on white. It was already
+     darkened once from #8a909c (~3.4:1); it must not drift lighter. */
 
-  --game-text: #1e2128;
-  --game-text-secondary: #5b616e;
-  /* Darkened from the original #8a909c: that value cleared only ~3.4:1
-     against white, below the 4.5:1 body-text floor. Same hue family. */
-  --game-text-muted: #6b7280;
-  --game-text-faint: #b6bcc6;
+  /* Chrome — the dark rail is the biggest single surface in the app. Was a
+     zero-chroma charcoal slab (#23262e); now a real navy. */
+  --game-rail:        oklch(0.28 0.055 265);
+  --game-rail-hover:  oklch(0.34 0.060 265);
+  --game-rail-line:   oklch(0.38 0.045 265);
+  --game-rail-text:   oklch(0.82 0.030 265);   /* ~7:1 on --game-rail */
+  --game-rail-faint:  oklch(0.66 0.028 265);   /* dim labels on the rail */
 
-  --game-accent: #3b73c4;
-  --game-accent2: #2f5fa8;
-  --game-success: #17835a;
+  --game-ink:    oklch(0.24 0.015 265);        /* near-black: receipt total bar */
 
-  --game-status-idle: #9aa2af;
-  --game-status-active: #1a9d6b;
-  --game-status-active-ink: #0f7a52;
-  --game-status-active-bg: #e7f4ee;
-  --game-status-warn: #d9920f;
-  --game-status-warn-ink: #96590a;
-  --game-status-warn-deep: #a86616;
-  --game-status-warn-bg: #fbf1df;
-  --game-status-expired: #d83a25;
-  --game-status-expired-ink: #c2321f;
-  --game-status-expired-bd: #f0c9c1;
-  --game-status-paused: #3b73c4;
-  --game-status-paused-ink: #2f5fa8;
-  --game-status-paused-bg: #e9eff8;
+  --game-canvas:  oklch(0.945 0.010 265);
+  --game-app-bg:  oklch(0.966 0.008 265);
+  --game-surface-sunken: oklch(0.977 0.006 265); /* was #fafbfc / #f7f8fa */
 
-  --game-shadow-card: 0 1px 2px rgba(20, 22, 28, 0.04);
-  --game-shadow-panel: 0 1px 2px rgba(20, 22, 28, 0.04), 0 10px 30px rgba(20, 22, 28, 0.06);
-  --game-shadow-modal: 0 24px 60px rgba(20, 22, 28, 0.28);
-  --game-shadow-drawer: -16px 0 50px rgba(20, 22, 28, 0.2);
-  --game-shadow-expired: 0 0 0 3px rgba(216, 58, 37, 0.08);
+  --game-line-hair:  oklch(0.955 0.006 265);
+  --game-line-faint: oklch(0.930 0.009 265);
+  --game-line-soft:  oklch(0.895 0.011 265);
+  --game-line:       oklch(0.855 0.013 265);
+
+  --game-text:           oklch(0.25 0.018 265);
+  --game-text-secondary: oklch(0.43 0.021 265);
+  --game-text-muted:     oklch(0.55 0.020 265);
+  --game-text-faint:     oklch(0.70 0.014 265);
+
+  /* Brand blue — aligned to the console blue design/tokens.css declares for
+     data-app="game" (oklch(0.50 0.190 265)). The old --game-accent (#3b73c4)
+     was a duller, unrelated blue, so the app carried two competing blues. */
+  --game-accent:        oklch(0.50 0.190 265);
+  --game-accent2:       oklch(0.40 0.170 265);   /* hover / pressed / deep */
+  --game-accent-soft:   oklch(0.950 0.035 265);  /* selected tints, chart quiet */
+  --game-success:       oklch(0.50 0.130 152);
+
+  /* Status — a real {base, ink, soft} triple per state. base = the dot/rail,
+     ink = text on soft (each cleared ≥4.5:1 against its own soft), soft = the
+     pill/row fill. idle and paused were declared-but-unused; they get used now
+     (StationTile free state, session paused). */
+  --game-status-idle:       oklch(0.64 0.030 265);
+  --game-status-idle-ink:   oklch(0.45 0.022 265);
+  --game-status-idle-bg:    oklch(0.945 0.010 265);
+
+  --game-status-active:     oklch(0.60 0.140 155);
+  --game-status-active-ink: oklch(0.45 0.115 155);
+  --game-status-active-bd:  oklch(0.830 0.075 155);
+  --game-status-active-bg:  oklch(0.950 0.045 155);
+
+  --game-status-warn:       oklch(0.72 0.150 75);
+  --game-status-warn-ink:   oklch(0.47 0.100 62);
+  --game-status-warn-deep:  oklch(0.50 0.105 62);
+  --game-status-warn-bd:    oklch(0.845 0.080 80);
+  --game-status-warn-bg:    oklch(0.955 0.050 80);
+
+  --game-status-expired:     oklch(0.58 0.205 27);
+  --game-status-expired-ink: oklch(0.51 0.190 27);
+  --game-status-expired-bd:  oklch(0.885 0.060 27);
+  --game-status-expired-bg:  oklch(0.955 0.030 27);
+
+  --game-status-paused:     oklch(0.50 0.190 265);
+  --game-status-paused-ink: oklch(0.42 0.170 265);
+  --game-status-paused-bg:  oklch(0.950 0.035 265);
+
+  --game-shadow-card: 0 1px 2px rgba(24, 33, 66, 0.05);
+  --game-shadow-panel: 0 1px 2px rgba(24, 33, 66, 0.05), 0 10px 30px rgba(24, 33, 66, 0.07);
+  --game-shadow-modal: 0 24px 60px rgba(18, 24, 50, 0.30);
+  --game-shadow-drawer: -16px 0 50px rgba(18, 24, 50, 0.22);
+  --game-shadow-expired: 0 0 0 3px oklch(0.58 0.205 27 / 0.10);
 }
 
 * {
@@ -84,13 +111,13 @@ body {
 body {
   background: theme("colors.app-bg");
   color: theme("colors.text.DEFAULT");
-  /* Fallback INSIDE var(). Written as `var(--font-plex-sans), system-ui` the
-     whole declaration is invalid when the variable is empty - and CSS then
-     falls all the way back to the UA default, which is Times New Roman, not
+  /* Fallback INSIDE var(). Written as `var(--font-ui), system-ui` the whole
+     declaration is invalid when the variable is empty - and CSS then falls
+     all the way back to the UA default, which is Times New Roman, not
      system-ui. Measured: with next/font stubbed out, every element resolved
      to "Times New Roman". So a failed font fetch would not degrade
      gracefully, it would make the whole app look broken. */
-  font-family: var(--font-plex-sans, system-ui), system-ui, sans-serif;
+  font-family: var(--font-ui, system-ui), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -98,9 +125,17 @@ body {
    design/tokens.css (imported above) — it adds line-height/letter-spacing
    tuning this app's own version didn't have. */
 
-/* tabular figures for all timers / money */
-.tnum {
-  font-variant-numeric: tabular-nums;
+/* Figures (rates, durations, totals, KPIs) render in the body/display face
+   with Tailwind's built-in `tabular-nums` utility for column alignment — the
+   old hand-rolled `.tnum` class and IBM Plex Mono are both gone. */
+
+/* Focus ring — was missing from every on-screen control (the only
+   focus:ring-* in the codebase lived in an unused Button). Uses the shared
+   ring tokens; outline follows each element's own border-radius and adds no
+   layout shift. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: var(--ring-w) solid var(--color-ring);
+  outline-offset: var(--ring-offset);
 }
 
 @layer utilities {
@@ -119,14 +154,14 @@ body {
 .cat-input {
   width: 100%;
   border: 1px solid var(--game-line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--text-base);
   outline: none;
   background: var(--color-surface);
 }
 .cat-input:disabled {
-  background: #f7f8fa;
+  background: var(--game-surface-sunken);
   color: var(--game-text-muted);
 }
 
@@ -166,14 +201,14 @@ select.field {
 .field {
   width: 100%;
   border: 1px solid var(--game-line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--text-base);
   outline: none;
   background: var(--color-surface);
 }
 .field:disabled {
-  background: #f7f8fa;
+  background: var(--game-surface-sunken);
   color: var(--game-text-muted);
 }
 .field:focus {

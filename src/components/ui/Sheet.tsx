@@ -50,7 +50,7 @@ export function Sheet({ open, onClose, title, children, className }: SheetProps)
         </div>
         {title && (
           <div className="px-5 pb-2">
-            <h2 id={titleId} className="text-[15px] font-bold">{title}</h2>
+            <h2 id={titleId} className="text-md font-bold">{title}</h2>
           </div>
         )}
         <div className="px-5 pt-2">{children}</div>

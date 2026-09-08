@@ -19,7 +19,7 @@ export function Field({ label, error, id, className, ...props }: FieldProps) {
     <div>
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} error={!!error} className={className} {...props} />
-      {error && <p className="mt-1 text-[11px] text-status-expired">{error}</p>}
+      {error && <p className="mt-1 text-2xs text-status-expired">{error}</p>}
     </div>
   );
 }

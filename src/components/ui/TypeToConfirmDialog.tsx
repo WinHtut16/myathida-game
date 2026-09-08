@@ -66,11 +66,11 @@ export function TypeToConfirmDialog({
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-status-expired-bd">
           <AlertTriangle className="h-6 w-6 text-status-expired-ink" />
         </div>
-        <h3 id={titleId} className="text-center text-[15px] font-bold">{title}</h3>
-        <p className="mt-1.5 text-center text-[13px] text-text-secondary">{message}</p>
+        <h3 id={titleId} className="text-center text-md font-bold">{title}</h3>
+        <p className="mt-1.5 text-center text-sm text-text-secondary">{message}</p>
 
-        <label htmlFor={inputId} className="mt-4 mb-1.5 block text-[11px] tracking-[.1em] uppercase text-text-muted font-semibold">
-          Type <span className="font-mono font-semibold text-ink">{confirmWord}</span> to confirm
+        <label htmlFor={inputId} className="mt-4 mb-1.5 block text-2xs tracking-caps uppercase text-text-muted font-semibold">
+          Type <span className="font-display font-semibold text-text tracking-caps">{confirmWord}</span> to confirm
         </label>
         <Input
           id={inputId}
@@ -79,7 +79,7 @@ export function TypeToConfirmDialog({
           disabled={isLoading}
           autoComplete="off"
           spellCheck={false}
-          className="font-mono"
+          className="tabular-nums tracking-caps"
         />
 
         <div className="mt-5 flex flex-col gap-2">

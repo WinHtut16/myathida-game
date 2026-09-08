@@ -102,10 +102,10 @@ export function RecordSessionModal({
       >
         <div className="flex items-center justify-between p-4 sm:p-[18px] px-4 sm:px-[22px] border-b border-line-faint">
           <div>
-            <div className="text-[17px] font-bold">{t("record.title")}</div>
-            <div className="text-[12.5px] text-text-muted">{t("record.subtitle")}</div>
+            <div className="text-lg font-bold">{t("record.title")}</div>
+            <div className="text-xs text-text-muted">{t("record.subtitle")}</div>
           </div>
-          <button onClick={onClose} className="text-text-muted">
+          <button onClick={onClose} className="text-text-muted hover:text-text">
             <X size={18} />
           </button>
         </div>
@@ -118,7 +118,7 @@ export function RecordSessionModal({
               <select
                 value={sid}
                 onChange={(e) => setSid(e.target.value)}
-                className="w-full border border-line rounded-lg px-3 py-2.5 text-sm outline-none bg-white"
+                className="w-full border border-line rounded-md px-3 py-2.5 text-sm outline-none bg-white"
               >
                 {available.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -129,7 +129,7 @@ export function RecordSessionModal({
             </div>
             <div className="flex-1">
               <Label>{t("record.rate")}</Label>
-              <div className="border border-line-faint bg-[#fafbfc] rounded-lg px-3 py-2.5 text-sm font-mono">
+              <div className="border border-line-faint bg-surface-sunken rounded-md px-3 py-2.5 text-sm tabular-nums">
                 {pricing ? `${formatMMK(pricing.ratePerHour)} / hr` : "—"}
               </div>
             </div>
@@ -144,12 +144,14 @@ export function RecordSessionModal({
                   key={m}
                   onClick={() => setMinutes(m)}
                   className={cx(
-                    "rounded-lg py-2.5 text-sm font-semibold border",
-                    minutes === m ? "border-2 border-accent bg-[#eef3fa]" : "border-line",
+                    "rounded-md py-2.5 text-sm font-semibold border tabular-nums transition-colors",
+                    minutes === m
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line hover:border-line-strong",
                   )}
                 >
                   {m}
-                  <span className="text-[11px] text-text-muted"> {t("record.minutes")}</span>
+                  <span className="text-2xs text-text-muted"> {t("record.minutes")}</span>
                 </button>
               ))}
               <input
@@ -157,11 +159,11 @@ export function RecordSessionModal({
                 min={1}
                 value={minutes}
                 onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 0))}
-                className="rounded-lg py-2.5 text-sm font-semibold border border-line text-center font-mono outline-none"
+                className="rounded-md py-2.5 text-sm font-semibold border border-line text-center tabular-nums outline-none"
                 aria-label={t("record.customMinutes")}
               />
             </div>
-            {pricing && <div className="text-[11.5px] text-text-muted mt-1.5">{fill(t("record.minCharge"), { m: pricing.minMinutes })}</div>}
+            {pricing && <div className="text-2xs text-text-muted mt-1.5">{fill(t("record.minCharge"), { m: pricing.minMinutes })}</div>}
           </div>
 
           {/* snacks */}
@@ -171,23 +173,23 @@ export function RecordSessionModal({
               {activeProducts.map((p) => {
                 const qty = cart[p.id] ?? 0;
                 return (
-                  <div key={p.id} className={cx("flex items-center justify-between border rounded-lg px-3 py-2", qty > 0 ? "border-ink" : "border-line")}>
+                  <div key={p.id} className={cx("flex items-center justify-between border rounded-md px-3 py-2 transition-colors", qty > 0 ? "border-accent bg-accent-soft" : "border-line")}>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-semibold truncate">{localizedName(locale, p)}</div>
-                      <div className="text-[11px] text-text-muted font-mono">{formatMMK(p.price)}</div>
+                      <div className="text-sm font-semibold truncate">{localizedName(locale, p)}</div>
+                      <div className="text-2xs text-text-muted tabular-nums">{formatMMK(p.price)}</div>
                     </div>
                     {qty > 0 ? (
-                      <div className="flex items-center gap-1.5 bg-ink rounded-md p-0.5 flex-none">
+                      <div className="flex items-center gap-1.5 bg-accent rounded-md p-0.5 flex-none">
                         <button className="w-5 h-5 flex items-center justify-center text-white" onClick={() => setQty(p.id, -1)}>
                           <Minus size={12} />
                         </button>
-                        <span className="text-white font-mono text-[13px] min-w-3 text-center">{qty}</span>
+                        <span className="text-white font-display text-sm tabular-nums min-w-3 text-center">{qty}</span>
                         <button className="w-5 h-5 flex items-center justify-center text-white" onClick={() => setQty(p.id, 1)}>
                           <Plus size={12} />
                         </button>
                       </div>
                     ) : (
-                      <button className="w-6 h-6 rounded-md bg-line-faint border border-line-soft flex items-center justify-center flex-none" onClick={() => setQty(p.id, 1)}>
+                      <button className="w-6 h-6 rounded-md bg-line-faint border border-line-soft flex items-center justify-center flex-none hover:bg-accent-soft hover:border-accent transition-colors" onClick={() => setQty(p.id, 1)}>
                         <Plus size={13} />
                       </button>
                     )}
@@ -206,33 +208,33 @@ export function RecordSessionModal({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Ko Aung"
-              className="w-full border border-line rounded-lg px-3 py-2.5 text-sm outline-none"
+              className="w-full border border-line rounded-md px-3 py-2.5 text-sm outline-none"
             />
           </div>
         </div>
 
         {/* footer total */}
-        <div className="border-t border-line-faint bg-[#fafbfc] p-4 px-[22px] flex items-center justify-between">
+        <div className="border-t border-line-faint bg-surface-sunken p-4 px-[22px] flex items-center justify-between">
           {preview && (
-            <div className="text-[12.5px] text-text-secondary">
-              {t("record.playtime")} <span className="font-mono">{formatMMK(preview.playtimeTotal)}</span>
+            <div className="text-xs text-text-secondary">
+              {t("record.playtime")} <span className="tabular-nums">{formatMMK(preview.playtimeTotal)}</span>
               {preview.snacksTotal > 0 && (
                 <>
                   {" · "}
-                  {t("record.snacksTotal")} <span className="font-mono">{formatMMK(preview.snacksTotal)}</span>
+                  {t("record.snacksTotal")} <span className="tabular-nums">{formatMMK(preview.snacksTotal)}</span>
                 </>
               )}
             </div>
           )}
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-[10.5px] text-text-muted uppercase tracking-[.1em]">{t("record.total")}</div>
-              <div className="font-mono text-[20px] font-bold">{preview ? formatMMKUnit(preview.total) : "—"}</div>
+              <div className="text-2xs text-text-muted uppercase tracking-caps">{t("record.total")}</div>
+              <div className="font-display text-xl font-bold tabular-nums tracking-tight">{preview ? formatMMKUnit(preview.total) : "—"}</div>
             </div>
             <button
               onClick={save}
               disabled={!station || minutes <= 0 || saving}
-              className="bg-success text-white rounded-lg px-5 py-3 text-sm font-semibold flex items-center gap-1.5 disabled:opacity-50"
+              className="bg-status-active text-white rounded-md px-5 py-3 text-sm font-semibold flex items-center gap-1.5 disabled:opacity-50 hover:brightness-95 transition"
             >
               <Check size={16} />
               {saving ? t("record.saving") : t("record.save")}
@@ -245,5 +247,5 @@ export function RecordSessionModal({
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <div className="text-[11px] tracking-[.12em] uppercase text-text-muted font-semibold mb-2">{children}</div>;
+  return <div className="text-2xs tracking-caps uppercase text-text-muted font-semibold mb-2">{children}</div>;
 }

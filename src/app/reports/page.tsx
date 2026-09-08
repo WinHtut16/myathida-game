@@ -43,12 +43,12 @@ export default async function ReportsPage({
       <AppShell title={t("reports.title")}>
         <div className="p-6">
           <div className="max-w-[560px] bg-surface border border-line rounded-xl p-5 flex items-start gap-3">
-            <span className="w-8 h-8 rounded-lg bg-[#fdf3f1] text-[#8a3324] flex items-center justify-center flex-none">
+            <span className="w-8 h-8 rounded-lg bg-status-expired-bg text-status-expired-ink flex items-center justify-center flex-none">
               <TriangleAlert size={17} />
             </span>
             <div>
-              <div className="font-bold text-[15px] mb-1">{t("reports.unavailable")}</div>
-              <p className="text-[13.5px] text-text-secondary leading-relaxed m-0">{data.message}</p>
+              <div className="font-bold text-md mb-1">{t("reports.unavailable")}</div>
+              <p className="text-sm text-text-secondary leading-relaxed m-0">{data.message}</p>
             </div>
           </div>
         </div>
@@ -65,14 +65,14 @@ export default async function ReportsPage({
 
 function PeriodTabs({ active, t }: { active: Period; t: T }) {
   return (
-    <div className="flex bg-line-faint border border-line-soft rounded-lg p-[3px] text-[12px] sm:text-[12.5px] font-semibold">
+    <div className="flex bg-line-faint border border-line-soft rounded-md p-[3px] text-xs font-semibold">
       {(Object.keys(LABEL_KEYS) as Period[]).map((p) => (
         <Link
           key={p}
           href={`/reports?period=${p}`}
           prefetch={false}
           className={`px-2 sm:px-3 py-1.5 rounded-md whitespace-nowrap ${
-            p === active ? "bg-ink text-white" : "text-text-secondary"
+            p === active ? "bg-accent text-white" : "text-text-secondary"
           }`}
         >
           {t(LABEL_KEYS[p])}
@@ -92,7 +92,7 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
   return (
     <div className="p-4 sm:p-5 px-4 sm:px-[22px] max-w-[1180px] flex flex-col gap-4">
       {data.truncated && (
-        <div className="text-[12.5px] text-status-warn-ink bg-status-warn-bg border border-[#e8d9b4] rounded-lg px-3.5 py-2.5">
+        <div className="text-xs text-status-warn-ink bg-status-warn-bg border border-status-warn-bd rounded-lg px-3.5 py-2.5">
           {t("reports.truncated")}
         </div>
       )}
@@ -184,10 +184,10 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface border border-line rounded-[11px] p-[18px]">
+    <div className="bg-surface border border-line rounded-lg p-[18px]">
       <div className="flex items-baseline justify-between mb-3.5">
-        <h2 className="text-[13.5px] font-bold m-0">{title}</h2>
-        {note && <span className="text-[11.5px] text-text-muted font-mono">{note}</span>}
+        <h2 className="text-sm font-bold m-0">{title}</h2>
+        {note && <span className="text-2xs text-text-muted tabular-nums">{note}</span>}
       </div>
       {children}
     </div>

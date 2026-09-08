@@ -75,8 +75,8 @@ export function ConfirmDialog({
           {variant === "warning" && <AlertTriangle className={iconClass} />}
           {variant === "default" && <HelpCircle className={iconClass} />}
         </div>
-        <h3 id={titleId} className="text-center text-[15px] font-bold">{title}</h3>
-        <p className="mt-1.5 text-center text-[13px] text-text-secondary">{message}</p>
+        <h3 id={titleId} className="text-center text-md font-bold">{title}</h3>
+        <p className="mt-1.5 text-center text-sm text-text-secondary">{message}</p>
         <div className="mt-5 flex flex-col gap-2">
           <Button
             variant={variant === "warning" ? "primary" : variant === "danger" ? "danger" : "primary"}

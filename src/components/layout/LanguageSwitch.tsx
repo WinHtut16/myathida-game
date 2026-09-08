@@ -9,13 +9,13 @@ export function LanguageSwitch({ variant = "light" }: { variant?: "light" | "dar
 
   const wrap =
     variant === "dark"
-      ? "bg-[#1b1e24] rounded-lg p-[3px]"
-      : "bg-line-faint border border-line-soft rounded-lg p-[3px]";
-  const on = variant === "dark" ? "bg-[#3b3f47] text-white" : "bg-ink text-white";
-  const off = variant === "dark" ? "text-[#9aa0aa]" : "text-text-secondary";
+      ? "bg-rail-hover rounded-md p-[3px]"
+      : "bg-line-faint border border-line-soft rounded-md p-[3px]";
+  const on = variant === "dark" ? "bg-accent text-white" : "bg-accent text-white";
+  const off = variant === "dark" ? "text-rail-faint" : "text-text-secondary";
 
   return (
-    <div className={cx("flex text-[12.5px] font-semibold", wrap)}>
+    <div className={cx("flex text-xs font-semibold", wrap)}>
       <button
         onClick={() => setLocale("en")}
         className={cx("flex-1 text-center rounded-md px-3.5 py-1.5", locale === "en" ? on : off)}

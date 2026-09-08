@@ -47,7 +47,7 @@ export function SidebarFooter() {
       {user?.isSuperadmin && (
         <a
           href="/admin/audit?app=game"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] text-[#9aa0aa] hover:bg-[#2c3037] hover:text-[#c7cbd3]"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-rail-faint hover:bg-rail-hover hover:text-rail-text transition-colors"
         >
           <ScrollText size={15} />
           {t("nav.auditLog")}
@@ -56,7 +56,7 @@ export function SidebarFooter() {
 
       <a
         href="/admin/apps"
-        className="flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] text-[#9aa0aa] hover:bg-[#2c3037] hover:text-[#c7cbd3]"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-rail-faint hover:bg-rail-hover hover:text-rail-text transition-colors"
       >
         <Grid2x2 size={15} />
         {t("nav.allBusinesses")}
@@ -64,19 +64,19 @@ export function SidebarFooter() {
 
       <LanguageSwitch variant="dark" />
 
-      <div className="flex items-center gap-2 border-t border-[#34383f] pt-2.5">
+      <div className="flex items-center gap-2 border-t border-rail-line pt-2.5">
         <Link
           href="/account"
-          className="flex items-center gap-2.5 flex-1 min-w-0 px-1 py-1.5 rounded-md hover:bg-[#2c3037]"
+          className="flex items-center gap-2.5 flex-1 min-w-0 px-1 py-1.5 rounded-md hover:bg-rail-hover transition-colors"
         >
-          <span className="w-[30px] h-[30px] rounded-full bg-[#3b3f47] flex items-center justify-center text-[#c7cbd3] flex-none">
+          <span className="w-[30px] h-[30px] rounded-full bg-rail-hover flex items-center justify-center text-rail-text flex-none">
             <User size={15} />
           </span>
           <span className="leading-[1.15] min-w-0">
-            <span className="block text-white text-[13px] font-medium truncate">
+            <span className="block text-white text-sm font-medium truncate">
               {user?.name ?? t("common.signedOut")}
             </span>
-            <span className="block text-[10.5px] text-[#7d838e]">
+            <span className="block text-2xs text-rail-faint">
               {user ? t(user.isSuperadmin ? "role.superadmin" : "role.admin") : "—"}
             </span>
           </span>
@@ -87,7 +87,7 @@ export function SidebarFooter() {
           disabled={signingOut}
           title={t("nav.signOut")}
           aria-label={t("nav.signOut")}
-          className="flex-none w-8 h-8 rounded-md flex items-center justify-center text-[#9aa0aa] hover:bg-[#3a2a2a] hover:text-[#e88c7d] disabled:opacity-45"
+          className="flex-none w-8 h-8 rounded-md flex items-center justify-center text-rail-faint hover:bg-rail-hover hover:text-status-expired transition-colors disabled:opacity-45"
         >
           <LogOut size={15} />
         </button>

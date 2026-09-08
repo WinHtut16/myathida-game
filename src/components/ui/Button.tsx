@@ -8,11 +8,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Shared button vocabulary — see DESIGN.md. Variant classes mirror what
- * every existing screen already hand-writes for its primary/secondary/
- * destructive actions (`bg-ink text-white rounded-lg…`, `bg-status-expired
- * text-white…`), so this can replace those call sites screen by screen
- * with no visual change, rather than the other way round.
+ * Shared button vocabulary — see DESIGN.md. `primary` is the brand blue (the
+ * accent that marks primary actions suite-wide); `danger` the expired-red;
+ * `secondary`/`ghost` the neutral pair. Focus rings come from the global
+ * :focus-visible rule in globals.css, so no per-button ring here.
  */
 export function Button({
   variant = "primary",
@@ -24,17 +23,17 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:opacity-45 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-2 font-semibold rounded-md transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
 
   const variants = {
-    primary: "bg-ink text-white hover:opacity-90",
+    primary: "bg-accent text-white hover:bg-accent-strong",
     secondary: "bg-surface text-text border border-line hover:bg-line-faint",
-    danger: "bg-status-expired text-white hover:opacity-90",
+    danger: "bg-status-expired text-white hover:brightness-95",
     ghost: "text-text-secondary hover:bg-line-faint",
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-[12.5px]",
+    sm: "px-3 py-1.5 text-xs",
     md: "px-4 py-2.5 text-sm",
     lg: "px-6 py-3 text-sm w-full",
   };

@@ -17,6 +17,7 @@ export const my: Record<string, string> = {
   "floor.markFree": "အားလပ်ဟုမှတ်",
   "floor.maintenance": "ပြုပြင်ဆဲ",
   "floor.perHour": "{r}/နာရီ",
+  "floor.hourUnit": "နာရီ",
 
   "record.title": "ဆက်ရှင်မှတ်တမ်းတင်",
   "record.subtitle": "ကြာချိန်နှင့် မုန့်ထည့်ပါ — စုစုပေါင်းကို တွက်ချက်ပေးပါမည်",

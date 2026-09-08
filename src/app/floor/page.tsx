@@ -46,12 +46,12 @@ function SetupNotice({ message }: { message: string }) {
     <div className="min-h-screen bg-app-bg flex items-center justify-center p-6">
       <div className="max-w-[540px] w-full bg-surface border border-line rounded-xl shadow-card p-6">
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="w-8 h-8 rounded-lg bg-[#fdf3f1] text-[#8a3324] flex items-center justify-center flex-none">
+          <span className="w-8 h-8 rounded-lg bg-status-expired-bg text-status-expired-ink flex items-center justify-center flex-none">
             <TriangleAlert size={17} />
           </span>
-          <h1 className="text-[17px] font-bold m-0">Game shop is not ready yet</h1>
+          <h1 className="text-lg font-bold m-0">Game shop is not ready yet</h1>
         </div>
-        <p className="text-[13.5px] text-text-secondary leading-relaxed m-0">{message}</p>
+        <p className="text-sm text-text-secondary leading-relaxed m-0">{message}</p>
       </div>
     </div>
   );

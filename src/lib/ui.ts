@@ -9,9 +9,27 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-/** Badge styling per pricing tier. */
+/** Badge styling per pricing tier. Values are design-token references
+ * (globals.css --game-*), so the tiers move with the palette. Three distinct
+ * weights so the tier reads across a room, not just up close:
+ *   PS4 — base tier, ghost outline pill
+ *   PS5 — current gen, solid brand blue
+ *   VIP — premium, solid gold */
 export const TIER_STYLE: Record<Tier, { bg: string; ink: string; border?: string; label: string }> = {
-  PS4: { bg: "#f1f3f6", ink: "#1e2128", border: "#dcdfe5", label: "PS4" },
-  PS5: { bg: "#1e2128", ink: "#ffffff", label: "PS5" },
-  VIP: { bg: "#8a6d1f", ink: "#ffffff", label: "VIP" },
+  PS4: {
+    bg: "transparent",
+    ink: "var(--game-text-muted)",
+    border: "var(--game-line)",
+    label: "PS4",
+  },
+  PS5: {
+    bg: "var(--game-accent)",
+    ink: "#ffffff",
+    label: "PS5",
+  },
+  VIP: {
+    bg: "var(--game-status-warn)",
+    ink: "#231600",
+    label: "VIP",
+  },
 };

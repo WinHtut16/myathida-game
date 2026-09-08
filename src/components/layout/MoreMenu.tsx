@@ -40,8 +40,8 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
               onClick={onNavigate}
               prefetch={false}
               className={cx(
-                "flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[14px]",
-                active ? "bg-line-faint text-ink font-semibold" : "text-text hover:bg-line-faint"
+                "flex items-center gap-3 rounded-md px-3 py-2.5 text-base",
+                active ? "bg-line-faint text-text font-semibold" : "text-text hover:bg-line-faint"
               )}
             >
               <Icon size={18} strokeWidth={active ? 2.2 : 1.9} />
@@ -53,7 +53,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
       <Link
         href="/account"
         onClick={onNavigate}
-        className="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[14px] text-text hover:bg-line-faint"
+        className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
       >
         <User size={18} strokeWidth={1.9} />
         {t("account.title")}
@@ -64,7 +64,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
       {superadmin && (
         <a
           href="/admin/audit?app=game"
-          className="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[14px] text-text hover:bg-line-faint"
+          className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
         >
           <ScrollText size={18} strokeWidth={1.9} />
           {t("nav.auditLog")}
@@ -72,7 +72,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
       )}
       <a
         href="/admin/apps"
-        className="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[14px] text-text hover:bg-line-faint"
+        className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
       >
         <Grid2x2 size={18} strokeWidth={1.9} />
         {t("nav.allBusinesses")}
@@ -82,7 +82,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
         <LanguageSwitch variant="light" />
         <button
           onClick={signOut}
-          className="flex items-center gap-1.5 rounded-[9px] px-3 py-2 text-[13px] font-semibold text-text-secondary hover:bg-line-faint"
+          className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-line-faint"
         >
           <LogOut size={16} />
           {t("nav.signOut")}

@@ -46,7 +46,7 @@ export function BottomNav() {
               )}
             >
               <Icon size={20} strokeWidth={active ? 2.3 : 1.9} />
-              <span className="text-[10px] font-semibold">{t(key)}</span>
+              <span className="text-2xs font-semibold">{t(key)}</span>
             </Link>
           );
         })}
@@ -56,7 +56,7 @@ export function BottomNav() {
           className={cx("flex flex-col items-center justify-center gap-0.5", more ? "text-accent" : "text-text-muted")}
         >
           <MoreHorizontal size={20} strokeWidth={1.9} />
-          <span className="text-[10px] font-semibold">{t("nav.more")}</span>
+          <span className="text-2xs font-semibold">{t("nav.more")}</span>
         </button>
       </nav>
 
