@@ -59,11 +59,14 @@ export function StationTile({
 
   return (
     <div
-      className="rounded-lg p-4 flex flex-col gap-3 border border-line bg-surface shadow-card"
+      className={cx(
+        "rounded-lg p-4 flex flex-col gap-3 border border-line-strong shadow-card",
+        occupied ? "bg-status-active-bg" : "bg-surface",
+      )}
       style={{
         borderTop: occupied
           ? "4px solid var(--game-status-active)"
-          : "4px solid var(--game-line)",
+          : "4px solid var(--game-line-strong)",
       }}
     >
       <Header name={station.name} tier={station.tier} />
@@ -81,8 +84,8 @@ export function StationTile({
         className={cx(
           "flex items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold border disabled:opacity-60 transition-colors",
           occupied
-            ? "bg-status-active-ink text-white border-transparent"
-            : "bg-surface text-text-secondary border-line hover:border-line-strong",
+            ? "bg-surface text-status-active-ink border-status-active-bd hover:bg-status-active-bg"
+            : "bg-line-faint text-text border-line-soft hover:bg-line-soft",
         )}
       >
         {occupied ? <CircleDot size={14} /> : <Circle size={14} />}

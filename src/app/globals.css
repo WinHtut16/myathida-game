@@ -62,6 +62,7 @@
   --game-accent2:       oklch(0.40 0.170 265);   /* hover / pressed / deep */
   --game-accent-soft:   oklch(0.950 0.035 265);  /* selected tints, chart quiet */
   --game-success:       oklch(0.50 0.130 152);
+  --game-slate:         oklch(0.37 0.020 265);   /* PS5 tier chip — dark neutral, own identity vs the accent-blue buttons */
 
   /* Status — a real {base, ink, soft} triple per state. base = the dot/rail,
      ink = text on soft (each cleared ≥4.5:1 against its own soft), soft = the

@@ -51,6 +51,7 @@ const config: Config = {
           soft: "var(--game-accent-soft)",
         },
         accent2: "var(--game-accent2)",
+        slate: "var(--game-slate)",
         status: {
           idle: "var(--game-status-idle)",
           "idle-ink": "var(--game-status-idle-ink)",

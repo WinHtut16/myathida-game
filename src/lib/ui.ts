@@ -10,20 +10,22 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
 }
 
 /** Badge styling per pricing tier. Values are design-token references
- * (globals.css --game-*), so the tiers move with the palette. Three distinct
- * weights so the tier reads across a room, not just up close:
- *   PS4 — base tier, ghost outline pill
- *   PS5 — current gen, solid brand blue
- *   VIP — premium, solid gold */
+ * (globals.css --game-*), so the tiers move with the palette. A three-step
+ * value ladder — light grey, dark slate, gold — so the tier reads across a
+ * room and none of the chips collide with the accent-blue buttons or the
+ * green/amber station states:
+ *   PS4 — base tier, light grey chip
+ *   PS5 — current gen, dark slate chip
+ *   VIP — premium, gold chip */
 export const TIER_STYLE: Record<Tier, { bg: string; ink: string; border?: string; label: string }> = {
   PS4: {
-    bg: "transparent",
-    ink: "var(--game-text-muted)",
-    border: "var(--game-line)",
+    bg: "var(--game-line-faint)",
+    ink: "var(--game-text-secondary)",
+    border: "var(--game-line-soft)",
     label: "PS4",
   },
   PS5: {
-    bg: "var(--game-accent)",
+    bg: "var(--game-slate)",
     ink: "#ffffff",
     label: "PS5",
   },
