@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Shield, User, Wrench, ExternalLink } from "lucide-react";
+import { Plus, Shield, User, Wrench, CircleCheck, ExternalLink } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { upsertStationAction, setStationStatusAction } from "@/app/actions/stations";
 import { TierBadge } from "@/components/station/TierBadge";
@@ -254,22 +254,44 @@ function StationRow({
         </span>
       )}
 
-      <button
-        onClick={() =>
-          onRun(() =>
-            setStationStatusAction(station.id, maint ? "available" : "maintenance"),
-          )
-        }
-        disabled={!canEdit || disabled}
-        className={cx(
-          "text-xs flex items-center gap-1.5 justify-self-start disabled:cursor-default",
-          maint ? "text-status-warn-deep" : "text-status-active-ink",
-          canEdit && "hover:underline underline-offset-2",
-        )}
-      >
-        {maint ? <Wrench size={12} /> : null}
-        {maint ? t("floor.maintenance") : t("settings.available")}
-      </button>
+      {canEdit ? (
+        <div className="flex w-full md:w-[176px] bg-line-faint border border-line-soft rounded-md p-[3px] text-2xs font-semibold justify-self-start">
+          <button
+            onClick={() => !maint || onRun(() => setStationStatusAction(station.id, "available"))}
+            disabled={disabled}
+            aria-pressed={!maint}
+            className={cx(
+              "flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 transition-colors disabled:opacity-45",
+              !maint ? "bg-status-active-bg text-status-active-ink" : "text-text-muted hover:text-text",
+            )}
+          >
+            <CircleCheck size={12} />
+            {t("settings.available")}
+          </button>
+          <button
+            onClick={() => maint || onRun(() => setStationStatusAction(station.id, "maintenance"))}
+            disabled={disabled}
+            aria-pressed={maint}
+            className={cx(
+              "flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 transition-colors disabled:opacity-45",
+              maint ? "bg-status-warn-bg text-status-warn-deep" : "text-text-muted hover:text-text",
+            )}
+          >
+            <Wrench size={12} />
+            {t("floor.maintenance")}
+          </button>
+        </div>
+      ) : (
+        <span
+          className={cx(
+            "text-xs flex items-center gap-1.5 justify-self-start",
+            maint ? "text-status-warn-deep" : "text-status-active-ink",
+          )}
+        >
+          {maint ? <Wrench size={12} /> : <CircleCheck size={12} />}
+          {maint ? t("floor.maintenance") : t("settings.available")}
+        </span>
+      )}
     </div>
   );
 }

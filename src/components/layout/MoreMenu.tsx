@@ -38,7 +38,9 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
               key={href}
               href={href}
               onClick={onNavigate}
-              prefetch={false}
+              // See Sidebar.tsx: prefetch the loading.tsx boundary everywhere
+              // except /floor, where useAutoRefresh would re-prefetch on a loop.
+              prefetch={pathname === "/floor" ? false : undefined}
               className={cx(
                 "flex items-center gap-3 rounded-md px-3 py-2.5 text-base",
                 active ? "bg-line-faint text-text font-semibold" : "text-text hover:bg-line-faint"
@@ -53,6 +55,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
       <Link
         href="/account"
         onClick={onNavigate}
+        prefetch={pathname === "/floor" ? false : undefined}
         className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
       >
         <User size={18} strokeWidth={1.9} />

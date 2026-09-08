@@ -39,7 +39,10 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              prefetch={false}
+              // Prefetch the target's loading.tsx boundary so its skeleton
+              // paints instantly — except on /floor, where useAutoRefresh's
+              // 10s router.refresh() would re-prefetch every link each tick.
+              prefetch={pathname === "/floor" ? false : undefined}
               className={cx(
                 "flex flex-col items-center justify-center gap-0.5",
                 active ? "text-accent" : "text-text-muted"

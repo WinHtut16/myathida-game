@@ -53,13 +53,17 @@ export function Sidebar() {
               key={href}
               href={href}
               /**
-               * Prefetch off. useAutoRefresh re-runs router.refresh() every 10s
-               * and each pass re-prefetched all five of these, so one open tab
-               * produced 30 extra requests a minute for navigations that are
-               * cheap anyway. It also turned the cached-404 bug into 1018
-               * console errors, which buried the one that mattered.
+               * Prefetch the target's loading.tsx boundary so its skeleton
+               * paints instantly on click, instead of the page popping in only
+               * when the Sydney round-trip happens to be slow.
+               *
+               * Off on /floor only: useAutoRefresh re-runs router.refresh()
+               * every 10s there, and each pass re-prefetched all of these — 30
+               * extra requests a minute, and it once buried a real error under
+               * 1018 cached-404 console lines. useAutoRefresh is mounted
+               * nowhere else, so every other screen prefetches safely.
                */
-              prefetch={false}
+              prefetch={pathname === "/floor" ? false : undefined}
               className={cx(
                 "flex items-center gap-[11px] px-3 py-2.5 rounded-md text-sm transition-colors",
                 active ? "bg-accent text-white font-medium" : "hover:bg-rail-hover",

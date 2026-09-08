@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogOut, Grid2x2, User, ScrollText } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { LanguageSwitch } from "./LanguageSwitch";
@@ -22,6 +23,7 @@ import { useT } from "@/i18n";
 export function SidebarFooter() {
   const { t } = useT();
   const user = useCurrentUser();
+  const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
@@ -67,6 +69,7 @@ export function SidebarFooter() {
       <div className="flex items-center gap-2 border-t border-rail-line pt-2.5">
         <Link
           href="/account"
+          prefetch={pathname === "/floor" ? false : undefined}
           className="flex items-center gap-2.5 flex-1 min-w-0 px-1 py-1.5 rounded-md hover:bg-rail-hover transition-colors"
         >
           <span className="w-[30px] h-[30px] rounded-full bg-rail-hover flex items-center justify-center text-rail-text flex-none">
