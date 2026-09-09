@@ -40,6 +40,19 @@ function yangonMidnight(daysAgo: number): Date {
   return new Date(shifted.getTime() - YANGON_OFFSET_MIN * 60_000);
 }
 
+/**
+ * The absolute instant of 00:00 Yangon on a given calendar day, passed as
+ * "YYYY-MM-DD". Used to turn the history page's date-range inputs (which the
+ * shop staff read as local dates) into the UTC bounds a timestamptz column
+ * compares against. Returns null for anything not shaped like a date.
+ */
+function yangonDayStart(date: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const utcMidnight = new Date(`${date}T00:00:00.000Z`).getTime();
+  if (Number.isNaN(utcMidnight)) return null;
+  return new Date(utcMidnight - YANGON_OFFSET_MIN * 60_000);
+}
+
 export const PERIODS = ["today", "7d", "30d", "all"] as const;
 export type Period = (typeof PERIODS)[number];
 
@@ -96,6 +109,17 @@ export type ReportsResult = ReportsData | { ok: false; message: string };
  */
 const ROW_CAP = 5000;
 
+/** Rows per page on the full session-history browser. */
+export const SESSION_HISTORY_PAGE_SIZE = 50;
+
+/**
+ * The column list every session read shares. Kept in one place so the reports
+ * dashboard and the history browser can never drift into selecting different
+ * shapes for the same `Session`.
+ */
+const SESSION_SELECT =
+  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,order_lines(product_id,product_name,qty,unit_price,line_total)";
+
 interface SessionRow {
   id: string;
   station_id: string | null;
@@ -119,6 +143,53 @@ interface SessionRow {
     unit_price: number;
     line_total: number;
   }[] | null;
+}
+
+function mapSessionRow(r: SessionRow): Session {
+  const orders: OrderLine[] = (r.order_lines ?? []).map((o) => ({
+    productId: o.product_id ?? "",
+    productName: o.product_name,
+    qty: o.qty,
+    unitPrice: Number(o.unit_price),
+    lineTotal: Number(o.line_total),
+  }));
+  return {
+    id: r.id,
+    stationId: r.station_id ?? "",
+    stationName: r.station_name,
+    tier: r.tier,
+    ratePerHour: Number(r.rate_per_hour),
+    minutes: r.minutes,
+    chargedMinutes: r.charged_minutes,
+    playtimeTotal: Number(r.playtime_total),
+    snacksTotal: Number(r.snacks_total),
+    total: Number(r.total),
+    label: r.label,
+    orders,
+    createdBy: r.created_by,
+    createdAt: r.created_at,
+    voidReason: r.void_reason,
+    voidedAt: r.voided_at,
+  };
+}
+
+/** Turn a failed `sessions` read into the message the screen should show. */
+function describeSessionsError(error: {
+  code?: string;
+  message: string;
+  details?: string | null;
+  hint?: string | null;
+}): string {
+  console.error("[reports] sessions read failed", {
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  });
+  if (error.code === "PGRST106") {
+    return "The `game` schema is not exposed to the API. Add it under Settings > API > Exposed schemas in the futsal Supabase project (mmyjtvlnuizpwktpkuij) and press Save.";
+  }
+  return `Could not load sessions (${error.code ?? "unknown"}). ${error.message}`;
 }
 
 function emptyTotals(): Totals {
@@ -156,9 +227,7 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
   let query = supabase
     .from("sessions")
-    .select(
-      "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,order_lines(product_id,product_name,qty,unit_price,line_total)",
-    )
+    .select(SESSION_SELECT)
     .order("created_at", { ascending: false })
     .limit(ROW_CAP);
 
@@ -167,23 +236,7 @@ export async function getReports(period: Period): Promise<ReportsResult> {
   const [sessionsRes, directory] = await Promise.all([query, getStaffDirectory()]);
 
   if (sessionsRes.error) {
-    console.error("[reports] sessions read failed", {
-      code: sessionsRes.error.code,
-      message: sessionsRes.error.message,
-      details: sessionsRes.error.details,
-      hint: sessionsRes.error.hint,
-    });
-    if (sessionsRes.error.code === "PGRST106") {
-      return {
-        ok: false,
-        message:
-          "The `game` schema is not exposed to the API. Add it under Settings > API > Exposed schemas in the futsal Supabase project (mmyjtvlnuizpwktpkuij) and press Save.",
-      };
-    }
-    return {
-      ok: false,
-      message: `Could not load reports (${sessionsRes.error.code ?? "unknown"}). ${sessionsRes.error.message}`,
-    };
+    return { ok: false, message: describeSessionsError(sessionsRes.error) };
   }
 
   // A staff-directory failure costs names, not numbers, so it degrades to
@@ -192,33 +245,7 @@ export async function getReports(period: Period): Promise<ReportsResult> {
   for (const row of directory ?? []) staffNames[row.id] = row.name;
 
   const rows = (sessionsRes.data as SessionRow[] | null) ?? [];
-  const all: Session[] = rows.map((r) => {
-    const orders: OrderLine[] = (r.order_lines ?? []).map((o) => ({
-      productId: o.product_id ?? "",
-      productName: o.product_name,
-      qty: o.qty,
-      unitPrice: Number(o.unit_price),
-      lineTotal: Number(o.line_total),
-    }));
-    return {
-      id: r.id,
-      stationId: r.station_id ?? "",
-      stationName: r.station_name,
-      tier: r.tier,
-      ratePerHour: Number(r.rate_per_hour),
-      minutes: r.minutes,
-      chargedMinutes: r.charged_minutes,
-      playtimeTotal: Number(r.playtime_total),
-      snacksTotal: Number(r.snacks_total),
-      total: Number(r.total),
-      label: r.label,
-      orders,
-      createdBy: r.created_by,
-      createdAt: r.created_at,
-      voidReason: r.void_reason,
-      voidedAt: r.voided_at,
-    };
-  });
+  const all: Session[] = rows.map(mapSessionRow);
 
   // Split into this window and the one before it.
   const boundary = days === null ? null : yangonMidnight(days - 1);
@@ -297,4 +324,101 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
 function distinctDays(rows: Session[]): number {
   return new Set(rows.map((s) => yangonDay(s.createdAt))).size;
+}
+
+// ── full session-history browser ──────────────────────────────────────────────
+// The reports dashboard shows a short, unfiltered tail of recent sessions. This
+// backs the dedicated "all session history" screen: one page of rows at a time,
+// narrowed by date range / station / staff, with an exact total so the pager
+// knows how many pages there are. Filtering and paging happen in Postgres here
+// rather than in TypeScript — this list is unbounded, unlike the capped
+// dashboard aggregation.
+
+export interface SessionHistoryFilters {
+  from?: string; // YYYY-MM-DD, inclusive (local Yangon day)
+  to?: string; // YYYY-MM-DD, inclusive (local Yangon day)
+  stationId?: string;
+  staff?: string; // staff id (sessions.created_by)
+  page?: number; // 1-based
+}
+
+export interface SessionHistoryData {
+  ok: true;
+  sessions: Session[];
+  staffNames: Record<string, string>;
+  /** Total rows matching the filters, across all pages. */
+  total: number;
+  page: number;
+  pageCount: number;
+  pageSize: number;
+  /** Option lists for the filter controls. */
+  stations: { id: string; name: string }[];
+  staffList: { id: string; name: string }[];
+}
+
+export type SessionHistoryResult = SessionHistoryData | { ok: false; message: string };
+
+export async function getSessionHistory(
+  filters: SessionHistoryFilters,
+): Promise<SessionHistoryResult> {
+  if (!isSupabaseConfigured()) {
+    return {
+      ok: false,
+      message:
+        "Supabase is not configured for this deployment. Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and DATA_SOURCE=supabase on the Vercel project myathida-game.",
+    };
+  }
+
+  const supabase = await createClient();
+  const pageSize = SESSION_HISTORY_PAGE_SIZE;
+  const page = Math.max(1, Math.floor(filters.page ?? 1));
+  const offset = (page - 1) * pageSize;
+
+  let query = supabase
+    .from("sessions")
+    .select(SESSION_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  const fromInstant = filters.from ? yangonDayStart(filters.from) : null;
+  const toInstant = filters.to ? yangonDayStart(filters.to) : null;
+  if (fromInstant) query = query.gte("created_at", fromInstant.toISOString());
+  if (toInstant) {
+    // `to` is an inclusive local day, so the upper bound is the start of the
+    // day after it.
+    const end = new Date(toInstant.getTime() + 86_400_000);
+    query = query.lt("created_at", end.toISOString());
+  }
+  if (filters.stationId) query = query.eq("station_id", filters.stationId);
+  if (filters.staff) query = query.eq("created_by", filters.staff);
+
+  const [sessionsRes, stationsRes, directory] = await Promise.all([
+    query,
+    supabase.from("stations").select("id,name").order("sort_order"),
+    getStaffDirectory(),
+  ]);
+
+  if (sessionsRes.error) {
+    return { ok: false, message: describeSessionsError(sessionsRes.error) };
+  }
+
+  const staffNames: Record<string, string> = {};
+  for (const row of directory ?? []) staffNames[row.id] = row.name;
+
+  const sessions = ((sessionsRes.data as SessionRow[] | null) ?? []).map(mapSessionRow);
+  const total = sessionsRes.count ?? sessions.length;
+
+  return {
+    ok: true,
+    sessions,
+    staffNames,
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+    pageSize,
+    stations: ((stationsRes.data as { id: string; name: string }[] | null) ?? []).filter(
+      (s) => s.id && s.name,
+    ),
+    staffList: (directory ?? []).map((r) => ({ id: r.id, name: r.name })),
+  };
 }

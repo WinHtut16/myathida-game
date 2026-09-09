@@ -169,7 +169,12 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
         </Card>
       </div>
 
-      <SessionTable sessions={sessions} staffNames={staffNames} canCorrect={canCorrect} />
+      <SessionTable
+        sessions={sessions}
+        staffNames={staffNames}
+        canCorrect={canCorrect}
+        viewAllHref="/reports/sessions"
+      />
     </div>
   );
 }

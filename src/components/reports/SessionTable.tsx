@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Receipt, X, TriangleAlert, Undo2 } from "lucide-react";
+import { Receipt, X, TriangleAlert, Undo2, ArrowRight } from "lucide-react";
 import { voidSessionAction } from "@/app/actions/sessions";
 import { TierBadge } from "@/components/station/TierBadge";
 import { formatDateTime, formatDuration, formatMMK, formatMMKUnit } from "@/lib/format";
@@ -19,11 +20,21 @@ export function SessionTable({
   sessions,
   staffNames,
   canCorrect = false,
+  scroll = true,
+  viewAllHref,
+  emptyLabel,
 }: {
   sessions: Session[];
   staffNames: Record<string, string>;
   /** Corrections zero real takings, so they stay with the owner. */
   canCorrect?: boolean;
+  /** Cap the body height and let it scroll — the dashboard's short tail.
+      The full-history page owns its own paging, so it turns this off. */
+  scroll?: boolean;
+  /** When set, a link to the full session-history screen sits in the header. */
+  viewAllHref?: string;
+  /** Overrides the "nothing recorded" line (e.g. "no rows match the filters"). */
+  emptyLabel?: string;
 }) {
   const { t } = useT();
   const [receipt, setReceipt] = useState<Session | null>(null);
@@ -31,33 +42,49 @@ export function SessionTable({
 
   return (
     <div className="bg-surface border border-line rounded-lg overflow-hidden">
-      <div className="flex items-baseline justify-between p-[18px] pb-3">
+      <div className="flex items-baseline justify-between gap-3 p-[18px] pb-3">
         <h2 className="text-sm font-bold m-0">{t("reports.history")}</h2>
-        <span className="text-2xs text-text-muted tabular-nums">
-          {sessions.length} {t(sessions.length === 1 ? "reports.sessionOne" : "reports.sessionMany")}
-        </span>
+        <div className="flex items-baseline gap-3">
+          <span className="text-2xs text-text-muted tabular-nums">
+            {sessions.length} {t(sessions.length === 1 ? "reports.sessionOne" : "reports.sessionMany")}
+          </span>
+          {viewAllHref && (
+            <Link
+              href={viewAllHref}
+              prefetch={false}
+              className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline whitespace-nowrap"
+            >
+              {t("reports.viewAll")}
+              <ArrowRight size={12} />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Real table from md up; below md each row collapses to a stacked
-          card — see DESIGN.md's list pattern. */}
-      <div
-        className={`hidden md:grid ${cols} gap-3 px-[18px] py-2.5 border-y border-line-faint text-2xs tracking-caps uppercase text-text-muted font-semibold`}
-      >
-        <span>{t("reports.when")}</span>
-        <span>{t("reports.station")}</span>
-        <span className="text-right">{t("reports.time")}</span>
-        <span className="text-right">{t("reports.snacks")}</span>
-        <span className="text-right">{t("reports.total")}</span>
-        <span />
-      </div>
-
-      {sessions.length === 0 && (
-        <div className="px-[18px] py-10 text-center text-text-muted text-sm">
-          {t("reports.noneRecorded")}
+          card — see DESIGN.md's list pattern. The body scrolls when `scroll`
+          is on, with the column head pinned so it stays readable. */}
+      <div className={scroll ? "max-h-[62vh] overflow-y-auto" : undefined}>
+        <div
+          className={`hidden md:grid ${cols} gap-3 px-[18px] py-2.5 border-y border-line-faint text-2xs tracking-caps uppercase text-text-muted font-semibold ${
+            scroll ? "sticky top-0 z-10 bg-surface" : ""
+          }`}
+        >
+          <span>{t("reports.when")}</span>
+          <span>{t("reports.station")}</span>
+          <span className="text-right">{t("reports.time")}</span>
+          <span className="text-right">{t("reports.snacks")}</span>
+          <span className="text-right">{t("reports.total")}</span>
+          <span />
         </div>
-      )}
 
-      {sessions.map((s) => (
+        {sessions.length === 0 && (
+          <div className="px-[18px] py-10 text-center text-text-muted text-sm">
+            {emptyLabel ?? t("reports.noneRecorded")}
+          </div>
+        )}
+
+        {sessions.map((s) => (
         <div
           key={s.id}
           className={`flex flex-col gap-2 px-[18px] py-3 md:grid ${cols} md:gap-3 md:items-center border-b border-line-hair text-sm last:border-0 ${
@@ -101,7 +128,8 @@ export function SessionTable({
             </button>
           </div>
         </div>
-      ))}
+        ))}
+      </div>
 
       {receipt && (
         <ReceiptModal
