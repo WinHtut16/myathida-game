@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PackagePlus, Check, X } from "lucide-react";
+import { PackagePlus, Check, X, Pencil } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   upsertProductAction,
@@ -250,17 +250,40 @@ function StockCell({
 
   if (!editing) {
     const low = product.stock !== null && product.stock <= 3;
+    const value = product.stock === null ? "—" : product.stock;
+
+    // A plain admin can't restock, so the number is just a number.
+    if (!canEdit) {
+      return (
+        <span
+          className={cx(
+            "tabular-nums text-sm md:text-right md:justify-self-end",
+            low ? "text-status-expired-ink font-semibold" : "text-text-secondary",
+          )}
+        >
+          {value}
+        </span>
+      );
+    }
+
+    // For a superadmin it's an editable field: a bordered chip with a pencil,
+    // so it reads as "tap to change" without needing to be discovered on hover.
     return (
       <button
+        type="button"
         onClick={onEdit}
-        disabled={!canEdit || disabled}
+        disabled={disabled}
+        aria-label={`Edit stock for ${product.nameEn}`}
         className={cx(
-          "tabular-nums text-sm text-right disabled:cursor-default",
-          low ? "text-status-expired-ink font-semibold" : "text-text-secondary",
-          canEdit && "hover:underline underline-offset-2",
+          "group inline-flex items-center gap-1.5 rounded-md border px-2 py-1",
+          "tabular-nums text-sm transition-colors md:justify-self-end disabled:opacity-45",
+          low
+            ? "border-status-expired-bd bg-status-expired-bg text-status-expired-ink font-semibold hover:border-status-expired"
+            : "border-line bg-surface-sunken text-text-secondary hover:border-accent hover:text-accent",
         )}
       >
-        {product.stock === null ? "—" : product.stock}
+        {value}
+        <Pencil size={12} className="text-text-muted transition-colors group-hover:text-accent" />
       </button>
     );
   }
