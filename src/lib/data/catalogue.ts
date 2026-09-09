@@ -2,6 +2,8 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { getStaffDirectory } from "./staff-directory";
+import { yangonDayStart } from "./yangon";
 import type { Pricing, Product, Station, Tier } from "@/lib/types";
 
 /** Server reads for the catalogue screens (Snacks, Pricing). */
@@ -130,11 +132,18 @@ export async function getStations(): Promise<CatalogueResult<Station[]>> {
   };
 }
 
+export const STOCK_REASONS = ["sale", "restock", "adjustment", "void_return"] as const;
+export type StockReason = (typeof STOCK_REASONS)[number];
+
+export function isStockReason(v: string | undefined): v is StockReason {
+  return !!v && (STOCK_REASONS as readonly string[]).includes(v);
+}
+
 export interface StockMovement {
   id: string;
   productName: string;
   change: number;
-  reason: "sale" | "restock" | "adjustment" | "void_return";
+  reason: StockReason;
   note: string | null;
   createdBy: string | null;
   createdAt: string;
@@ -187,14 +196,113 @@ export async function getStockMovements(
 
   return {
     ok: true,
-    data: (data as unknown as MovementRow[]).map((m) => ({
-      id: m.id,
-      productName: m.products?.name_en ?? "Deleted product",
-      change: m.change,
-      reason: m.reason,
-      note: m.note,
-      createdBy: m.created_by,
-      createdAt: m.created_at,
-    })),
+    data: (data as unknown as MovementRow[]).map(mapMovementRow),
+  };
+}
+
+function mapMovementRow(m: MovementRow): StockMovement {
+  return {
+    id: m.id,
+    productName: m.products?.name_en ?? "Deleted product",
+    change: m.change,
+    reason: m.reason,
+    note: m.note,
+    createdBy: m.created_by,
+    createdAt: m.created_at,
+  };
+}
+
+function explainMovementsRead(code: string | undefined, message: string): string {
+  if (code === "42P01") {
+    return "Stock history is not set up yet. Run supabase/game-corrections-migration.sql in the futsal Supabase project.";
+  }
+  return explainRead(code, message);
+}
+
+// ── full stock-movement browser ──────────────────────────────────────────────
+// getStockMovements() is the short recent tail under the catalogue. This backs
+// the dedicated /products/stock-history screen: one page at a time, narrowed by
+// product / reason / date range, with an exact total for the pager. Filtering
+// and paging happen in Postgres because this list is unbounded.
+
+export const STOCK_HISTORY_PAGE_SIZE = 50;
+
+export interface StockHistoryFilters {
+  productId?: string;
+  reason?: StockReason;
+  from?: string; // YYYY-MM-DD, inclusive (local Yangon day)
+  to?: string; // YYYY-MM-DD, inclusive (local Yangon day)
+  page?: number; // 1-based
+}
+
+export interface StockHistoryData {
+  ok: true;
+  movements: StockMovement[];
+  staffNames: Record<string, string>;
+  total: number;
+  page: number;
+  pageCount: number;
+  pageSize: number;
+  products: { id: string; name: string }[];
+}
+
+export type StockHistoryResult = StockHistoryData | { ok: false; message: string };
+
+export async function getStockHistory(
+  filters: StockHistoryFilters,
+): Promise<StockHistoryResult> {
+  if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
+
+  const supabase = await createClient();
+  const pageSize = STOCK_HISTORY_PAGE_SIZE;
+  const page = Math.max(1, Math.floor(filters.page ?? 1));
+  const offset = (page - 1) * pageSize;
+
+  let query = supabase
+    .from("stock_movements")
+    .select("id,change,reason,note,created_by,created_at,products(name_en)", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  const fromInstant = filters.from ? yangonDayStart(filters.from) : null;
+  const toInstant = filters.to ? yangonDayStart(filters.to) : null;
+  if (fromInstant) query = query.gte("created_at", fromInstant.toISOString());
+  if (toInstant) {
+    query = query.lt("created_at", new Date(toInstant.getTime() + 86_400_000).toISOString());
+  }
+  if (filters.productId) query = query.eq("product_id", filters.productId);
+  if (filters.reason) query = query.eq("reason", filters.reason);
+
+  const [movementsRes, productsRes, directory] = await Promise.all([
+    query,
+    getProducts(),
+    getStaffDirectory(),
+  ]);
+
+  if (movementsRes.error) {
+    console.error("[catalogue] stock history read failed", {
+      code: movementsRes.error.code, message: movementsRes.error.message,
+      details: movementsRes.error.details, hint: movementsRes.error.hint,
+    });
+    return { ok: false, message: explainMovementsRead(movementsRes.error.code, movementsRes.error.message) };
+  }
+
+  const staffNames: Record<string, string> = {};
+  for (const row of directory ?? []) staffNames[row.id] = row.name;
+
+  const movements = (movementsRes.data as unknown as MovementRow[]).map(mapMovementRow);
+  const total = movementsRes.count ?? movements.length;
+
+  return {
+    ok: true,
+    movements,
+    staffNames,
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+    pageSize,
+    products: productsRes.ok
+      ? productsRes.data.map((p) => ({ id: p.id, name: p.nameEn }))
+      : [],
   };
 }

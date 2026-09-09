@@ -43,6 +43,7 @@ export default async function ProductsPage() {
           movements={movements.ok ? movements.data : []}
           staffNames={staffNames}
           message={movements.ok ? undefined : movements.message}
+          viewAllHref="/products/stock-history"
         />
       </div>
     </AppShell>

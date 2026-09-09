@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PackagePlus, Check, X, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PackagePlus, Check, X, Pencil, Trash2 } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   upsertProductAction,
   setProductActiveAction,
   setStockAction,
+  deleteProductAction,
 } from "@/app/actions/catalogue";
 import { localizedName, useT } from "@/i18n";
-import { cx } from "@/lib/ui";
+import { cx, fill } from "@/lib/ui";
 import { formatMMK } from "@/lib/format";
 import type { Product, ProductCategory } from "@/lib/types";
 
@@ -32,39 +35,81 @@ export function ProductsView({
   canEdit: boolean;
 }) {
   const { t, locale } = useT();
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [editingStock, setEditingStock] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Product | null>(null);
 
+  // null = the form is in "add" mode; a product = editing that row's details.
+  const [editing, setEditing] = useState<Product | null>(null);
   const [nameEn, setNameEn] = useState("");
   const [nameMy, setNameMy] = useState("");
   const [category, setCategory] = useState<ProductCategory>("drink");
   const [price, setPrice] = useState(0);
 
+  const resetForm = () => {
+    setEditing(null);
+    setNameEn("");
+    setNameMy("");
+    setCategory("drink");
+    setPrice(0);
+  };
+
+  const startEdit = (p: Product) => {
+    setEditing(p);
+    setNameEn(p.nameEn);
+    setNameMy(p.nameMy);
+    setCategory(p.category);
+    setPrice(p.price);
+    setError(null);
+  };
+
+  /**
+   * Every write re-runs the server components afterwards. revalidatePath in the
+   * action marks the cache stale; router.refresh() is what actually re-fetches
+   * this route - without it the Recent stock changes panel below keeps showing
+   * yesterday's ledger until a manual reload.
+   */
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
       const r = await fn();
-      setError(r.ok ? null : (r.message ?? "Could not save."));
+      if (r.ok) {
+        setError(null);
+        router.refresh();
+      } else {
+        setError(r.message ?? "Could not save.");
+      }
     });
 
   const save = () =>
     startTransition(async () => {
       const r = await upsertProductAction({
+        id: editing?.id,
         nameEn,
         nameMy,
         category,
         price,
-        stock: 0,
+        // Stock is edited inline (StockCell), never here - carry the row's
+        // current value through an edit so it is not reset to zero.
+        stock: editing ? editing.stock : 0,
       });
       if (!r.ok) {
         setError(r.message ?? "Could not save.");
         return;
       }
       setError(null);
-      setNameEn("");
-      setNameMy("");
-      setPrice(0);
+      resetForm();
+      router.refresh();
     });
+
+  const confirmDelete = () => {
+    if (!deleting) return;
+    const target = deleting;
+    setDeleting(null);
+    if (editing?.id === target.id) resetForm();
+    run(() => deleteProductAction(target.id));
+  };
 
   return (
     <>
@@ -77,12 +122,12 @@ export function ProductsView({
           {/* Real table from md up; each row below md collapses to a two-line
               card instead — same list, no columns squeezed unreadable at
               phone width. See DESIGN.md's list pattern. */}
-          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_.9fr_.7fr] gap-3 p-3 px-5 border-b border-line-faint text-2xs tracking-caps uppercase text-text-muted font-semibold">
+          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_.9fr_1.15fr] gap-3 p-3 px-5 border-b border-line-faint text-2xs tracking-caps uppercase text-text-muted font-semibold">
             <span>{t("products.name")}</span>
             <span>{t("products.category")}</span>
             <span className="text-right">{t("products.price")}</span>
             <span className="text-right">{t("products.stock")}</span>
-            <span className="text-center">{t("products.active")}</span>
+            <span className="text-right">{t("products.actions")}</span>
           </div>
 
           {products.length === 0 && (
@@ -96,8 +141,9 @@ export function ProductsView({
               key={p.id}
               className={cx(
                 "flex flex-col gap-2 p-3.5 px-4",
-                "md:grid md:grid-cols-[2fr_1fr_1fr_.9fr_.7fr] md:gap-3 md:px-5 md:items-center",
+                "md:grid md:grid-cols-[2fr_1fr_1fr_.9fr_1.15fr] md:gap-3 md:px-5 md:items-center",
                 "border-b border-line-hair last:border-0",
+                editing?.id === p.id && "bg-line-faint",
                 !p.active && "opacity-55",
               )}
             >
@@ -134,31 +180,64 @@ export function ProductsView({
                   }}
                 />
 
-                <button
-                  onClick={() => run(() => setProductActiveAction(p.id, !p.active))}
-                  disabled={!canEdit || pending}
-                  aria-label={`${p.active ? "Delist" : "Relist"} ${p.nameEn}`}
-                  className={cx(
-                    "justify-self-center w-[34px] h-5 rounded-full relative transition-colors disabled:opacity-45 flex-none",
-                    p.active ? "bg-success" : "bg-line",
+                <div className="flex items-center justify-end gap-1.5 md:justify-self-end">
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => startEdit(p)}
+                        disabled={pending}
+                        aria-label={`Edit ${p.nameEn}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-accent hover:bg-line-faint disabled:opacity-45 flex-none"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        onClick={() => setDeleting(p)}
+                        disabled={pending}
+                        aria-label={`Delete ${p.nameEn}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-status-expired-ink hover:bg-status-expired-bg disabled:opacity-45 flex-none"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </>
                   )}
-                >
-                  <span
+                  <button
+                    onClick={() => run(() => setProductActiveAction(p.id, !p.active))}
+                    disabled={!canEdit || pending}
+                    aria-label={`${p.active ? "Delist" : "Relist"} ${p.nameEn}`}
                     className={cx(
-                      "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                      p.active ? "right-0.5" : "left-0.5",
+                      "w-[34px] h-5 rounded-full relative transition-colors disabled:opacity-45 flex-none",
+                      p.active ? "bg-success" : "bg-line",
                     )}
-                  />
-                </button>
+                  >
+                    <span
+                      className={cx(
+                        "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                        p.active ? "right-0.5" : "left-0.5",
+                      )}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
         <div className="bg-surface border border-line rounded-md p-4 sm:p-[22px] flex flex-col gap-4 self-start">
-          <div className="text-md font-bold flex items-center gap-2">
-            <PackagePlus size={18} />
-            {t("products.new")}
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-md font-bold flex items-center gap-2">
+              <PackagePlus size={18} />
+              {editing ? t("products.edit") : t("products.new")}
+            </div>
+            {editing && (
+              <button
+                onClick={resetForm}
+                disabled={pending}
+                className="text-xs font-semibold text-text-secondary hover:text-accent"
+              >
+                {t("products.new")}
+              </button>
+            )}
           </div>
 
           {!canEdit && (
@@ -216,10 +295,26 @@ export function ProductsView({
             disabled={!canEdit || pending || !nameEn.trim()}
             className="bg-accent text-white rounded-md hover:bg-accent-strong transition-colors py-3 text-sm font-semibold disabled:opacity-45"
           >
-            {pending ? t("record.saving") : t("products.save")}
+            {pending ? t("record.saving") : editing ? t("products.saveChanges") : t("products.save")}
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={deleting !== null}
+        onClose={() => setDeleting(null)}
+        onConfirm={confirmDelete}
+        variant="danger"
+        title={t("products.deleteTitle")}
+        message={
+          deleting
+            ? fill(t("products.deleteMessage"), { name: deleting.nameEn })
+            : ""
+        }
+        confirmLabel={t("products.deleteConfirm")}
+        cancelLabel={t("common.cancel")}
+        isLoading={pending}
+      />
     </>
   );
 }

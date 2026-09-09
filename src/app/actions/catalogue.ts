@@ -123,6 +123,39 @@ export async function setProductActiveAction(
 }
 
 /**
+ * Deleting a product outright, not just delisting it.
+ *
+ * Through game.delete_product() rather than a table DELETE: the function is
+ * superadmin-only and the migration that adds it also changes
+ * order_lines.product_id to ON DELETE SET NULL, so a snack that has already
+ * been sold can still be removed without erasing the sale - the order line
+ * keeps its snapshotted product_name and Reports stay correct.
+ */
+export async function deleteProductAction(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_product", { p_id: id });
+
+  if (error) {
+    console.error("[catalogue] product delete failed", {
+      id, code: error.code, message: error.message,
+      details: error.details, hint: error.hint,
+    });
+    if (error.code === "42883") {
+      return {
+        ok: false,
+        message:
+          "Deleting products is not set up yet. Run supabase/game-product-delete-migration.sql in the futsal Supabase project.",
+      };
+    }
+    return { ok: false, message: explain(error.code, error.message) };
+  }
+
+  revalidatePath("/products");
+  revalidatePath("/floor");
+  return { ok: true };
+}
+
+/**
  * Restocking. Deliberately an absolute count, not a delta: staff count what is
  * on the shelf, and "there are 14" is a fact they can check, whereas "add 6"
  * depends on the number already being right.

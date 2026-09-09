@@ -3,27 +3,15 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
+import { YANGON_OFFSET_MIN, yangonDay, yangonDayStart } from "./yangon";
 import type { OrderLine, Session, Tier } from "@/lib/types";
 
 /**
  * Server-side reads and aggregation for the reports screen.
  *
- * ── The timezone thing, because it decides what "today" means ──────────────
- * created_at is timestamptz, so Postgres hands back an absolute instant and
- * the browser/server would bucket it in UTC. The shop is in Yangon, UTC+06:30.
- * Bucketing in UTC moves every sale before 06:30 local into the previous day -
- * so an evening shift ending at 01:00 would land in the wrong day's takings,
- * and "today's revenue" would be wrong for the first six and a half hours of
- * every morning. Myanmar has no DST and has not changed offset since 1945, so
- * a fixed offset is correct here and simpler than pulling in a tz database.
+ * The Yangon-local date maths this leans on (why a fixed +06:30 offset is
+ * correct, why UTC bucketing would be wrong) lives in ./yangon.
  */
-const YANGON_OFFSET_MIN = 6 * 60 + 30;
-
-/** The local (Yangon) calendar day an instant falls in, as YYYY-MM-DD. */
-export function yangonDay(iso: string): string {
-  const shifted = new Date(new Date(iso).getTime() + YANGON_OFFSET_MIN * 60_000);
-  return shifted.toISOString().slice(0, 10);
-}
 
 /** Local hour of day, 0-23. */
 function yangonHour(iso: string): number {
@@ -38,19 +26,6 @@ function yangonMidnight(daysAgo: number): Date {
   shifted.setUTCHours(0, 0, 0, 0);
   shifted.setUTCDate(shifted.getUTCDate() - daysAgo);
   return new Date(shifted.getTime() - YANGON_OFFSET_MIN * 60_000);
-}
-
-/**
- * The absolute instant of 00:00 Yangon on a given calendar day, passed as
- * "YYYY-MM-DD". Used to turn the history page's date-range inputs (which the
- * shop staff read as local dates) into the UTC bounds a timestamptz column
- * compares against. Returns null for anything not shaped like a date.
- */
-function yangonDayStart(date: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  const utcMidnight = new Date(`${date}T00:00:00.000Z`).getTime();
-  if (Number.isNaN(utcMidnight)) return null;
-  return new Date(utcMidnight - YANGON_OFFSET_MIN * 60_000);
 }
 
 export const PERIODS = ["today", "7d", "30d", "all"] as const;
