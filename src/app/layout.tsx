@@ -52,7 +52,7 @@ const myanmar = Noto_Sans_Myanmar({
 });
 
 export const metadata: Metadata = {
-  title: "MyaThida — Game Shop Management",
+  title: "AcJ Gaming Lounge — Management",
   description: "Admin/staff console for a PS4/PS5 walk-in game shop.",
 };
 
