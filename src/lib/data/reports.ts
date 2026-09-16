@@ -200,9 +200,13 @@ export async function getReports(period: Period): Promise<ReportsResult> {
   // badges cost no extra round trip.
   const from = days === null ? null : yangonMidnight(days * 2 - 1);
 
+  // status: a session that is still running has no total yet, and summing a
+  // NULL into a day's takings makes the whole figure NULL - which reads on
+  // screen as a quiet night rather than an unfinished one.
   let query = supabase
     .from("sessions")
     .select(SESSION_SELECT)
+    .eq("status", "closed")
     .order("created_at", { ascending: false })
     .limit(ROW_CAP);
 
@@ -349,9 +353,12 @@ export async function getSessionHistory(
   const page = Math.max(1, Math.floor(filters.page ?? 1));
   const offset = (page - 1) * pageSize;
 
+  // Finished sessions only - history, not the floor. An open session would
+  // appear here as a row with no duration and no total.
   let query = supabase
     .from("sessions")
     .select(SESSION_SELECT, { count: "exact" })
+    .eq("status", "closed")
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
 

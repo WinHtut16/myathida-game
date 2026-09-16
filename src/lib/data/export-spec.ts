@@ -31,6 +31,12 @@ export const SPECS: TableSpec[] = [
     columns: [
       { key: "id", header: "Session ID", width: 38 },
       { key: "created_at", header: "Recorded At", width: 24 },
+      // A live session is a real row with no duration and no total yet.
+      // Without status, a backup taken mid-evening shows those as blanks with
+      // nothing to explain them - the same trap the void columns below fix.
+      { key: "status", header: "Status", width: 10 },
+      { key: "started_at", header: "Started At", width: 24 },
+      { key: "ended_at", header: "Ended At", width: 24 },
       { key: "station_name", header: "Station", width: 12 },
       { key: "tier", header: "Tier", width: 8 },
       { key: "rate_per_hour", header: "Rate / hr", width: 12 },
@@ -39,6 +45,9 @@ export const SPECS: TableSpec[] = [
       { key: "playtime_total", header: "Playtime", width: 12 },
       { key: "snacks_total", header: "Snacks", width: 12 },
       { key: "total", header: "Total", width: 12 },
+      { key: "waived_minutes", header: "Waived Minutes", width: 15 },
+      { key: "payment_method", header: "Paid By", width: 12 },
+      { key: "paid_at", header: "Paid At", width: 24 },
       { key: "label", header: "Note", width: 20 },
       { key: "created_by", header: "Recorded By", width: 38 },
       // A backup that dropped these would show a corrected session as a
