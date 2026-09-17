@@ -211,6 +211,8 @@ export async function updatePricingAction(
   tier: Tier,
   ratePerHour: number,
   minMinutes: number,
+  incrementMinutes: number,
+  graceMinutes: number,
 ): Promise<ActionResult> {
   if (!Number.isFinite(ratePerHour) || ratePerHour < 0) {
     return { ok: false, message: "Rate must be zero or more." };
@@ -218,11 +220,24 @@ export async function updatePricingAction(
   if (!Number.isInteger(minMinutes) || minMinutes < 0) {
     return { ok: false, message: "Minimum minutes must be a whole number, zero or more." };
   }
+  // A zero block size would divide by zero in the billing rule, so this is a
+  // guard rather than a preference. The database has the same check.
+  if (!Number.isInteger(incrementMinutes) || incrementMinutes < 1) {
+    return { ok: false, message: "Block size must be a whole number of at least 1 minute." };
+  }
+  if (!Number.isInteger(graceMinutes) || graceMinutes < 0) {
+    return { ok: false, message: "Grace must be a whole number, zero or more." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pricing")
-    .update({ rate_per_hour: ratePerHour, min_minutes: minMinutes })
+    .update({
+      rate_per_hour: ratePerHour,
+      min_minutes: minMinutes,
+      increment_minutes: incrementMinutes,
+      grace_minutes: graceMinutes,
+    })
     .eq("tier", tier)
     .select("tier");
 

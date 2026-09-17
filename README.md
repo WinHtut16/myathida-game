@@ -73,8 +73,9 @@ mock/demo data source and no role switcher — sign-in happens on the hub
   change links out to the hub.
 - **Export** (`/export`, superadmin) — full-shop `.xlsx` backup.
 
-Sign-in is **not** implemented in this repo — `/login` is a vestigial static
-page. Real authentication happens on the hub at `/admin/login`; this app
+Sign-in is **not** implemented in this repo — there is no `/login` route
+(a prior vestigial static page shipping hardcoded demo credentials was
+removed). Real authentication happens on the hub at `/admin/login`; this app
 reads the resulting session via `getCurrentUser()`.
 
 ## Pricing

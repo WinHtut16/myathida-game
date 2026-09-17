@@ -33,12 +33,24 @@ Consequences for day-to-day work:
   networks block `*.supabase.co` outright at the ISP level; server-to-server
   calls from Vercel are unaffected. If a client component needs live data,
   poll with `useAutoRefresh` (`router.refresh()`), not a Realtime channel.
-- **Sign-in is not implemented here.** `/login` is a vestigial static page.
-  Real auth happens on the hub at `/admin/login`; this app only reads the
-  resulting session via `getCurrentUser()`.
+- **Sign-in is not implemented here.** There is no `/login` route in this
+  repo — it shipped hardcoded demo credentials and a `<Link>` that
+  authenticated nothing, and was removed. Real auth happens on the hub at
+  `/admin/login`; this app only reads the resulting session via
+  `getCurrentUser()`.
 - **No PWA manifest in this repo.** The hub's manifest is scoped to `/admin`
   and already covers all three businesses — a second in-scope manifest here
   would be ambiguous. Do not add one.
 - **Role decides what to show, never what is allowed.** Every mutating
   server action re-checks the caller's role itself; a hidden nav item or
   disabled button is a UX courtesy, not the authorization boundary.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

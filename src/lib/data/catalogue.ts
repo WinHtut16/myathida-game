@@ -18,7 +18,13 @@ interface ProductRow {
   active: boolean;
 }
 
-interface PricingRow { tier: Tier; rate_per_hour: number; min_minutes: number }
+interface PricingRow {
+  tier: Tier;
+  rate_per_hour: number;
+  min_minutes: number;
+  increment_minutes: number;
+  grace_minutes: number;
+}
 
 export type CatalogueResult<T> = { ok: true; data: T } | { ok: false; message: string };
 
@@ -75,7 +81,7 @@ export async function getPricing(): Promise<CatalogueResult<Pricing[]>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pricing")
-    .select("tier,rate_per_hour,min_minutes");
+    .select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes");
 
   if (error) {
     console.error("[catalogue] pricing read failed", {
@@ -88,7 +94,13 @@ export async function getPricing(): Promise<CatalogueResult<Pricing[]>> {
   return {
     ok: true,
     data: (data as PricingRow[])
-      .map((p) => ({ tier: p.tier, ratePerHour: Number(p.rate_per_hour), minMinutes: p.min_minutes }))
+      .map((p) => ({
+        tier: p.tier,
+        ratePerHour: Number(p.rate_per_hour),
+        minMinutes: p.min_minutes,
+        incrementMinutes: p.increment_minutes,
+        graceMinutes: p.grace_minutes,
+      }))
       .sort((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier)),
   };
 }

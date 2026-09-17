@@ -93,7 +93,7 @@ export const SESSION_HISTORY_PAGE_SIZE = 50;
  * shapes for the same `Session`.
  */
 const SESSION_SELECT =
-  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,order_lines(product_id,product_name,qty,unit_price,line_total)";
+  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,order_lines(product_id,product_name,qty,unit_price,line_total)";
 
 interface SessionRow {
   id: string;
@@ -118,6 +118,11 @@ interface SessionRow {
     unit_price: number;
     line_total: number;
   }[] | null;
+  status: "active" | "closed";
+  started_at: string | null;
+  ended_at: string | null;
+  payment_method: string | null;
+  waived_minutes: number | null;
 }
 
 function mapSessionRow(r: SessionRow): Session {
@@ -145,6 +150,14 @@ function mapSessionRow(r: SessionRow): Session {
     createdAt: r.created_at,
     voidReason: r.void_reason,
     voidedAt: r.voided_at,
+    // Reports only ever show closed rows (both readers filter on status), but
+    // the type carries these so a screen that wants to say "paid by KBZPay" or
+    // "50 min waived" does not need a second query for it.
+    status: r.status ?? "closed",
+    startedAt: r.started_at,
+    endedAt: r.ended_at,
+    paymentMethod: (r.payment_method as Session["paymentMethod"]) ?? null,
+    waivedMinutes: r.waived_minutes ?? 0,
   };
 }
 

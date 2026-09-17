@@ -51,14 +51,25 @@ function RateCard({
   const [draft, setDraft] = useState({
     ratePerHour: pricing.ratePerHour,
     minMinutes: pricing.minMinutes,
+    incrementMinutes: pricing.incrementMinutes,
+    graceMinutes: pricing.graceMinutes,
   });
 
   const dirty =
-    draft.ratePerHour !== pricing.ratePerHour || draft.minMinutes !== pricing.minMinutes;
+    draft.ratePerHour !== pricing.ratePerHour ||
+    draft.minMinutes !== pricing.minMinutes ||
+    draft.incrementMinutes !== pricing.incrementMinutes ||
+    draft.graceMinutes !== pricing.graceMinutes;
 
   const save = () =>
     startTransition(async () => {
-      const r = await updatePricingAction(pricing.tier, draft.ratePerHour, draft.minMinutes);
+      const r = await updatePricingAction(
+        pricing.tier,
+        draft.ratePerHour,
+        draft.minMinutes,
+        draft.incrementMinutes,
+        draft.graceMinutes,
+      );
       if (r.ok) {
         onError(null);
         toast.success(t("pricing.saved"));
@@ -70,6 +81,10 @@ function RateCard({
   const rows: { key: keyof typeof draft; label: string; sub: string }[] = [
     { key: "ratePerHour", label: t("pricing.ratePerHour"), sub: t("pricing.ratePerHourSub") },
     { key: "minMinutes", label: t("pricing.minMinutes"), sub: t("pricing.minMinutesSub") },
+    // Live sessions only. record_session bills the duration typed in, so these
+    // two do not affect a retroactively entered session.
+    { key: "incrementMinutes", label: t("pricing.increment"), sub: t("pricing.blocksHint") },
+    { key: "graceMinutes", label: t("pricing.grace"), sub: t("pricing.blocksHint") },
   ];
 
   return (

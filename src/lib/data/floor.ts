@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-import type { Pricing, Product, Station, StationView, Tier } from "@/lib/types";
+import type { ActiveSession, OrderLine, Pricing, Product, Station, StationView, Tier } from "@/lib/types";
 
 /**
  * Server-side reads for the floor board.
@@ -26,7 +26,33 @@ interface StationRow {
   sort_order: number;
 }
 
-interface PricingRow { tier: Tier; rate_per_hour: number; min_minutes: number }
+interface PricingRow {
+  tier: Tier;
+  rate_per_hour: number;
+  min_minutes: number;
+  increment_minutes: number;
+  grace_minutes: number;
+}
+
+interface OrderLineRow {
+  id: string;
+  product_id: string | null;
+  product_name: string;
+  qty: number;
+  unit_price: number;
+  line_total: number;
+}
+
+interface ActiveSessionRow {
+  id: string;
+  station_id: string;
+  station_name: string;
+  tier: Tier;
+  rate_per_hour: number;
+  started_at: string;
+  label: string | null;
+  order_lines: OrderLineRow[] | null;
+}
 
 interface ProductRow {
   id: string;
@@ -55,10 +81,26 @@ export async function getFloorData(): Promise<FloorData> {
    * the Sydney project each is ~95ms, so serialising them would put a third of
    * a second on every floor-board render for no reason.
    */
-  const [stationsRes, pricingRes, productsRes] = await Promise.all([
+  const [stationsRes, pricingRes, productsRes, activeRes] = await Promise.all([
     supabase.from("stations").select("id,name,tier,status,occupied,sort_order").order("sort_order"),
-    supabase.from("pricing").select("tier,rate_per_hour,min_minutes"),
+    supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
+    /**
+     * The open sessions, with their snacks embedded in the same round trip.
+     * At most one per station - a partial unique index guarantees it - so this
+     * is a handful of rows however busy the shop gets.
+     *
+     * No totals are selected because an open session has none. The running
+     * figure is derived from started_at on the client, so a reload or a second
+     * device shows the same number instead of each keeping its own count.
+     */
+    supabase
+      .from("sessions")
+      .select(
+        "id,station_id,station_name,tier,rate_per_hour,started_at,label," +
+          "order_lines(id,product_id,product_name,qty,unit_price,line_total)",
+      )
+      .eq("status", "active"),
   ]);
 
   /**
@@ -71,7 +113,7 @@ export async function getFloorData(): Promise<FloorData> {
    * exactly this reason. An RLS denial and a misspelled column must not arrive
    * here wearing the same clothes.
    */
-  const failure = stationsRes.error ?? pricingRes.error ?? productsRes.error;
+  const failure = stationsRes.error ?? pricingRes.error ?? productsRes.error ?? activeRes.error;
   if (failure) {
     console.error("[floor] read failed", {
       code: failure.code,
@@ -103,6 +145,8 @@ export async function getFloorData(): Promise<FloorData> {
     tier: p.tier,
     ratePerHour: Number(p.rate_per_hour),
     minMinutes: p.min_minutes,
+    incrementMinutes: p.increment_minutes,
+    graceMinutes: p.grace_minutes,
   }));
 
   /**
@@ -119,8 +163,39 @@ export async function getFloorData(): Promise<FloorData> {
     };
   }
 
-  const rateFor = (tier: Tier) =>
-    pricing.find((p) => p.tier === tier)?.ratePerHour ?? 0;
+  // A tier with no pricing row cannot be billed, so it gets a zeroed entry
+  // rather than crashing the board. open_session refuses it server-side too.
+  const fallback = (tier: Tier): Pricing => ({
+    tier,
+    ratePerHour: 0,
+    minMinutes: 0,
+    incrementMinutes: 10,
+    graceMinutes: 0,
+  });
+  const pricingFor = (tier: Tier) => pricing.find((p) => p.tier === tier) ?? fallback(tier);
+
+  const toOrderLine = (l: OrderLineRow): OrderLine => ({
+    id: l.id,
+    productId: l.product_id ?? "",
+    productName: l.product_name,
+    qty: l.qty,
+    unitPrice: Number(l.unit_price),
+    lineTotal: Number(l.line_total),
+  });
+
+  const activeByStation = new Map<string, ActiveSession>();
+  for (const row of (activeRes.data ?? []) as unknown as ActiveSessionRow[]) {
+    activeByStation.set(row.station_id, {
+      id: row.id,
+      stationId: row.station_id,
+      stationName: row.station_name,
+      tier: row.tier,
+      ratePerHour: Number(row.rate_per_hour),
+      startedAt: row.started_at,
+      label: row.label,
+      orders: (row.order_lines ?? []).map(toOrderLine),
+    });
+  }
 
   const stations: StationView[] = (stationsRes.data ?? []).map((s: StationRow) => ({
     station: {
@@ -132,7 +207,9 @@ export async function getFloorData(): Promise<FloorData> {
       sortOrder: s.sort_order,
     },
     occupied: s.occupied,
-    rate: rateFor(s.tier),
+    rate: pricingFor(s.tier).ratePerHour,
+    pricing: pricingFor(s.tier),
+    active: activeByStation.get(s.id) ?? null,
   }));
 
   const products: Product[] = (productsRes.data ?? []).map((p: ProductRow) => ({
