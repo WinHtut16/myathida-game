@@ -80,16 +80,30 @@ reads the resulting session via `getCurrentUser()`.
 
 ## Pricing
 
-Charged **per minute, prorated** from the hourly rate, with a configurable
-minimum (default 30 min):
+Charged in **whole blocks** off the hourly rate, after a grace period, never
+below a tier minimum — the same rule billiards runs, and the same rule whether
+the session was timed or typed in afterwards:
+
+```
+billed  = max(minMinutes, ceil(max(0, minutes - grace) / increment) * increment)
+charged = max(minMinutes, billed - min(max(waiveBlocks, 0), 1) * increment)
+total   = round(ratePerHour * charged / 60) + snacks
+```
+
+Defaults: 30-minute minimum, 10-minute blocks, 5-minute grace, all per tier.
+Grace is taken off the total rather than granted once, so it shifts *every*
+block boundary: three minutes past the hour pays for the hour. One block can be
+waived at checkout, and never through the minimum.
+
+It lives in exactly one place — `game.bill_minutes()` — which both
+`game.close_session()` (a timer) and `game.record_session()` (a duration entered
+afterwards) call, so one duration cannot carry two prices.
 
 | Tier | Rate | Stations |
 |---|---|---|
 | PS4 | 3,000 MMK/hr | TV 1–7 |
 | PS5 | 5,000 MMK/hr | TV 8–9 |
 | VIP (PS5) | 7,000 MMK/hr | VIP room |
-
-`total = max(minutes, minMinutes) / 60 × ratePerHour + snacks`
 
 ## Roles
 

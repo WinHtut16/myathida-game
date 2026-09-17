@@ -163,7 +163,22 @@ export function RecordSessionModal({
                 aria-label={t("record.customMinutes")}
               />
             </div>
-            {pricing && <div className="text-2xs text-text-muted mt-1.5">{fill(t("record.minCharge"), { m: pricing.minMinutes })}</div>}
+            {pricing && (
+              <div className="text-2xs text-text-muted mt-1.5">
+                {fill(t("record.chargeRule"), {
+                  m: pricing.minMinutes,
+                  inc: pricing.incrementMinutes,
+                  g: pricing.graceMinutes,
+                })}
+                {/* The duration typed in is no longer always the duration billed.
+                    Saying so here, under the input, costs nothing; finding it out
+                    at the counter after the customer has heard a different number
+                    costs an argument. */}
+                {preview && preview.chargedMinutes !== minutes && (
+                  <> · {fill(t("record.chargedAs"), { c: preview.chargedMinutes })}</>
+                )}
+              </div>
+            )}
           </div>
 
           {/* snacks */}

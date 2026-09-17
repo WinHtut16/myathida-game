@@ -54,7 +54,7 @@ export const en = {
   "session.startedAt": "Started",
   "pricing.increment": "Block size (min)",
   "pricing.grace": "Grace (min)",
-  "pricing.blocksHint": "A live session rounds up to a whole block once the grace is used. Same rule as billiards.",
+  "pricing.blocksHint": "Every session rounds up to a whole block once the grace is used, whether it was timed or typed in. Same rule as billiards.",
 
   // record session
   "record.title": "Record session",
@@ -73,7 +73,8 @@ export const en = {
   "record.playtime": "Playtime",
   "record.snacksTotal": "Snacks",
   "record.total": "Total",
-  "record.minCharge": "Minimum {m} min charged",
+  "record.chargeRule": "Minimum {m} min, then {inc} min blocks with {g} min grace",
+  "record.chargedAs": "Charged as {c} min",
   "record.save": "Save session",
   "record.saving": "Saving…",
 
@@ -114,7 +115,7 @@ export const en = {
   // pricing
   "pricing.rateCard": "Rate card",
   "pricing.ratePerHour": "Rate per hour",
-  "pricing.ratePerHourSub": "Charged per minute, prorated",
+  "pricing.ratePerHourSub": "Charged in blocks off this rate",
   "pricing.minMinutes": "Minimum minutes",
   "pricing.minMinutesSub": "Shortest charged session",
   "pricing.save": "Save rate",

@@ -81,8 +81,8 @@ function RateCard({
   const rows: { key: keyof typeof draft; label: string; sub: string }[] = [
     { key: "ratePerHour", label: t("pricing.ratePerHour"), sub: t("pricing.ratePerHourSub") },
     { key: "minMinutes", label: t("pricing.minMinutes"), sub: t("pricing.minMinutesSub") },
-    // Live sessions only. record_session bills the duration typed in, so these
-    // two do not affect a retroactively entered session.
+    // These apply to BOTH doors onto the sessions table: a session closed off a
+    // timer and one typed in afterwards go through the same game.bill_minutes().
     { key: "incrementMinutes", label: t("pricing.increment"), sub: t("pricing.blocksHint") },
     { key: "graceMinutes", label: t("pricing.grace"), sub: t("pricing.blocksHint") },
   ];

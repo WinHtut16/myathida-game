@@ -1,15 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { computeLiveBill, formatElapsed, previewLiveTotal } from "./pricing";
+import {
+  computeLiveBill,
+  computePlaytime,
+  formatElapsed,
+  previewLiveTotal,
+  previewTotal,
+} from "./pricing";
 import type { OrderLine, Pricing } from "./types";
 
 /**
- * The live billing rule exists twice: here, for the number on the staff
- * member's screen, and in game.close_session(), for the number actually
- * charged. Two copies of one rule drift unless something pins them together.
+ * The billing rule exists twice: here, for the number on the staff member's
+ * screen, and in game.bill_minutes(), for the number actually charged. Two
+ * copies of one rule drift unless something pins them together.
  *
  * This is that pin. Every boundary below is asserted against the real database
  * in db-tests/97-game-live-sessions.sql with the same inputs and the same
  * expected minutes. Change one implementation and one of the two suites fails.
+ *
+ * Both doors onto the sessions table - a timer closed off and a duration typed
+ * in afterwards - go through that one SQL function, so "the two doors agree" is
+ * itself a property worth asserting rather than assuming. See the
+ * computePlaytime block below.
  */
 
 // PS5 as seeded: 10-minute blocks, 5-minute grace, 30-minute floor — the same
@@ -77,6 +88,73 @@ describe("computeLiveBill — the waiver", () => {
 
   it("ignores a negative waiver", () => {
     expect(computeLiveBill(66, ps5, -3).chargedMinutes).toBe(70);
+  });
+});
+
+describe("computePlaytime — the retroactive door prices identically", () => {
+  // The reason this change exists. record_session used to bill per typed minute
+  // floored at the minimum, so 62 minutes cost 62 min typed in and 60 min on a
+  // timer, while 36 cost 36 typed in and 40 on a timer. Same hour, two prices,
+  // and not even consistently cheaper - it flipped with where in the block you
+  // landed, so no price could be quoted in advance.
+  const durations = [1, 2, 29, 30, 31, 34, 35, 36, 40, 41, 59, 60, 61, 62, 65, 66, 70, 119, 120, 121];
+
+  it("charges exactly what the timer would charge, at every boundary", () => {
+    for (const m of durations) {
+      const typed = computePlaytime(m, ps5);
+      const timed = computeLiveBill(m, ps5);
+      expect(typed.chargedMinutes, `${m} min`).toBe(timed.chargedMinutes);
+      expect(typed.total, `${m} min`).toBe(timed.playtimeTotal);
+    }
+  });
+
+  it("bills the same table of boundaries the database asserts", () => {
+    expect(computePlaytime(2, ps5).chargedMinutes).toBe(30);
+    expect(computePlaytime(30, ps5).chargedMinutes).toBe(30);
+    expect(computePlaytime(34, ps5).chargedMinutes).toBe(30);
+    expect(computePlaytime(36, ps5).chargedMinutes).toBe(40);
+    expect(computePlaytime(62, ps5).chargedMinutes).toBe(60);
+    expect(computePlaytime(66, ps5).chargedMinutes).toBe(70);
+  });
+
+  it("no longer charges per typed minute", () => {
+    // The specific regression. If this ever passes at 62 again, the two doors
+    // have come apart.
+    expect(computePlaytime(62, ps5).chargedMinutes).not.toBe(62);
+    expect(computePlaytime(36, ps5).chargedMinutes).not.toBe(36);
+  });
+
+  it("never prices a longer session below a shorter one", () => {
+    // Monotonicity. A customer who stays longer cannot pay less, which is the
+    // one property a rounding rule can quietly break.
+    let previous = 0;
+    for (const m of durations) {
+      const charge = computePlaytime(m, ps5).total;
+      expect(charge, `${m} min`).toBeGreaterThanOrEqual(previous);
+      previous = charge;
+    }
+  });
+});
+
+describe("previewTotal — the retroactive modal", () => {
+  const lines: OrderLine[] = [
+    { productId: "p1", productName: "Crisps", qty: 3, unitPrice: 1000, lineTotal: 3000 },
+  ];
+
+  it("adds snacks to the block-rounded playtime", () => {
+    const p = previewTotal(62, ps5, lines);
+    expect(p.chargedMinutes).toBe(60);
+    expect(p.playtimeTotal).toBe(5000);
+    expect(p.snacksTotal).toBe(3000);
+    expect(p.total).toBe(8000);
+  });
+
+  it("matches the live preview for the same duration and the same snacks", () => {
+    const started = "2026-09-16T10:00:00.000Z";
+    const at62 = new Date(started).getTime() + 62 * 60_000;
+    const typed = previewTotal(62, ps5, lines);
+    const timed = previewLiveTotal(started, ps5, lines, at62);
+    expect(typed.total).toBe(timed.total);
   });
 });
 

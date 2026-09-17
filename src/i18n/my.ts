@@ -53,7 +53,7 @@ export const my: Record<string, string> = {
   "session.startedAt": "စတင်ချိန်",
   "pricing.increment": "တစ်ပိုင်း (မိနစ်)",
   "pricing.grace": "ကျေးဇူးချိန် (မိနစ်)",
-  "pricing.blocksHint": "ကျေးဇူးချိန် ကုန်ပါက တစ်ပိုင်းအလိုက် အဝိုင်းတင်မည်။ ဘိလိယက်နှင့် အတူတူ။",
+  "pricing.blocksHint": "အချိန်တိုင်းသည်ဖြစ်စေ ကိုယ်တိုင်ရိုက်ထည့်သည်ဖြစ်စေ ကျေးဇူးချိန်ကုန်ပါက တစ်ပိုင်းအလိုက် အဝိုင်းတင်မည်။ ဘိလိယက်နှင့် အတူတူ။",
 
   "record.title": "ဆက်ရှင်မှတ်တမ်းတင်",
   "record.subtitle": "ကြာချိန်နှင့် မုန့်ထည့်ပါ — စုစုပေါင်းကို တွက်ချက်ပေးပါမည်",
@@ -71,7 +71,8 @@ export const my: Record<string, string> = {
   "record.playtime": "ကစားချိန်",
   "record.snacksTotal": "မုန့်",
   "record.total": "စုစုပေါင်း",
-  "record.minCharge": "အနည်းဆုံး {m} မိနစ် တွက်ချက်",
+  "record.chargeRule": "အနည်းဆုံး {m} မိနစ်၊ ထို့နောက် ကျေးဇူးချိန် {g} မိနစ်ဖြင့် {inc} မိနစ်တစ်ပိုင်း",
+  "record.chargedAs": "{c} မိနစ်အဖြစ် တွက်ချက်မည်",
   "record.save": "ဆက်ရှင်သိမ်း",
   "record.saving": "သိမ်းဆည်းနေသည်…",
 
@@ -109,7 +110,7 @@ export const my: Record<string, string> = {
 
   "pricing.rateCard": "ဈေးနှုန်းကတ်",
   "pricing.ratePerHour": "တစ်နာရီနှုန်း",
-  "pricing.ratePerHourSub": "မိနစ်အလိုက် တွက်ချက်",
+  "pricing.ratePerHourSub": "ဤနှုန်းထားမှ တစ်ပိုင်းအလိုက် တွက်ချက်",
   "pricing.minMinutes": "အနည်းဆုံးမိနစ်",
   "pricing.minMinutesSub": "အတိုဆုံးတွက်ချက်ချိန်",
   "pricing.save": "နှုန်းသိမ်း",

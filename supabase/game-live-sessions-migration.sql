@@ -22,6 +22,17 @@
 -- same. They are PER TIER here, which is better than billiards' single global
 -- setting: a VIP room can bill in different blocks from a PS4.
 --
+-- ONE RULE, BOTH DOORS. record_session used to bill per-minute floored at the
+-- minimum, so the same hour cost a different amount depending on which screen
+-- it was entered from - 62 minutes was 62 min typed in and 60 min on a timer,
+-- while 36 minutes was 36 typed in and 40 on a timer. Not even consistently
+-- cheaper: it flipped with where in the block you landed, so nobody could quote
+-- a price in advance and the owner could not reconcile a day's takings against
+-- a rule. The rule IS the price list, so both doors now go through
+-- game.bill_minutes() below - one function, called from both, which is why they
+-- cannot drift apart again. A typed-in duration is treated as a measurement of
+-- how long the station was occupied, which is what it is.
+--
 -- IDEMPOTENT. Safe to re-run.
 
 begin;
@@ -43,7 +54,54 @@ alter table game.pricing
   add column if not exists grace_minutes int not null default 5
     check (grace_minutes >= 0);
 
--- ── 2. Sessions gain a lifecycle ────────────────────────────────────────────
+-- ── 2. The billing rule, in exactly one place ─────────────────────────────
+-- Both close_session (a measured elapsed time) and record_session (a duration
+-- typed in afterwards) charge through this. It exists so that they cannot be
+-- changed independently: there is no second copy of the arithmetic to forget.
+--
+--   billed = max(min_minutes, ceil(max(0, elapsed - grace) / increment) * increment)
+--   after  = max(min_minutes, billed - min(max(waive_blocks, 0), 1) * increment)
+--
+-- Call it twice to get both numbers - once with 0 blocks for what the session
+-- was worth, once with the request for what is actually charged. The difference
+-- is what was waived, which is the number the audit log records, and it is not
+-- always what was asked for: a waiver is never allowed through the tier floor.
+--
+-- immutable because it reads nothing. plpgsql rather than sql so that a zero
+-- increment raises instead of dividing by zero and returning null into a
+-- not-null money column, where it would surface far from its cause.
+create or replace function game.bill_minutes(
+  p_elapsed           numeric,
+  p_min_minutes       int,
+  p_increment_minutes int,
+  p_grace_minutes     int,
+  p_waive_blocks      int default 0
+)
+returns int language plpgsql immutable as $$
+declare
+  v_billed int;
+  v_waive  int;
+begin
+  if p_increment_minutes is null or p_increment_minutes <= 0 then
+    raise exception 'Billing increment must be positive (got %).', p_increment_minutes
+      using errcode = '22023';
+  end if;
+  if p_min_minutes is null or p_min_minutes < 0 then
+    raise exception 'Minimum charged minutes must not be negative (got %).', p_min_minutes
+      using errcode = '22023';
+  end if;
+
+  v_billed := greatest(
+    p_min_minutes,
+    (ceil(greatest(0, coalesce(p_elapsed, 0) - coalesce(p_grace_minutes, 0))
+          / p_increment_minutes) * p_increment_minutes)::int
+  );
+  -- At most one block, and never through the floor.
+  v_waive := least(greatest(coalesce(p_waive_blocks, 0), 0), 1) * p_increment_minutes;
+  return greatest(p_min_minutes, v_billed - v_waive);
+end $$;
+
+-- ── 3. Sessions gain a lifecycle ────────────────────────────────────────────
 -- `not null default 'closed'` backfills every historical row correctly in one
 -- step: everything that already exists is, by definition, finished.
 alter table game.sessions
@@ -86,7 +144,7 @@ create unique index if not exists sessions_one_active_per_station
 -- Historical rows have no started_at/ended_at. That is honest - we do not know
 -- when they began - and nothing reads them: reports key on created_at.
 
--- ── 3. Open a session ───────────────────────────────────────────────────────
+-- ── 4. Open a session ───────────────────────────────────────────────────────
 create or replace function game.open_session(
   p_station_id uuid,
   p_label      text default null
@@ -133,7 +191,7 @@ exception when unique_violation then
   raise exception '% already has a session running.', v_station.name using errcode = '23505';
 end $$;
 
--- ── 4. Add and remove snacks while the customer plays ───────────────────────
+-- ── 5. Add and remove snacks while the customer plays ───────────────────────
 -- Stock moves NOW, not at checkout: the crisps have physically left the shelf.
 create or replace function game.add_session_item(
   p_session_id uuid,
@@ -221,7 +279,7 @@ begin
   delete from order_lines where id = ol.id;
 end $$;
 
--- ── 5. Close and take payment ───────────────────────────────────────────────
+-- ── 6. Close and take payment ───────────────────────────────────────────────
 create or replace function game.close_session(
   p_session_id     uuid,
   p_payment_method text,
@@ -234,7 +292,6 @@ declare
   pr         pricing%rowtype;
   v_elapsed  numeric;
   v_billed   int;
-  v_waive    int;
   v_after    int;
   v_playtime numeric;
   v_snacks   numeric;
@@ -259,15 +316,12 @@ begin
 
   v_elapsed := greatest(0, extract(epoch from (v_now - s.started_at)) / 60);
 
-  -- Byte-for-byte the billiards rule. Grace first, then round up to a whole
-  -- block, never below the tier minimum.
-  v_billed := greatest(
-    pr.min_minutes,
-    ceil(greatest(0, v_elapsed - pr.grace_minutes) / pr.increment_minutes) * pr.increment_minutes
-  );
-  -- At most one block, and never through the floor.
-  v_waive  := least(greatest(coalesce(p_waive_blocks, 0), 0), 1) * pr.increment_minutes;
-  v_after  := greatest(pr.min_minutes, v_billed - v_waive);
+  -- What the session was worth, and what is actually being charged. The same
+  -- function record_session uses, so one duration cannot carry two prices.
+  v_billed := game.bill_minutes(v_elapsed, pr.min_minutes,
+                                pr.increment_minutes, pr.grace_minutes, 0);
+  v_after  := game.bill_minutes(v_elapsed, pr.min_minutes,
+                                pr.increment_minutes, pr.grace_minutes, p_waive_blocks);
 
   v_playtime := round(s.rate_per_hour * v_after / 60.0);
   select coalesce(sum(line_total), 0) into v_snacks from order_lines where session_id = s.id;
@@ -292,7 +346,7 @@ begin
   return s;
 end $$;
 
--- ── 6. Cancel an open session ───────────────────────────────────────────────
+-- ── 7. Cancel an open session ───────────────────────────────────────────────
 -- Not the same operation as void_session, which corrects a CLOSED one. Nothing
 -- was sold here, so the row goes and the stock comes back.
 --
@@ -349,7 +403,7 @@ begin
   update stations set occupied = false where id = s.station_id;
 end $$;
 
--- ── 7. occupied stops being independent truth ───────────────────────────────
+-- ── 8. occupied stops being independent truth ───────────────────────────────
 -- The session owns that flag now. The manual toggle stays - staff may want to
 -- mark a TV busy without billing anyone - but it can no longer contradict a
 -- live session, which is the one way this design could quietly rot.
@@ -370,7 +424,7 @@ begin
   end if;
 end $$;
 
--- ── 8. void_session must not swallow an open session ────────────────────────
+-- ── 9. void_session must not swallow an open session ────────────────────────
 -- It selects on `void_reason is null`, which an open session also satisfies, so
 -- it would happily "correct" a live session into a half-state with the station
 -- still showing occupied. Reproducing that whole function to add one guard
@@ -392,7 +446,7 @@ create trigger reject_void_of_open_session
   before update of void_reason on game.sessions
   for each row execute function game.reject_void_of_open_session();
 
--- ── 9. The audit row now knows about payment and waivers ────────────────────
+-- ── 10. The audit row now knows about payment and waivers ────────────────────
 -- Same trigger point as before (`update of total`, which both close_session and
 -- record_session reach exactly once), extended with the two new facts. The
 -- summary distinguishes the two paths by whether a timer ran, because "closed a
@@ -437,18 +491,162 @@ begin
   return new;
 end $$;
 
--- ── 10. Grants, following the project's hardening pattern ───────────────────
+-- ── 11. record_session comes onto the same rule ───────────────────────────
+-- Reproduced in full because create-or-replace has no way to patch a body. It
+-- is a MECHANICAL copy of the version in game-corrections-migration.sql with
+-- three deliberate edits, each marked below - a money function is no place to
+-- retype a hundred lines from memory.
+--
+-- Why it survives at all: staff forget to hit Start. Without this door the
+-- session's revenue is never recorded. What changes is only the price it
+-- charges, which is now game.bill_minutes() - the same call close_session
+-- makes, with the same tier's increment and grace.
+create or replace function game.record_session(
+  p_station_id uuid,
+  p_minutes    int,
+  p_items      jsonb default '[]'::jsonb,
+  p_label      text default null
+)
+returns uuid
+language plpgsql security definer
+set search_path = game, public as $$
+declare
+  v_station   game.stations%rowtype;
+  v_pricing   game.pricing%rowtype;
+  v_session   uuid;
+  v_charged   int;
+  v_playtime  numeric;
+  v_snacks    numeric := 0;
+  v_item      jsonb;
+  v_product   game.products%rowtype;
+  v_qty       int;
+  v_line      numeric;
+begin
+  if not game.is_active_staff() then
+    raise exception 'Not authorised to record sessions for the game shop.'
+      using errcode = '42501';
+  end if;
+
+  if p_minutes is null or p_minutes <= 0 then
+    raise exception 'Session length must be a positive number of minutes.'
+      using errcode = '22023';
+  end if;
+
+  select * into v_station from game.stations where id = p_station_id for update;
+  if not found then
+    raise exception 'Unknown station.' using errcode = '23503';
+  end if;
+
+  select * into v_pricing from game.pricing where tier = v_station.tier;
+  if not found then
+    raise exception 'No pricing configured for tier %.', v_station.tier
+      using errcode = '23503';
+  end if;
+
+  -- New since the lifecycle exists: typing a session in while one is RUNNING on
+  -- the same station would record a second, closed session AND clear occupied,
+  -- orphaning the live one. The `for update` above is what makes this hold
+  -- against open_session racing it.
+  if exists (
+    select 1 from game.sessions
+     where station_id = v_station.id and status = 'active'
+  ) then
+    raise exception '% has a session running. Close that one instead of recording another.',
+      v_station.name using errcode = '23514';
+  end if;
+
+  -- THE ONE CHANGE THAT MATTERS. Was `greatest(p_minutes, min_minutes)`, which
+  -- priced a typed-in hour differently from a timed one. `minutes` still keeps
+  -- the duration exactly as it was entered; only the CHARGE goes through the
+  -- shared rule. No waiver on this path - there is no block to forgive when
+  -- nobody was watching a clock.
+  v_charged  := game.bill_minutes(p_minutes, v_pricing.min_minutes,
+                                  v_pricing.increment_minutes,
+                                  v_pricing.grace_minutes, 0);
+  -- Multiply before dividing, as close_session does. Division first can lose a
+  -- kyat at a rounding boundary, and two paths to the same total must not
+  -- disagree by even that much.
+  v_playtime := round(v_pricing.rate_per_hour * v_charged / 60.0);
+
+  insert into game.sessions (
+    station_id, station_name, tier, rate_per_hour,
+    minutes, charged_minutes, playtime_total, snacks_total, total,
+    label, created_by
+  ) values (
+    v_station.id, v_station.name, v_station.tier, v_pricing.rate_per_hour,
+    p_minutes, v_charged, v_playtime, 0, v_playtime,
+    nullif(btrim(coalesce(p_label, '')), ''), auth.uid()
+  ) returning id into v_session;
+
+  for v_item in select * from jsonb_array_elements(coalesce(p_items, '[]'::jsonb))
+  loop
+    v_qty := coalesce((v_item->>'qty')::int, 0);
+    continue when v_qty <= 0;
+
+    select * into v_product
+      from game.products
+     where id = (v_item->>'productId')::uuid
+       for update;
+    if not found then
+      raise exception 'Unknown product in order.' using errcode = '23503';
+    end if;
+    if not v_product.active then
+      raise exception 'Product % is no longer on sale.', v_product.name_en
+        using errcode = '23514';
+    end if;
+    if v_product.stock is not null and v_product.stock < v_qty then
+      raise exception 'Not enough % in stock (% left, % requested).',
+        v_product.name_en, v_product.stock, v_qty using errcode = '23514';
+    end if;
+
+    v_line   := v_product.price * v_qty;
+    v_snacks := v_snacks + v_line;
+
+    insert into game.order_lines
+      (session_id, product_id, product_name, qty, unit_price, line_total)
+    values
+      (v_session, v_product.id, v_product.name_en, v_qty, v_product.price, v_line);
+
+    if v_product.stock is not null then
+      update game.products set stock = stock - v_qty where id = v_product.id;
+      insert into game.stock_movements (product_id, change, reason, session_id, created_by)
+        values (v_product.id, -v_qty, 'sale', v_session, auth.uid());
+    end if;
+  end loop;
+
+  update game.sessions
+     set snacks_total = v_snacks,
+         total        = v_playtime + v_snacks
+   where id = v_session;
+
+  update game.stations set occupied = false where id = v_station.id;
+
+  return v_session;
+end $$;
+
+-- ── 12. Grants, following the project's hardening pattern ───────────────────
 revoke all on function game.open_session(uuid, text)                  from public, anon;
 revoke all on function game.add_session_item(uuid, uuid, int)         from public, anon;
 revoke all on function game.remove_session_item(uuid)                 from public, anon;
 revoke all on function game.close_session(uuid, text, int)            from public, anon;
 revoke all on function game.cancel_active_session(uuid, text)         from public, anon;
+revoke all on function game.bill_minutes(numeric, int, int, int, int) from public, anon;
+-- record_session predates this file; `from public` was already revoked in
+-- game-schema-migration.sql and anon is added here because an anonymous
+-- visitor must never be able to book revenue. Narrowing only.
+revoke all on function game.record_session(uuid, int, jsonb, text)   from public, anon;
 
 grant execute on function game.open_session(uuid, text)               to authenticated, service_role;
 grant execute on function game.add_session_item(uuid, uuid, int)      to authenticated, service_role;
 grant execute on function game.remove_session_item(uuid)              to authenticated, service_role;
 grant execute on function game.close_session(uuid, text, int)         to authenticated, service_role;
 grant execute on function game.cancel_active_session(uuid, text)      to authenticated, service_role;
+grant execute on function game.bill_minutes(numeric, int, int, int, int) to authenticated, service_role;
+-- create-or-replace keeps the privileges record_session already had; restated
+-- so this file describes the end state on its own. Deliberately NOT widened to
+-- service_role like the new functions above - replacing a body is no reason to
+-- change who may call a money function that has been live.
+grant execute on function game.record_session(uuid, int, jsonb, text) to authenticated;
 
 commit;
 
@@ -458,3 +656,5 @@ notify pgrst, 'reload schema';
 --   select tier, rate_per_hour, min_minutes, increment_minutes, grace_minutes from game.pricing;
 --   select indexname from pg_indexes where tablename='sessions' and schemaname='game';
 --   select status, count(*) from game.sessions group by status;
+--   -- both doors must agree; 30/30/40/60/70 for a 30-min-min, 10-block, 5-grace tier
+--   select m, game.bill_minutes(m, 30, 10, 5, 0) from unnest(array[2,30,36,62,66]) m;
