@@ -19,8 +19,12 @@ export function formatCompactMMK(amount: number): string {
 
 /** Minutes -> "2h 15m" / "45m". */
 export function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
+  // Round FIRST, then split. Rounding the remainder on its own turns 59.7 into
+  // "60m" instead of "1h" - unreachable while every caller passed whole
+  // minutes, reachable the moment the timeline started passing live fractions.
+  const total = Math.round(minutes);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   if (h > 0 && m > 0) return `${h}h ${m}m`;
   if (h > 0) return `${h}h`;
   return `${m}m`;

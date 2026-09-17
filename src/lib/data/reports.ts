@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
 import { YANGON_OFFSET_MIN, yangonDay, yangonDayStart } from "./yangon";
+import { buildTimeline, type TimelineData } from "@/lib/timeline";
 import type { OrderLine, Session, Tier } from "@/lib/types";
 
 /**
@@ -416,4 +417,95 @@ export async function getSessionHistory(
     ),
     staffList: (directory ?? []).map((r) => ({ id: r.id, name: r.name })),
   };
+}
+
+// ── station occupancy timeline ──────────────────────────────────────────────
+// One Gantt-style row per station for a single Yangon day: colored where a
+// session ran, empty where the station sat free. Pure layout maths lives in
+// src/lib/timeline.ts; this just reads the day's stations and sessions.
+
+export type StationTimelineResult = { ok: true; data: TimelineData } | { ok: false; message: string };
+
+interface TimelineSessionRow {
+  id: string;
+  station_id: string | null;
+  station_name: string;
+  tier: Tier;
+  minutes: number;
+  total: number;
+  label: string | null;
+  status: "active" | "closed";
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+}
+
+export async function getStationTimeline(day: string): Promise<StationTimelineResult> {
+  if (!isSupabaseConfigured()) {
+    return {
+      ok: false,
+      message:
+        "Supabase is not configured for this deployment. Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and DATA_SOURCE=supabase on the Vercel project myathida-game.",
+    };
+  }
+
+  const dayStart = yangonDayStart(day);
+  if (!dayStart) return { ok: false, message: "Invalid date." };
+  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+
+  const supabase = await createClient();
+
+  // A session belongs to the day it started. Typed-in rows have no
+  // started_at, so those fall back to created_at instead.
+  const filter =
+    `and(started_at.gte.${dayStart.toISOString()},started_at.lt.${dayEnd.toISOString()}),` +
+    `and(started_at.is.null,created_at.gte.${dayStart.toISOString()},created_at.lt.${dayEnd.toISOString()})`;
+
+  const [stationsRes, sessionsRes] = await Promise.all([
+    supabase.from("stations").select("id,name,tier,sort_order").order("sort_order"),
+    supabase
+      .from("sessions")
+      .select("id,station_id,station_name,tier,minutes,total,label,status,started_at,ended_at,created_at")
+      // A corrected session is zeroed out and re-recorded, so its original
+      // span would double-count played time if left in.
+      .is("voided_at", null)
+      .or(filter),
+  ]);
+
+  if (stationsRes.error) {
+    console.error("[reports] stations read failed", stationsRes.error);
+    return { ok: false, message: `Could not load stations (${stationsRes.error.code ?? "unknown"}).` };
+  }
+  if (sessionsRes.error) {
+    return { ok: false, message: describeSessionsError(sessionsRes.error) };
+  }
+
+  const stations = (
+    (stationsRes.data as { id: string; name: string; tier: Tier; sort_order: number }[] | null) ?? []
+  ).map((r) => ({ id: r.id, name: r.name, tier: r.tier, sortOrder: r.sort_order }));
+
+  const sessions = ((sessionsRes.data as TimelineSessionRow[] | null) ?? []).map((r) => ({
+    id: r.id,
+    stationId: r.station_id ?? "",
+    stationName: r.station_name,
+    tier: r.tier,
+    minutes: r.minutes,
+    total: Number(r.total),
+    label: r.label,
+    status: r.status,
+    startedAt: r.started_at,
+    endedAt: r.ended_at,
+    createdAt: r.created_at,
+  }));
+
+  const data = buildTimeline({
+    day,
+    dayStartMs: dayStart.getTime(),
+    nowMs: Date.now(),
+    isToday: day === yangonDay(new Date().toISOString()),
+    stations,
+    sessions,
+  });
+
+  return { ok: true, data };
 }

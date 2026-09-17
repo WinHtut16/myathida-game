@@ -1,5 +1,9 @@
 import type { Bucket } from "@/lib/data/reports";
-import { formatMMK } from "@/lib/format";
+import type { TimelineData } from "@/lib/timeline";
+import { formatDuration, formatMMK } from "@/lib/format";
+import type { MessageKey } from "@/i18n";
+
+type T = (k: MessageKey) => string;
 
 /**
  * Charts as server-rendered SVG. No charting library, and no client JS at all.
@@ -181,5 +185,120 @@ export function Sparkline({ values }: { values: number[] }) {
         />
       ))}
     </div>
+  );
+}
+
+/**
+ * Station occupancy timeline: a Gantt-style row per station, played spans laid
+ * out across the axis returned by `buildTimeline`. Same server-rendered-HTML
+ * approach as the charts above — the position math is done once on the
+ * server (percentages against axisStart/axisEnd), so no client JS runs here
+ * either.
+ */
+export function StationTimeline({ data, t }: { data: TimelineData; t: T }) {
+  const { rows, axisStart, axisEnd, ticks, now, isToday } = data;
+  const span = axisEnd - axisStart;
+  const pct = (ms: number) => `${(Math.min(Math.max(ms, axisStart), axisEnd) - axisStart) / span * 100}%`;
+
+  const hasAnySpan = rows.some((r) => r.spans.length > 0);
+  if (!hasAnySpan) return <EmptyPlot label={t("reports.timelineEmpty")} />;
+
+  const nowPct = isToday && now >= axisStart && now <= axisEnd ? pct(now) : null;
+
+  return (
+    <div>
+      <div className="flex flex-col gap-2">
+        {rows.map((row) => (
+          <div key={row.stationId} className="flex items-center gap-3">
+            <div className="w-[64px] sm:w-[106px] flex-none text-xs text-text-secondary truncate">
+              {row.stationName}
+            </div>
+            <div className="relative flex-1 h-[22px] bg-line-faint rounded-sm overflow-hidden">
+              {ticks.map((tick) => (
+                <div
+                  key={tick.at}
+                  className="absolute top-0 bottom-0 w-px bg-line"
+                  style={{ left: pct(tick.at) }}
+                />
+              ))}
+              {row.spans.map((s) => (
+                <div
+                  key={s.id}
+                  title={spanTooltip(s, t)}
+                  className="absolute top-0 bottom-0 rounded-sm"
+                  style={{
+                    left: pct(s.start),
+                    width: `calc(${pct(s.end)} - ${pct(s.start)})`,
+                    background: s.estimated
+                      ? "repeating-linear-gradient(45deg, var(--game-status-active) 0, var(--game-status-active) 4px, var(--game-status-active-bg) 4px, var(--game-status-active-bg) 8px)"
+                      : "var(--game-status-active)",
+                    minWidth: 2,
+                  }}
+                />
+              ))}
+              {nowPct && (
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-status-expired"
+                  style={{ left: nowPct }}
+                />
+              )}
+            </div>
+            <div className="w-[64px] sm:w-[84px] flex-none text-right tabular-nums text-xs font-semibold">
+              {row.playedMinutes > 0 ? formatDuration(row.playedMinutes) : "—"}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Positioned with the same pct() the gridlines above use, NOT with flex.
+          Even flex distribution only agrees with the gridlines when the axis
+          span is an exact multiple of the tick step, and tickStepHours returns
+          2h for anything from 9 to 16 hours - so a 9-hour day drew 5 ticks over
+          8 hours and put the last label 11% to the right of its own line. One
+          source of truth for horizontal position is the only version that
+          cannot drift apart again. */}
+      <div className="relative h-4 mt-1.5 ml-[76px] sm:ml-[118px] mr-[76px] sm:mr-[96px]">
+        {ticks.map((tick) => (
+          <span
+            key={tick.at}
+            className="absolute text-2xs text-text-muted tabular-nums -translate-x-1/2 whitespace-nowrap"
+            style={{ left: pct(tick.at) }}
+          >
+            {tick.label}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-4 mt-4 text-2xs text-text-muted">
+        <LegendSwatch style={{ background: "var(--game-status-active)" }} label={t("reports.timelinePlayed")} />
+        <LegendSwatch
+          style={{
+            background:
+              "repeating-linear-gradient(45deg, var(--game-status-active) 0, var(--game-status-active) 3px, var(--game-status-active-bg) 3px, var(--game-status-active-bg) 6px)",
+          }}
+          label={t("reports.timelineEstimated")}
+        />
+        <LegendSwatch style={{ background: "var(--game-line-faint)" }} label={t("reports.timelineFree")} />
+      </div>
+    </div>
+  );
+}
+
+function spanTooltip(
+  s: TimelineData["rows"][number]["spans"][number],
+  t: T,
+): string {
+  const parts = [`${s.startLabel} – ${s.endLabel}`, formatDuration(s.minutes)];
+  if (s.total > 0) parts.push(`${formatMMK(s.total)} MMK`);
+  if (s.estimated) parts.push(t("reports.timelineEstimated"));
+  if (s.clipped) parts.push(t("reports.timelineClipped"));
+  if (s.live) parts.push(t("reports.timelineLive"));
+  return parts.join(" · ");
+}
+
+function LegendSwatch({ style, label }: { style: React.CSSProperties; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="w-3 h-3 rounded-sm flex-none" style={style} />
+      {label}
+    </span>
   );
 }

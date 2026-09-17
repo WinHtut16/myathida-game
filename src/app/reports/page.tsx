@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { getReports, isPeriod, type Period, type ReportsData } from "@/lib/data/reports";
+import { getReports, getStationTimeline, isPeriod, type Period, type ReportsData, type StationTimelineResult } from "@/lib/data/reports";
+import { yangonDay } from "@/lib/data/yangon";
 import { getCurrentUser } from "@/lib/data/session";
-import { ColumnChart, RankedBars } from "@/components/reports/charts";
+import { ColumnChart, RankedBars, StationTimeline } from "@/components/reports/charts";
 import { StatTile } from "@/components/reports/StatTile";
 import { SessionTable } from "@/components/reports/SessionTable";
 import { formatMMK } from "@/lib/format";
@@ -32,11 +33,19 @@ type T = (k: MessageKey) => string;
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; day?: string }>;
 }) {
   const params = await searchParams;
   const period: Period = isPeriod(params.period) ? params.period : "7d";
-  const [data, { t }, user] = await Promise.all([getReports(period), getT(), getCurrentUser()]);
+  const today = yangonDay(new Date().toISOString());
+  const day = isValidDay(params.day) && params.day! <= today ? params.day! : today;
+
+  const [data, timeline, { t }, user] = await Promise.all([
+    getReports(period),
+    getStationTimeline(day),
+    getT(),
+    getCurrentUser(),
+  ]);
 
   if (!data.ok) {
     return (
@@ -57,19 +66,80 @@ export default async function ReportsPage({
   }
 
   return (
-    <AppShell title={t("reports.title")} subtitle={t(LABEL_KEYS[period])} right={<PeriodTabs active={period} t={t} />}>
-      <Body data={data} t={t} canCorrect={user?.isSuperadmin ?? false} />
+    <AppShell title={t("reports.title")} subtitle={t(LABEL_KEYS[period])} right={<PeriodTabs active={period} day={day} t={t} />}>
+      <Body data={data} timeline={timeline} period={period} day={day} today={today} t={t} canCorrect={user?.isSuperadmin ?? false} />
     </AppShell>
   );
 }
 
-function PeriodTabs({ active, t }: { active: Period; t: T }) {
+/**
+ * Shape is not enough. "2026-01-99" passes a regex and also passes `<= today`
+ * as a string compare, and then shiftDay() throws RangeError on
+ * `new Date(NaN).toISOString()` - a 500 on the whole page, from a URL. Dates
+ * like "2026-02-31" are worse: V8 rolls them into March and the page quietly
+ * charts the wrong day. Round-tripping catches both, which is the same standard
+ * yangonDayStart() in lib/data/yangon.ts already holds itself to.
+ */
+function isValidDay(v: string | undefined): v is string {
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const ms = Date.parse(`${v}T00:00:00.000Z`);
+  return Number.isFinite(ms) && new Date(ms).toISOString().slice(0, 10) === v;
+}
+
+/** "YYYY-MM-DD" +/- one calendar day. Pure string math, no timezone involved. */
+function shiftDay(day: string, deltaDays: number): string {
+  const ms = Date.parse(`${day}T00:00:00Z`) + deltaDays * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function formatDayLabel(day: string): string {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function DaySwitcher({ period, day, today, t }: { period: Period; day: string; today: string; t: T }) {
+  const prev = shiftDay(day, -1);
+  const next = shiftDay(day, 1);
+  const nextDisabled = day >= today;
+  return (
+    <span className="flex items-center gap-1">
+      <Link
+        href={`/reports?period=${period}&day=${prev}`}
+        prefetch={false}
+        aria-label={t("reports.prevDay")}
+        className="w-6 h-6 flex items-center justify-center rounded hover:bg-line-faint"
+      >
+        <ChevronLeft size={14} />
+      </Link>
+      <span className="w-16 text-center">{day === today ? t("reports.today") : formatDayLabel(day)}</span>
+      {nextDisabled ? (
+        <span className="w-6 h-6 flex items-center justify-center text-text-faint">
+          <ChevronRight size={14} />
+        </span>
+      ) : (
+        <Link
+          href={`/reports?period=${period}&day=${next}`}
+          prefetch={false}
+          aria-label={t("reports.nextDay")}
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-line-faint"
+        >
+          <ChevronRight size={14} />
+        </Link>
+      )}
+    </span>
+  );
+}
+
+function PeriodTabs({ active, day, t }: { active: Period; day: string; t: T }) {
   return (
     <div className="flex bg-line-faint border border-line-soft rounded-md p-[3px] text-xs font-semibold">
       {(Object.keys(LABEL_KEYS) as Period[]).map((p) => (
         <Link
           key={p}
-          href={`/reports?period=${p}`}
+          href={`/reports?period=${p}&day=${day}`}
           prefetch={false}
           className={`px-2 sm:px-3 py-1.5 rounded-md whitespace-nowrap ${
             p === active ? "bg-accent text-white" : "text-text-secondary"
@@ -82,7 +152,23 @@ function PeriodTabs({ active, t }: { active: Period; t: T }) {
   );
 }
 
-function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: boolean }) {
+function Body({
+  data,
+  timeline,
+  period,
+  day,
+  today,
+  t,
+  canCorrect,
+}: {
+  data: ReportsData;
+  timeline: StationTimelineResult;
+  period: Period;
+  day: string;
+  today: string;
+  t: T;
+  canCorrect: boolean;
+}) {
   const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames } = data;
 
   // Sparkline for the hero tile: the daily revenue already computed, tail-end.
@@ -133,6 +219,15 @@ function Body({ data, t, canCorrect }: { data: ReportsData; t: T; canCorrect: bo
           previous={previous?.snacks ?? null}
         />
       </div>
+
+      {/* ── station occupancy timeline ───────────────────────────────────── */}
+      <Card title={t("reports.timeline")} note={<DaySwitcher period={period} day={day} today={today} t={t} />}>
+        {timeline.ok ? (
+          <StationTimeline data={timeline.data} t={t} />
+        ) : (
+          <p className="text-sm text-text-secondary m-0">{timeline.message}</p>
+        )}
+      </Card>
 
       {/* ── trend + peak hours ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
@@ -185,7 +280,7 @@ function Card({
   children,
 }: {
   title: string;
-  note?: string;
+  note?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
