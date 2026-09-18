@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
@@ -27,7 +28,16 @@ export interface CurrentUser {
   isSuperadmin: boolean;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/**
+ * Wrapped in React's cache() so a render that touches getCurrentUser() more
+ * than once - the root layout resolves it for the shell, and most pages
+ * resolve it again for their own canEdit/isSuperadmin check - pays for the
+ * auth.getUser() call and the is_superadmin() RPC once per request, not once
+ * per call site. Same pattern as getStaffDirectory() in ./staff-directory,
+ * and for the same reason: NOT cached across requests, since a revoked grant
+ * must take effect on the very next page load.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();
@@ -74,4 +84,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const isSuperadmin = superRes.error ? me.role === "superadmin" : superRes.data === true;
   const role: Role = isSuperadmin ? "superadmin" : "admin";
   return { id: me.id, name: me.name, role, isSuperadmin };
-}
+});

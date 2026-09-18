@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
@@ -47,22 +46,6 @@ export async function createClient() {
           }
         },
       },
-    },
-  );
-}
-
-/**
- * Service-role client. Bypasses RLS entirely, so it is only for creating staff
- * accounts, which needs admin auth powers no signed-in user has. Never use it
- * to "fix" a permissions error - that removes the check rather than the cause.
- */
-export function createServiceClient() {
-  return createSupabaseClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!,
-    {
-      db: { schema: "game" },
-      auth: { autoRefreshToken: false, persistSession: false },
     },
   );
 }

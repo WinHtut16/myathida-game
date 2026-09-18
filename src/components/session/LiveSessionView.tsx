@@ -33,7 +33,6 @@ export function LiveSessionView({
 }) {
   const { t, locale } = useT();
   const router = useRouter();
-  const now = useNow();
   const [error, setError] = useState<string | null>(null);
   const [pane, setPane] = useState<"none" | "close" | "cancel">("none");
   const [method, setMethod] = useState<PaymentMethod>("cash");
@@ -44,17 +43,6 @@ export function LiveSessionView({
   // Someone else may add a snack from the other phone. Same stand-in for
   // Realtime the floor board uses.
   useAutoRefresh();
-
-  /**
-   * The running bill, recomputed every tick from the server's startedAt.
-   *
-   * This is the same rule game.close_session() charges by - pinned to it by
-   * pricing.test.ts and db-tests/97-game-live-sessions.sql, which assert the
-   * identical table of boundaries. The server is still the authority; this
-   * exists so the staff member sees the number they are about to charge rather
-   * than an approximation of it.
-   */
-  const bill = previewLiveTotal(session.startedAt, pricing, session.orders, now, waive ? 1 : 0);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
@@ -113,35 +101,7 @@ export function LiveSessionView({
         <div className="max-w-[860px] grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* ── the clock and the money ── */}
           <section className="bg-surface border border-line rounded-xl shadow-card p-5">
-            <div className="text-2xs font-semibold uppercase tracking-wide text-text-muted">
-              {t("session.elapsed")}
-            </div>
-            <div className="font-display text-5xl font-semibold tabular-nums tracking-tight text-text leading-none mt-1">
-              {formatElapsed(bill.elapsed)}
-            </div>
-            <div className="text-xs text-text-muted mt-2">
-              {t("session.billingFor")} {bill.chargedMinutes} {t("floor.minutesShort")}
-              {" · "}
-              {formatMMK(pricing.ratePerHour)}/{t("floor.hourUnit")}
-            </div>
-
-            <dl className="mt-5 border-t border-line pt-4 space-y-2 text-sm">
-              <Row label={t("session.playtime")} value={formatMMK(bill.playtimeTotal)} />
-              <Row label={t("session.snacks")} value={formatMMK(bill.snacksTotal)} />
-              {bill.waivedMinutes > 0 && (
-                <Row
-                  label={t("session.waive")}
-                  value={`−${bill.waivedMinutes} ${t("floor.minutesShort")}`}
-                  muted
-                />
-              )}
-              <div className="flex items-center justify-between border-t border-line pt-3 mt-1">
-                <dt className="font-semibold text-text">{t("session.total")}</dt>
-                <dd className="font-display text-2xl font-semibold tabular-nums text-text">
-                  {formatMMK(bill.total)}
-                </dd>
-              </div>
-            </dl>
+            <LiveBill session={session} pricing={pricing} waive={waive} />
 
             {pane === "none" && (
               <div className="mt-5 flex flex-col sm:flex-row gap-2">
@@ -208,7 +168,7 @@ export function LiveSessionView({
                     disabled={isPending}
                     className="flex-1 bg-accent text-white rounded-md py-2.5 text-sm font-semibold hover:bg-accent-strong disabled:opacity-60 transition-colors"
                   >
-                    {t("session.confirmClose")} · {formatMMK(bill.total)}
+                    <LiveTotalLabel session={session} pricing={pricing} waive={waive} />
                   </button>
                   <button
                     onClick={() => setPane("none")}
@@ -335,5 +295,95 @@ function Row({ label, value, muted = false }: { label: string; value: string; mu
       <dt className={muted ? "text-text-muted" : "text-text-secondary"}>{label}</dt>
       <dd className={cx("tabular-nums", muted ? "text-text-muted" : "text-text")}>{value}</dd>
     </div>
+  );
+}
+
+/**
+ * The clock and the money, ticking once a second from useNow(). Split out of
+ * LiveSessionView so the tick re-renders only this section - the snack picker
+ * over every product, and the close/cancel panes, used to re-render along
+ * with it every second because useNow() sat at the top of the whole screen.
+ */
+function LiveBill({
+  session,
+  pricing,
+  waive,
+}: {
+  session: ActiveSession;
+  pricing: Pricing;
+  waive: boolean;
+}) {
+  const { t } = useT();
+  const now = useNow();
+
+  /**
+   * The running bill, recomputed every tick from the server's startedAt.
+   *
+   * This is the same rule game.close_session() charges by - pinned to it by
+   * pricing.test.ts and db-tests/97-game-live-sessions.sql, which assert the
+   * identical table of boundaries. The server is still the authority; this
+   * exists so the staff member sees the number they are about to charge rather
+   * than an approximation of it.
+   */
+  const bill = previewLiveTotal(session.startedAt, pricing, session.orders, now, waive ? 1 : 0);
+
+  return (
+    <>
+      <div className="text-2xs font-semibold uppercase tracking-wide text-text-muted">
+        {t("session.elapsed")}
+      </div>
+      <div className="font-display text-5xl font-semibold tabular-nums tracking-tight text-text leading-none mt-1">
+        {formatElapsed(bill.elapsed)}
+      </div>
+      <div className="text-xs text-text-muted mt-2">
+        {t("session.billingFor")} {bill.chargedMinutes} {t("floor.minutesShort")}
+        {" · "}
+        {formatMMK(pricing.ratePerHour)}/{t("floor.hourUnit")}
+      </div>
+
+      <dl className="mt-5 border-t border-line pt-4 space-y-2 text-sm">
+        <Row label={t("session.playtime")} value={formatMMK(bill.playtimeTotal)} />
+        <Row label={t("session.snacks")} value={formatMMK(bill.snacksTotal)} />
+        {bill.waivedMinutes > 0 && (
+          <Row
+            label={t("session.waive")}
+            value={`−${bill.waivedMinutes} ${t("floor.minutesShort")}`}
+            muted
+          />
+        )}
+        <div className="flex items-center justify-between border-t border-line pt-3 mt-1">
+          <dt className="font-semibold text-text">{t("session.total")}</dt>
+          <dd className="font-display text-2xl font-semibold tabular-nums text-text">
+            {formatMMK(bill.total)}
+          </dd>
+        </div>
+      </dl>
+    </>
+  );
+}
+
+/**
+ * Just the confirm-close button's total, ticking on its own. The close pane
+ * needs the live figure too (the bill keeps moving while the pane is open),
+ * so this is its own small ticker rather than reading LiveBill's state -
+ * they are two separate elements on screen and neither should force the
+ * other, or the rest of the page, to re-render every second.
+ */
+function LiveTotalLabel({
+  session,
+  pricing,
+  waive,
+}: {
+  session: ActiveSession;
+  pricing: Pricing;
+  waive: boolean;
+}) {
+  const { t } = useT();
+  const now = useNow();
+  const bill = previewLiveTotal(session.startedAt, pricing, session.orders, now, waive ? 1 : 0);
+  return (
+    <>
+      {t("session.confirmClose")} · {formatMMK(bill.total)}
+    </>
   );
 }

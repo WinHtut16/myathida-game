@@ -23,6 +23,7 @@ export function SessionTable({
   scroll = true,
   viewAllHref,
   emptyLabel,
+  total,
 }: {
   sessions: Session[];
   staffNames: Record<string, string>;
@@ -35,10 +36,19 @@ export function SessionTable({
   viewAllHref?: string;
   /** Overrides the "nothing recorded" line (e.g. "no rows match the filters"). */
   emptyLabel?: string;
+  /**
+   * Count shown in the header. Defaults to `sessions.length`, which is right
+   * when `sessions` IS the whole list (the full-history page's current page).
+   * The dashboard passes only a short tail of a larger window, so it passes
+   * the window's real total here - otherwise the header would understate how
+   * many sessions the period actually had.
+   */
+  total?: number;
 }) {
   const { t } = useT();
   const [receipt, setReceipt] = useState<Session | null>(null);
   const cols = "md:grid-cols-[1.5fr_1fr_.8fr_.9fr_.9fr_.5fr]";
+  const count = total ?? sessions.length;
 
   return (
     <div className="bg-surface border border-line rounded-lg overflow-hidden">
@@ -46,7 +56,7 @@ export function SessionTable({
         <h2 className="text-sm font-bold m-0">{t("reports.history")}</h2>
         <div className="flex items-baseline gap-3">
           <span className="text-2xs text-text-muted tabular-nums">
-            {sessions.length} {t(sessions.length === 1 ? "reports.sessionOne" : "reports.sessionMany")}
+            {count} {t(count === 1 ? "reports.sessionOne" : "reports.sessionMany")}
           </span>
           {viewAllHref && (
             <Link

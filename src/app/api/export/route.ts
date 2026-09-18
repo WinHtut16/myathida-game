@@ -146,8 +146,16 @@ export async function GET(req: Request) {
     // Added first so it lands as the first tab; filled in once counts exist.
     const readme = workbook.addWorksheet("README");
 
+    // One table at a time used to mean one round trip in flight at once -
+    // for a dozen tables that is a dozen sequential paginated reads, each
+    // waiting on the last. They don't depend on each other, so fetch every
+    // table's rows in parallel and only then build the worksheets, in the
+    // same SPECS order as before (results[i] lines up with SPECS[i]), so the
+    // tab order on the sheet is unaffected.
+    const results = await Promise.all(SPECS.map((spec) => fetchAll(supabase, spec, bounds)));
+
     const counts: { sheet: string; count: number; scoped: boolean }[] = [];
-    for (const spec of SPECS) {
+    SPECS.forEach((spec, i) => {
       const ws = workbook.addWorksheet(spec.sheet);
       ws.columns = spec.columns.map((c) => ({
         header: c.header,
@@ -157,12 +165,12 @@ export async function GET(req: Request) {
       ws.getRow(1).font = { bold: true };
       ws.views = [{ state: "frozen", ySplit: 1 }];
 
-      const data = await fetchAll(supabase, spec, bounds);
+      const data = results[i];
       for (const row of data) {
         ws.addRow(spec.columns.map((c) => row[c.key] ?? null));
       }
       counts.push({ sheet: spec.sheet, count: data.length, scoped: !!spec.filter });
-    }
+    });
 
     readme.columns = [
       { header: "Field", key: "field", width: 26 },

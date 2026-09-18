@@ -49,6 +49,13 @@ const myanmar = Noto_Sans_Myanmar({
   weight: ["400", "500", "600"],
   variable: "--font-noto-my",
   display: "swap",
+  // next/font preloads every font used in the root layout by default. Most
+  // sessions render html[lang="en"], where this font is never applied (see
+  // the html[lang="my"] rule in globals.css that scopes it) - so that preload
+  // shipped Myanmar glyph files to English-locale devices on every page load
+  // for no reason. Without preload the file is still fetched, just only when
+  // something on the page actually needs it.
+  preload: false,
 });
 
 export const metadata: Metadata = {

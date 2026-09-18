@@ -5,20 +5,17 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
 import { YANGON_OFFSET_MIN, yangonDay, yangonDayStart } from "./yangon";
 import { buildTimeline, type TimelineData } from "@/lib/timeline";
+import { bucketByDay, bucketByHour, type Bucket } from "@/lib/report-buckets";
 import type { OrderLine, Session, Tier } from "@/lib/types";
 
 /**
  * Server-side reads and aggregation for the reports screen.
  *
  * The Yangon-local date maths this leans on (why a fixed +06:30 offset is
- * correct, why UTC bucketing would be wrong) lives in ./yangon.
+ * correct, why UTC bucketing would be wrong) lives in ./yangon. Revenue
+ * bucketing by day/hour lives in @/lib/report-buckets, split out so it can be
+ * unit tested without a database.
  */
-
-/** Local hour of day, 0-23. */
-function yangonHour(iso: string): number {
-  const shifted = new Date(new Date(iso).getTime() + YANGON_OFFSET_MIN * 60_000);
-  return shifted.getUTCHours();
-}
 
 /** Midnight Yangon, `daysAgo` days back, as an absolute instant. */
 function yangonMidnight(daysAgo: number): Date {
@@ -52,11 +49,8 @@ export interface Totals {
   avgPerSession: number;
 }
 
-export interface Bucket {
-  key: string;
-  label: string;
-  value: number;
-}
+/** Re-exported from @/lib/report-buckets so `charts.tsx` has one place to import it from. */
+export type { Bucket } from "@/lib/report-buckets";
 
 export interface ReportsData {
   ok: true;
@@ -87,6 +81,15 @@ const ROW_CAP = 5000;
 
 /** Rows per page on the full session-history browser. */
 export const SESSION_HISTORY_PAGE_SIZE = 50;
+
+/**
+ * Rows shown in the dashboard's session table - a short recent tail, not the
+ * whole (up to ROW_CAP) window. The "View all" link goes to
+ * getSessionHistory() for anyone who wants more. Without this the "30d"/"all"
+ * views could hand thousands of rows, orders included, to the browser for a
+ * table that only ever showed a screenful.
+ */
+export const RECENT_TAIL = 20;
 
 /**
  * The column list every session read shares. Kept in one place so the reports
@@ -247,35 +250,15 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
   // ── daily buckets, including days with no sales ──────────────────────────
   // Gaps must be drawn as zero, not skipped: a bar chart that silently omits
-  // the quiet days makes a bad week look like a busy one.
-  const span = days ?? Math.max(1, distinctDays(current));
-  const byDay: Bucket[] = [];
-  for (let i = span - 1; i >= 0; i--) {
-    const d = yangonMidnight(i);
-    const key = yangonDay(d.toISOString());
-    byDay.push({
-      key,
-      label: key.slice(5).replace("-", "/"),
-      value: current
-        .filter((s) => yangonDay(s.createdAt) === key)
-        .reduce((n, s) => n + s.total, 0),
-    });
-  }
+  // the quiet days makes a bad week look like a busy one. For "all", the span
+  // runs from the earliest session's Yangon day to today rather than a count
+  // of distinct selling days — see the doc comment on bucketByDay for why.
+  const byDay = bucketByDay(current, days, Date.now());
 
   // ── opening hours ────────────────────────────────────────────────────────
   // Every hour 0-23 would be mostly empty air; the shop's own range is the
   // useful window, widened a little so a late night is visible.
-  const hours = current.map((s) => yangonHour(s.createdAt));
-  const lo = hours.length ? Math.min(...hours) : 10;
-  const hi = hours.length ? Math.max(...hours) : 23;
-  const byHour: Bucket[] = [];
-  for (let h = lo; h <= hi; h++) {
-    byHour.push({
-      key: String(h),
-      label: `${String(h).padStart(2, "0")}`,
-      value: current.filter((s) => yangonHour(s.createdAt) === h).reduce((n, s) => n + s.total, 0),
-    });
-  }
+  const byHour = bucketByHour(current);
 
   const stationMap = new Map<string, number>();
   for (const s of current) {
@@ -313,10 +296,6 @@ export async function getReports(period: Period): Promise<ReportsResult> {
     topSnacks,
     truncated: rows.length >= ROW_CAP,
   };
-}
-
-function distinctDays(rows: Session[]): number {
-  return new Set(rows.map((s) => yangonDay(s.createdAt))).size;
 }
 
 // ── full session-history browser ──────────────────────────────────────────────

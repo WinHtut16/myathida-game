@@ -64,7 +64,19 @@ alter table game.stock_movements enable row level security;
 
 do $$
 begin
-  if not exists (select 1 from pg_policy where polname = 'stock_movements_select') then
+  -- Scoped to THIS table by polrelid, not just the name. Without that,
+  -- billiards.stock_movements' identically-named stock_movements_select
+  -- policy (billiards-schema-migration.sql) satisfies "already exists" on
+  -- any database where billiards loads first - which is every environment
+  -- this runs in, including production - so this table's own select policy
+  -- was silently never created, leaving game.stock_movements with RLS
+  -- enabled and zero read policies. Found by the 2026-09-18 perf audit;
+  -- see supabase/game-perf-migration.sql and db-tests/99-game-perf.sql.
+  if not exists (
+    select 1 from pg_policy
+     where polname = 'stock_movements_select'
+       and polrelid = 'game.stock_movements'::regclass
+  ) then
     create policy stock_movements_select on game.stock_movements
       for select using (game.is_active_staff());
   end if;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TriangleAlert, ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { getReports, getStationTimeline, isPeriod, type Period, type ReportsData, type StationTimelineResult } from "@/lib/data/reports";
+import { getReports, getStationTimeline, isPeriod, RECENT_TAIL, type Period, type ReportsData, type StationTimelineResult } from "@/lib/data/reports";
 import { yangonDay } from "@/lib/data/yangon";
 import { getCurrentUser } from "@/lib/data/session";
 import { ColumnChart, RankedBars, StationTimeline } from "@/components/reports/charts";
@@ -265,7 +265,8 @@ function Body({
       </div>
 
       <SessionTable
-        sessions={sessions}
+        sessions={sessions.slice(0, RECENT_TAIL)}
+        total={totals.sessions}
         staffNames={staffNames}
         canCorrect={canCorrect}
         viewAllHref="/reports/sessions"
