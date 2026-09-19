@@ -169,7 +169,8 @@ function Body({
   t: T;
   canCorrect: boolean;
 }) {
-  const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames } = data;
+  const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames, pricing } =
+    data;
 
   // Sparkline for the hero tile: the daily revenue already computed, tail-end.
   const spark = byDay.slice(-12).map((d) => d.value);
@@ -269,6 +270,7 @@ function Body({
         total={totals.sessions}
         staffNames={staffNames}
         canCorrect={canCorrect}
+        pricing={pricing}
         viewAllHref="/reports/sessions"
       />
     </div>

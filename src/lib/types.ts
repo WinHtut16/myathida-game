@@ -98,9 +98,20 @@ export interface Session {
   waivedMinutes: number;
   createdBy: string;
   createdAt: string; // ISO
-  /** Set when the session was corrected. The row is kept and its charge zeroed. */
+  /** Set when the session was cancelled. The row is kept and its charge zeroed. */
   voidReason: string | null;
   voidedAt: string | null;
+  /**
+   * Set when a superadmin re-priced this session to a different duration. The
+   * original figures are kept so the history can show both, and `createdAt` is
+   * deliberately untouched so the money stays on the day it was taken.
+   * Null on every session that has never been corrected.
+   */
+  originalMinutes: number | null;
+  originalChargedMinutes: number | null;
+  originalTotal: number | null;
+  correctionReason: string | null;
+  correctedAt: string | null;
 }
 
 /**

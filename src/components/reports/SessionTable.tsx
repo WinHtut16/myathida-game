@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Receipt, X, TriangleAlert, Undo2, ArrowRight } from "lucide-react";
-import { voidSessionAction } from "@/app/actions/sessions";
+import { correctSessionAction, voidSessionAction } from "@/app/actions/sessions";
 import { TierBadge } from "@/components/station/TierBadge";
 import { formatDateTime, formatDuration, formatMMK, formatMMKUnit } from "@/lib/format";
-import type { Session } from "@/lib/types";
+import type { Pricing, Session } from "@/lib/types";
+import { previewCorrection } from "@/lib/pricing";
 import { useT } from "@/i18n";
 import { fill } from "@/lib/ui";
 
@@ -24,9 +25,12 @@ export function SessionTable({
   viewAllHref,
   emptyLabel,
   total,
+  pricing = [],
 }: {
   sessions: Session[];
   staffNames: Record<string, string>;
+  /** Rate card for the correction preview. Empty = no preview, never a crash. */
+  pricing?: Pricing[];
   /** Corrections zero real takings, so they stay with the owner. */
   canCorrect?: boolean;
   /** Cap the body height and let it scroll — the dashboard's short tail.
@@ -145,6 +149,7 @@ export function SessionTable({
         <ReceiptModal
           session={receipt}
           canCorrect={canCorrect}
+          pricing={pricing}
           onClose={() => setReceipt(null)}
         />
       )}
@@ -155,24 +160,53 @@ export function SessionTable({
 function ReceiptModal({
   session,
   canCorrect,
+  pricing,
   onClose,
 }: {
   session: Session;
+  pricing: Pricing[];
   canCorrect: boolean;
   onClose: () => void;
 }) {
   const { t } = useT();
-  const [correcting, setCorrecting] = useState(false);
+  // Two different repairs, and they must not be one mis-click apart. "fix"
+  // re-prices the session and keeps the day it was taken on. "cancel" writes
+  // the whole sale off and is terminal.
+  const [mode, setMode] = useState<"fix" | "cancel" | null>(null);
+  const [minutes, setMinutes] = useState(String(session.minutes));
   const [reason, setReason] = useState("");
   const [returnSnacks, setReturnSnacks] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const typedMinutes = Number(minutes);
+  const minutesValid = Number.isInteger(typedMinutes) && typedMinutes > 0;
+  const canSubmit = reason.trim().length > 0 && (mode === "cancel" || minutesValid);
+
+  // The server re-derives all of this; the preview only exists so the owner
+  // sees the number before committing. `find` rather than rateFor(): an empty
+  // rate card must show NO preview, not silently price everything as tier one.
+  const tier = pricing.find((p) => p.tier === session.tier) ?? null;
+  const preview =
+    mode === "fix" && minutesValid && tier
+      ? previewCorrection(typedMinutes, tier, session.ratePerHour, session.snacksTotal)
+      : null;
+
+  const open = (next: "fix" | "cancel") => {
+    setMode(next);
+    setError(null);
+    setReason("");
+    setMinutes(String(session.minutes));
+  };
+
   const submit = () =>
     startTransition(async () => {
-      const r = await voidSessionAction(session.id, reason, returnSnacks);
+      const r =
+        mode === "fix"
+          ? await correctSessionAction(session.id, typedMinutes, reason)
+          : await voidSessionAction(session.id, reason, returnSnacks);
       if (r.ok) onClose();
-      else setError(r.message ?? "Could not correct the session.");
+      else setError(r.message ?? "Could not change the session.");
     });
   return (
     <div
@@ -222,23 +256,81 @@ function ReceiptModal({
           </div>
         )}
 
-        {correcting && (
+        {session.correctedAt && session.originalTotal !== null && (
+          <div className="mx-[22px] mb-4 rounded-md border border-line bg-surface-sunken px-3.5 py-2.5 text-xs text-text-secondary">
+            <strong className="font-semibold text-text">{t("reports.corrected")}.</strong>{" "}
+            {fill(t("reports.correctedFrom"), {
+              m: formatDuration(session.originalChargedMinutes ?? 0),
+              v: formatMMK(session.originalTotal),
+            })}
+            {session.correctionReason ? ` · ${session.correctionReason}` : ""}
+          </div>
+        )}
+
+        {mode && (
           <div className="mx-[22px] mb-4 rounded-md border border-line bg-surface-sunken p-3.5">
             {error && (
               <div className="mb-2.5 text-xs text-status-expired-ink">{error}</div>
             )}
+            {mode === "fix" && (
+              <>
+                <label className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
+                  {t("reports.correctMinutes")}
+                </label>
+                <input
+                  autoFocus
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                  disabled={pending}
+                  className="cat-input"
+                />
+                {/* The charge is re-derived on the server from this number and
+                    the tier's blocks, exactly as the timer does it. Saying so
+                    stops anyone expecting the typed minutes to be the price. */}
+                <div className="text-2xs text-text-muted mt-1.5 mb-2.5">
+                  {t("reports.correctMinutesHint")}
+                </div>
+                {preview && (
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-line-soft bg-surface px-3 py-2 text-xs">
+                    <span className="text-text-secondary">
+                      {fill(t("reports.correctPreview"), {
+                        m: formatDuration(preview.chargedMinutes),
+                      })}
+                    </span>
+                    <span className="tabular-nums font-semibold flex-none">
+                      <span className="text-text-muted line-through">
+                        {formatMMK(session.total)}
+                      </span>{" "}
+                      <ArrowRight size={11} className="inline -mt-px" />{" "}
+                      {formatMMK(preview.total)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
             <label className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
-              {t("reports.correctReason")}
+              {mode === "fix" ? t("reports.correctReason") : t("reports.cancelReason")}
             </label>
             <input
-              autoFocus
+              autoFocus={mode === "cancel"}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder={t("reports.correctReasonHint")}
+              placeholder={
+                mode === "fix" ? t("reports.correctReasonHint") : t("reports.cancelReasonHint")
+              }
               disabled={pending}
               className="cat-input"
             />
-            {session.orders.length > 0 && (
+            {mode === "cancel" && (
+              <div className="text-2xs text-status-expired-ink mt-1.5">
+                {t("reports.cancelNote")}
+              </div>
+            )}
+            {mode === "cancel" && session.orders.length > 0 && (
               <label className="flex items-start gap-2 mt-3 text-xs text-text-secondary">
                 <input
                   type="checkbox"
@@ -258,13 +350,19 @@ function ReceiptModal({
             <div className="flex items-center gap-2 mt-3.5">
               <button
                 onClick={submit}
-                disabled={pending || !reason.trim()}
-                className="bg-status-expired text-white rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-45"
+                disabled={pending || !canSubmit}
+                className={`${
+                  mode === "fix" ? "bg-accent" : "bg-status-expired"
+                } text-white rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-45`}
               >
-                {pending ? t("record.saving") : t("reports.correctConfirm")}
+                {pending
+                  ? t("record.saving")
+                  : mode === "fix"
+                    ? t("reports.correctConfirm")
+                    : t("reports.cancelConfirm")}
               </button>
               <button
-                onClick={() => setCorrecting(false)}
+                onClick={() => setMode(null)}
                 disabled={pending}
                 className="text-sm text-text-secondary font-semibold"
               >
@@ -274,14 +372,20 @@ function ReceiptModal({
           </div>
         )}
 
-        {canCorrect && !session.voidReason && !correcting && (
-          <div className="px-[22px] pb-4">
+        {canCorrect && !session.voidReason && !mode && (
+          <div className="px-[22px] pb-4 flex items-center gap-4">
             <button
-              onClick={() => setCorrecting(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-expired-ink hover:underline"
+              onClick={() => open("fix")}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
             >
               <Undo2 size={14} />
               {t("reports.correct")}
+            </button>
+            <button
+              onClick={() => open("cancel")}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-expired-ink hover:underline"
+            >
+              {t("reports.cancelSession")}
             </button>
           </div>
         )}

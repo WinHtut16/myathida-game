@@ -34,6 +34,11 @@ function session(overrides: Partial<Session> & { createdAt: string; total: numbe
     createdBy: "staff-1",
     voidReason: null,
     voidedAt: null,
+    originalMinutes: null,
+    originalChargedMinutes: null,
+    originalTotal: null,
+    correctionReason: null,
+    correctedAt: null,
     ...overrides,
   };
 }

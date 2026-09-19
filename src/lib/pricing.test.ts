@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeLiveBill,
   computePlaytime,
+  previewCorrection,
   formatElapsed,
   previewLiveTotal,
   previewTotal,
@@ -196,5 +197,36 @@ describe("formatElapsed", () => {
   it("adds hours only once there is an hour", () => {
     expect(formatElapsed(60)).toBe("1:00:00");
     expect(formatElapsed(125.5)).toBe("2:05:30");
+  });
+});
+
+describe("correction preview — the rate comes from the session, not the tier", () => {
+  // ReceiptModal builds its preview as computePlaytime(minutes, {...tier,
+  // ratePerHour: session.ratePerHour}), mirroring game.correct_session, which
+  // reads pr.min/increment/grace but s.rate_per_hour. The override is the whole
+  // point and it is invisible in a diff, so pin it: a price rise since the
+  // customer paid must not move the bill they already agreed to.
+  it("prices a corrected session at the rate it was sold at", () => {
+    const soldAt = 3000;
+    const tierToday: Pricing = { ...ps5, ratePerHour: 9000 }; // price tripled since
+    const preview = previewCorrection(62, tierToday, soldAt, 0);
+
+    expect(preview.chargedMinutes).toBe(60);   // blocks come from the tier
+    expect(preview.total).toBe(3000);          // rate comes from the session
+
+    // What the owner would be shown if anyone "simplified" the override away.
+    expect(computePlaytime(62, tierToday).total).toBe(9000);
+  });
+
+  it("adds the snacks that were already on the session", () => {
+    expect(previewCorrection(62, ps5, 3000, 1500).total).toBe(4500);
+  });
+
+  it("rounds a corrected duration by the same block rule as the timer", () => {
+    for (const m of [2, 30, 34, 36, 62, 66]) {
+      expect(previewCorrection(m, ps5, 3000, 0).chargedMinutes).toBe(
+        computeLiveBill(m, ps5).chargedMinutes,
+      );
+    }
   });
 });

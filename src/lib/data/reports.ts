@@ -6,7 +6,7 @@ import { getStaffDirectory } from "./staff-directory";
 import { YANGON_OFFSET_MIN, yangonDay, yangonDayStart } from "./yangon";
 import { buildTimeline, type TimelineData } from "@/lib/timeline";
 import { bucketByDay, bucketByHour, type Bucket } from "@/lib/report-buckets";
-import type { OrderLine, Session, Tier } from "@/lib/types";
+import type { OrderLine, Pricing, Session, Tier } from "@/lib/types";
 
 /**
  * Server-side reads and aggregation for the reports screen.
@@ -57,6 +57,12 @@ export interface ReportsData {
   period: Period;
   sessions: Session[];
   staffNames: Record<string, string>;
+  /**
+   * The rate card, so a superadmin correcting a session sees what the new
+   * duration will actually cost BEFORE saving. Rides in the existing parallel
+   * batch - four rows, no extra round-trip on the wire.
+   */
+  pricing: Pricing[];
   totals: Totals;
   /** Same-length window immediately before this one, for the trend badges. */
   previous: Totals | null;
@@ -97,7 +103,7 @@ export const RECENT_TAIL = 20;
  * shapes for the same `Session`.
  */
 const SESSION_SELECT =
-  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,order_lines(product_id,product_name,qty,unit_price,line_total)";
+  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,original_minutes,original_charged_minutes,original_total,correction_reason,corrected_at,order_lines(product_id,product_name,qty,unit_price,line_total)";
 
 interface SessionRow {
   id: string;
@@ -115,6 +121,11 @@ interface SessionRow {
   created_at: string;
   void_reason: string | null;
   voided_at: string | null;
+  original_minutes: number | null;
+  original_charged_minutes: number | null;
+  original_total: number | null;
+  correction_reason: string | null;
+  corrected_at: string | null;
   order_lines: {
     product_id: string | null;
     product_name: string;
@@ -154,6 +165,11 @@ function mapSessionRow(r: SessionRow): Session {
     createdAt: r.created_at,
     voidReason: r.void_reason,
     voidedAt: r.voided_at,
+    originalMinutes: r.original_minutes,
+    originalChargedMinutes: r.original_charged_minutes,
+    originalTotal: r.original_total === null ? null : Number(r.original_total),
+    correctionReason: r.correction_reason,
+    correctedAt: r.corrected_at,
     // Reports only ever show closed rows (both readers filter on status), but
     // the type carries these so a screen that wants to say "paid by KBZPay" or
     // "50 min waived" does not need a second query for it.
@@ -229,7 +245,11 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
   if (from) query = query.gte("created_at", from.toISOString());
 
-  const [sessionsRes, directory] = await Promise.all([query, getStaffDirectory()]);
+  const [sessionsRes, pricingRes, directory] = await Promise.all([
+    query,
+    supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
+    getStaffDirectory(),
+  ]);
 
   if (sessionsRes.error) {
     return { ok: false, message: describeSessionsError(sessionsRes.error) };
@@ -294,6 +314,21 @@ export async function getReports(period: Period): Promise<ReportsResult> {
     byHour,
     byStation,
     topSnacks,
+    // A pricing failure costs the correction preview, not a single number on
+    // this screen, so it degrades to an empty rate card rather than failing the
+    // whole report.
+    pricing: (
+      (pricingRes.data as {
+        tier: Tier; rate_per_hour: number; min_minutes: number;
+        increment_minutes: number; grace_minutes: number;
+      }[] | null) ?? []
+    ).map((p) => ({
+      tier: p.tier,
+      ratePerHour: Number(p.rate_per_hour),
+      minMinutes: p.min_minutes,
+      incrementMinutes: p.increment_minutes,
+      graceMinutes: p.grace_minutes,
+    })),
     truncated: rows.length >= ROW_CAP,
   };
 }
@@ -326,6 +361,8 @@ export interface SessionHistoryData {
   /** Option lists for the filter controls. */
   stations: { id: string; name: string }[];
   staffList: { id: string; name: string }[];
+  /** Rate card, for the correction preview. Same reason as ReportsData. */
+  pricing: Pricing[];
 }
 
 export type SessionHistoryResult = SessionHistoryData | { ok: false; message: string };
@@ -367,9 +404,10 @@ export async function getSessionHistory(
   if (filters.stationId) query = query.eq("station_id", filters.stationId);
   if (filters.staff) query = query.eq("created_by", filters.staff);
 
-  const [sessionsRes, stationsRes, directory] = await Promise.all([
+  const [sessionsRes, stationsRes, pricingRes, directory] = await Promise.all([
     query,
     supabase.from("stations").select("id,name").order("sort_order"),
+    supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
     getStaffDirectory(),
   ]);
 
@@ -395,6 +433,18 @@ export async function getSessionHistory(
       (s) => s.id && s.name,
     ),
     staffList: (directory ?? []).map((r) => ({ id: r.id, name: r.name })),
+    pricing: (
+      (pricingRes.data as {
+        tier: Tier; rate_per_hour: number; min_minutes: number;
+        increment_minutes: number; grace_minutes: number;
+      }[] | null) ?? []
+    ).map((p) => ({
+      tier: p.tier,
+      ratePerHour: Number(p.rate_per_hour),
+      minMinutes: p.min_minutes,
+      incrementMinutes: p.increment_minutes,
+      graceMinutes: p.grace_minutes,
+    })),
   };
 }
 

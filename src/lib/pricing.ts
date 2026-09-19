@@ -61,6 +61,31 @@ export function computePlaytime(
   return { chargedMinutes, total: playtimeCharge(chargedMinutes, pricing.ratePerHour) };
 }
 
+/**
+ * What a settled session will cost after a superadmin re-prices it, mirroring
+ * game.correct_session().
+ *
+ * The TIER supplies blocks, grace and the floor - those describe how the shop
+ * rounds. The SESSION supplies the rate, because a price rise since the
+ * customer paid must not move a bill they already agreed to. That override is
+ * one word in a spread and invisible in a diff, which is why this lives here
+ * with a test on it rather than inline in the modal.
+ *
+ * Snacks ride along untouched: a wrong duration is not a wrong crisp packet.
+ */
+export function previewCorrection(
+  minutes: number,
+  tier: Pricing,
+  soldAtRatePerHour: number,
+  snacksTotal: number,
+): { chargedMinutes: number; playtimeTotal: number; total: number } {
+  const { chargedMinutes, total } = computePlaytime(minutes, {
+    ...tier,
+    ratePerHour: soldAtRatePerHour,
+  });
+  return { chargedMinutes, playtimeTotal: total, total: total + snacksTotal };
+}
+
 export function rateFor(pricingList: Pricing[], tier: Tier): Pricing {
   return pricingList.find((p) => p.tier === tier) ?? pricingList[0];
 }
