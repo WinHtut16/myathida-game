@@ -99,22 +99,31 @@ export async function setProductActiveAction(
   active: boolean,
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .update({ active })
-    .eq("id", id)
-    .select("id");
+
+  /**
+   * Through game.set_product_active() rather than a table update: that RPC is
+   * open to any active staff, while the products table's own RLS policy
+   * (which also covers name/price edits) stays superadmin-only. A plain
+   * table update here would have to pick one or the other for every column.
+   */
+  const { error } = await supabase.rpc("set_product_active", {
+    p_product_id: id,
+    p_active: active,
+  });
 
   if (error) {
     console.error("[catalogue] toggle failed", {
       id, active, code: error.code, message: error.message,
       details: error.details, hint: error.hint,
     });
+    if (error.code === "42883") {
+      return {
+        ok: false,
+        message:
+          "Enabling/disabling products is not set up yet. Run supabase/game-admin-permissions-migration.sql in the futsal Supabase project.",
+      };
+    }
     return { ok: false, message: explain(error.code, error.message) };
-  }
-  if (!data || data.length === 0) {
-    console.warn("[catalogue] toggle affected 0 rows (RLS)", { id });
-    return { ok: false, message: DENIED };
   }
 
   revalidatePath("/products");

@@ -21,6 +21,7 @@ export function SessionTable({
   sessions,
   staffNames,
   canCorrect = false,
+  canVoid = false,
   scroll = true,
   viewAllHref,
   emptyLabel,
@@ -31,8 +32,10 @@ export function SessionTable({
   staffNames: Record<string, string>;
   /** Rate card for the correction preview. Empty = no preview, never a crash. */
   pricing?: Pricing[];
-  /** Corrections zero real takings, so they stay with the owner. */
+  /** Fixing a wrong duration/amount. Open to any active staff. */
   canCorrect?: boolean;
+  /** Cancelling a session outright (zeroes it). Superadmin-only. */
+  canVoid?: boolean;
   /** Cap the body height and let it scroll — the dashboard's short tail.
       The full-history page owns its own paging, so it turns this off. */
   scroll?: boolean;
@@ -149,6 +152,7 @@ export function SessionTable({
         <ReceiptModal
           session={receipt}
           canCorrect={canCorrect}
+          canVoid={canVoid}
           pricing={pricing}
           onClose={() => setReceipt(null)}
         />
@@ -160,12 +164,14 @@ export function SessionTable({
 function ReceiptModal({
   session,
   canCorrect,
+  canVoid,
   pricing,
   onClose,
 }: {
   session: Session;
   pricing: Pricing[];
   canCorrect: boolean;
+  canVoid: boolean;
   onClose: () => void;
 }) {
   const { t } = useT();
@@ -372,21 +378,25 @@ function ReceiptModal({
           </div>
         )}
 
-        {canCorrect && !session.voidReason && !mode && (
+        {(canCorrect || canVoid) && !session.voidReason && !mode && (
           <div className="px-[22px] pb-4 flex items-center gap-4">
-            <button
-              onClick={() => open("fix")}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
-            >
-              <Undo2 size={14} />
-              {t("reports.correct")}
-            </button>
-            <button
-              onClick={() => open("cancel")}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-expired-ink hover:underline"
-            >
-              {t("reports.cancelSession")}
-            </button>
+            {canCorrect && (
+              <button
+                onClick={() => open("fix")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+              >
+                <Undo2 size={14} />
+                {t("reports.correct")}
+              </button>
+            )}
+            {canVoid && (
+              <button
+                onClick={() => open("cancel")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-expired-ink hover:underline"
+              >
+                {t("reports.cancelSession")}
+              </button>
+            )}
           </div>
         )}
 

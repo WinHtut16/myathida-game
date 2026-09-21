@@ -67,7 +67,16 @@ export default async function ReportsPage({
 
   return (
     <AppShell title={t("reports.title")} subtitle={t(LABEL_KEYS[period])} right={<PeriodTabs active={period} day={day} t={t} />}>
-      <Body data={data} timeline={timeline} period={period} day={day} today={today} t={t} canCorrect={user?.isSuperadmin ?? false} />
+      <Body
+        data={data}
+        timeline={timeline}
+        period={period}
+        day={day}
+        today={today}
+        t={t}
+        canCorrect={!!user}
+        canVoid={user?.isSuperadmin ?? false}
+      />
     </AppShell>
   );
 }
@@ -160,6 +169,7 @@ function Body({
   today,
   t,
   canCorrect,
+  canVoid,
 }: {
   data: ReportsData;
   timeline: StationTimelineResult;
@@ -168,6 +178,7 @@ function Body({
   today: string;
   t: T;
   canCorrect: boolean;
+  canVoid: boolean;
 }) {
   const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames, pricing } =
     data;
@@ -270,6 +281,7 @@ function Body({
         total={totals.sessions}
         staffNames={staffNames}
         canCorrect={canCorrect}
+        canVoid={canVoid}
         pricing={pricing}
         viewAllHref="/reports/sessions"
       />

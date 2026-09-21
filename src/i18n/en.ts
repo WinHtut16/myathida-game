@@ -215,7 +215,7 @@ export const en = {
 
   "catalogue.unavailable": "This screen is not ready yet",
   "products.none": "No products yet. Add the first one on the right.",
-  "products.superOnly": "Only a superadmin can add or change products. You can still see what is on sale and how much stock is left.",
+  "products.superOnly": "Only a superadmin can add, rename, reprice, or delete products. You can still turn items on/off and restock them.",
   "pricing.futureOnly": "Affects future sessions only. Sessions already recorded keep the rate they were charged at.",
   "pricing.saved": "Saved",
 

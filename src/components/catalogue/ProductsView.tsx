@@ -23,16 +23,20 @@ import type { Product, ProductCategory } from "@/lib/types";
  * as props from the server page and every change goes out through a server
  * action. No Supabase call is made from this file.
  *
- * Everything here is superadmin-only at the database. A plain admin still sees
- * the screen, because knowing what is on sale and what the stock is matters to
- * whoever is working the counter; the controls simply refuse and say why.
+ * Adding, renaming, repricing and deleting are superadmin-only at the
+ * database (canEdit). Turning a product on/off and restocking it are open to
+ * any active staff (canManageInventory) - a plain admin still can't touch
+ * price or the catalogue itself; the controls for those simply refuse and say
+ * why.
  */
 export function ProductsView({
   products,
   canEdit,
+  canManageInventory,
 }: {
   products: Product[];
   canEdit: boolean;
+  canManageInventory: boolean;
 }) {
   const { t, locale } = useT();
   const router = useRouter();
@@ -169,7 +173,7 @@ export function ProductsView({
 
                 <StockCell
                   product={p}
-                  canEdit={canEdit}
+                  canEdit={canManageInventory}
                   editing={editingStock === p.id}
                   disabled={pending}
                   onEdit={() => setEditingStock(p.id)}
@@ -203,7 +207,7 @@ export function ProductsView({
                   )}
                   <button
                     onClick={() => run(() => setProductActiveAction(p.id, !p.active))}
-                    disabled={!canEdit || pending}
+                    disabled={!canManageInventory || pending}
                     aria-label={`${p.active ? "Delist" : "Relist"} ${p.nameEn}`}
                     className={cx(
                       "w-[34px] h-5 rounded-full relative transition-colors disabled:opacity-45 flex-none",
@@ -347,7 +351,7 @@ function StockCell({
     const low = product.stock !== null && product.stock <= 3;
     const value = product.stock === null ? "—" : product.stock;
 
-    // A plain admin can't restock, so the number is just a number.
+    // No active-staff session (or it failed to load) - the number is just a number.
     if (!canEdit) {
       return (
         <span
@@ -361,7 +365,7 @@ function StockCell({
       );
     }
 
-    // For a superadmin it's an editable field: a bordered chip with a pencil,
+    // For active staff it's an editable field: a bordered chip with a pencil,
     // so it reads as "tap to change" without needing to be discovered on hover.
     return (
       <button

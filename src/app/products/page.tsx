@@ -32,7 +32,11 @@ export default async function ProductsPage() {
 
   return (
     <AppShell title={t("nav.snacks")}>
-      <ProductsView products={result.data} canEdit={user?.isSuperadmin ?? false} />
+      <ProductsView
+        products={result.data}
+        canEdit={user?.isSuperadmin ?? false}
+        canManageInventory={!!user}
+      />
       {/*
         Below the catalogue rather than beside it: you come to this screen to
         change a product, and only look at the history when a number surprises

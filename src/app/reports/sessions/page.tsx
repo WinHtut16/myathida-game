@@ -106,7 +106,8 @@ export default async function SessionHistoryPage({
         <SessionTable
           sessions={sessions}
           staffNames={staffNames}
-          canCorrect={user?.isSuperadmin ?? false}
+          canCorrect={!!user}
+          canVoid={user?.isSuperadmin ?? false}
           pricing={pricing}
           scroll={false}
           emptyLabel={hasFilters ? t("reports.noMatches") : t("reports.noneRecorded")}
