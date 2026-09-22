@@ -38,9 +38,14 @@ Consequences for day-to-day work:
   authenticated nothing, and was removed. Real auth happens on the hub at
   `/admin/login`; this app only reads the resulting session via
   `getCurrentUser()`.
-- **No PWA manifest in this repo.** The hub's manifest is scoped to `/admin`
-  and already covers all three businesses — a second in-scope manifest here
-  would be ambiguous. Do not add one.
+- **No manifest of our own — link the hub's.** `src/app/layout.tsx` sets
+  `metadata.manifest: "/pwa/manifest.webmanifest"` (origin-absolute, not
+  basePath-relative) and `SWRegister` (mounted in the root layout) registers
+  the hub's `/sw.js` at `{ scope: '/admin' }`; the install card is
+  `src/components/pwa/InstallAppRow.tsx` on `/account`. The hub's manifest is
+  scoped to `/admin` and already covers all three businesses. Do not add a
+  second manifest here — a second in-scope manifest on the same origin would
+  be ambiguous.
 - **Role decides what to show, never what is allowed.** Every mutating
   server action re-checks the caller's role itself; a hidden nav item or
   disabled button is a UX courtesy, not the authorization boundary.

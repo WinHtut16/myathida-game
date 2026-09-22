@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Inter, Space_Grotesk, Noto_Sans_Myanmar } from "next/font/google";
 import { Toaster } from "sonner";
@@ -7,6 +7,7 @@ import { SessionProvider } from "@/components/providers/SessionProvider";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
 import { LOCALE_COOKIE } from "@/i18n/config";
 import { getCurrentUser } from "@/lib/data/session";
+import { SWRegister } from "@/components/pwa/SWRegister";
 import type { Locale } from "@/lib/types";
 
 /**
@@ -61,6 +62,25 @@ const myanmar = Noto_Sans_Myanmar({
 export const metadata: Metadata = {
   title: "AcJ Gaming Lounge — Management",
   description: "Admin/staff console for a PS4/PS5 walk-in game shop.",
+  // Links the hub's (PointSystem_AkoATP) manifest — this zone has none of its
+  // own. Origin-absolute, not basePath-relative: Next passes `manifest`
+  // through verbatim with no basePath resolution, so this must stay
+  // "/pwa/manifest.webmanifest", never a path under /admin/game. See
+  // "Admin Installable PWA" in the hub's CLAUDE.md.
+  manifest: "/pwa/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "MyaThida Admin",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  // #2c57cd is oklch(0.50 0.190 265) — --color-primary for data-app="game"
+  // in design/tokens.css — converted to hex because a theme-color meta tag
+  // can't reference a CSS var. Tints the browser/standalone bar on game
+  // screens; the installed app's own theme_color comes from the manifest.
+  themeColor: "#2c57cd",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -78,6 +98,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </LocaleProvider>
         {/* Shared toast placement — see DESIGN.md. */}
         <Toaster position="bottom-center" />
+        <SWRegister />
       </body>
     </html>
   );

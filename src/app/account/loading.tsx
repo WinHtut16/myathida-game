@@ -47,6 +47,16 @@ export default async function Loading() {
             <Bar w="140px" h={12} />
           </div>
         </SkeletonCard>
+
+        <SkeletonCard>
+          <div className="flex items-center gap-2.5">
+            <Bar w="32px" h={32} />
+            <Bar w="30%" h={14} />
+          </div>
+          <div className="mt-3">
+            <Bar w="110px" h={32} />
+          </div>
+        </SkeletonCard>
       </div>
     </AppShell>
   );

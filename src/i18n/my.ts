@@ -231,6 +231,13 @@ export const my: Record<string, string> = {
   "account.password": "စကားဝှက်",
   "account.passwordHint": "သင့်အကောင့်ဝင်ရန် အချက်အလက်ကို လုပ်ငန်းအားလုံးတွင် အတူတူသုံးသဖြင့် စကားဝှက်ကို ပင်မ admin panel တွင် ပြောင်းရပါမည်။",
   "account.passwordLink": "admin panel တွင် ပြောင်းရန်",
+  "account.install": "အက်ပ် ထည့်သွင်းရန်",
+  "account.installed": "ဤစက်ပေါ်တွင် အက်ပ် ထည့်သွင်းပြီးဖြစ်သည်",
+  "account.installHow": "မည်သို့လုပ်ရမလဲ?",
+  "account.installIosTitle": "ပင်မစာမျက်နှာသို့ ထည့်ရန်",
+  "account.installIosSteps": "Safari ရှိ Share ခလုတ်ကို နှိပ်ပြီး \"Add to Home Screen\" ကို ရွေးပါ။",
+  "account.installMacTitle": "Dock သို့ ထည့်ရန်",
+  "account.installMacSteps": "Safari ၏ menu bar တွင် File → \"Add to Dock\" ကို ရွေးပါ။",
 
   "reports.corrected": "ပြင်ဆင်ပြီး",
   "reports.correct": "အချိန် ပြင်ရန်",

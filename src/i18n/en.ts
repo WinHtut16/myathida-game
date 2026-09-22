@@ -239,6 +239,13 @@ export const en = {
   "account.password": "Password",
   "account.passwordHint": "Your sign-in is shared across all the businesses you have access to, so your password is changed in the main admin panel rather than here.",
   "account.passwordLink": "Change it in the admin panel",
+  "account.install": "Install app",
+  "account.installed": "App installed on this device",
+  "account.installHow": "How?",
+  "account.installIosTitle": "Add to Home Screen",
+  "account.installIosSteps": "Tap the Share icon in Safari, then choose \"Add to Home Screen\".",
+  "account.installMacTitle": "Add to Dock",
+  "account.installMacSteps": "In Safari's menu bar, choose File → \"Add to Dock\".",
 
   "reports.corrected": "Corrected",
   "reports.correct": "Fix the time",

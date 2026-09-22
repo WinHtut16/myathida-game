@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { KeyRound, ExternalLink } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { InstallAppRow } from "@/components/pwa/InstallAppRow";
 import { updateOwnProfileAction } from "@/app/actions/profile";
 import { useLocale } from "@/i18n/LocaleProvider";
 import { useT } from "@/i18n";
@@ -125,6 +126,8 @@ export function AccountView({
           <ExternalLink size={13} />
         </a>
       </div>
+
+      <InstallAppRow />
     </div>
   );
 }
