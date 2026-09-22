@@ -110,7 +110,7 @@ interface StationRow {
   name: string;
   tier: Tier;
   status: Station["status"];
-  occupied: boolean;
+  state: Station["state"];
   sort_order: number;
 }
 
@@ -121,7 +121,7 @@ export async function getStations(): Promise<CatalogueResult<Station[]>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("stations")
-    .select("id,name,tier,status,occupied,sort_order")
+    .select("id,name,tier,status,state,sort_order")
     .order("sort_order");
 
   if (error) {
@@ -138,7 +138,7 @@ export async function getStations(): Promise<CatalogueResult<Station[]>> {
       name: s.name,
       tier: s.tier,
       status: s.status,
-      occupied: s.occupied,
+      state: s.state,
       sortOrder: s.sort_order,
     })),
   };

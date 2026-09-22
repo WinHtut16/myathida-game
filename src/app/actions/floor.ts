@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { StationState } from "@/lib/types";
 
 /**
  * Writes for the floor board.
@@ -46,21 +47,21 @@ function explain(code: string | undefined, message: string): string {
   }
 }
 
-export async function setOccupiedAction(
+export async function setStationStateAction(
   stationId: string,
-  occupied: boolean,
+  state: StationState,
 ): Promise<ActionResult> {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("set_occupied", {
+  const { error } = await supabase.rpc("set_station_state", {
     p_station_id: stationId,
-    p_occupied: occupied,
+    p_state: state,
   });
 
   if (error) {
-    console.error("[floor] set_occupied failed", {
+    console.error("[floor] set_station_state failed", {
       stationId,
-      occupied,
+      state,
       code: error.code,
       message: error.message,
       details: error.details,

@@ -22,7 +22,7 @@ interface StationRow {
   name: string;
   tier: Tier;
   status: Station["status"];
-  occupied: boolean;
+  state: Station["state"];
   sort_order: number;
 }
 
@@ -82,7 +82,7 @@ export async function getFloorData(): Promise<FloorData> {
    * a second on every floor-board render for no reason.
    */
   const [stationsRes, pricingRes, productsRes, activeRes] = await Promise.all([
-    supabase.from("stations").select("id,name,tier,status,occupied,sort_order").order("sort_order"),
+    supabase.from("stations").select("id,name,tier,status,state,sort_order").order("sort_order"),
     supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
     /**
@@ -203,10 +203,10 @@ export async function getFloorData(): Promise<FloorData> {
       name: s.name,
       tier: s.tier,
       status: s.status,
-      occupied: s.occupied,
+      state: s.state,
       sortOrder: s.sort_order,
     },
-    occupied: s.occupied,
+    state: s.state,
     rate: pricingFor(s.tier).ratePerHour,
     pricing: pricingFor(s.tier),
     active: activeByStation.get(s.id) ?? null,

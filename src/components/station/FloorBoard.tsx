@@ -39,7 +39,7 @@ export function FloorBoard({
   // Stands in for Realtime, which Myanmar operators block. See the hook.
   useAutoRefresh();
 
-  const occupied = stations.filter((v) => v.occupied).length;
+  const occupied = stations.filter((v) => v.state === "occupied").length;
   const filtered = stations.filter(
     (v) => query === "" || v.station.name.toLowerCase().includes(query.toLowerCase()),
   );

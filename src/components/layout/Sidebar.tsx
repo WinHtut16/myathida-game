@@ -37,10 +37,10 @@ export function Sidebar() {
     <div className="hidden md:flex md:flex-col w-[216px] bg-rail text-rail-text flex-none py-[18px]">
       <div className="px-5 pb-5 flex items-center gap-2.5 border-b border-rail-line mb-3">
         <span className="w-[30px] h-[30px] rounded-md bg-accent flex items-center justify-center text-white font-display font-bold text-md">
-          M
+          A
         </span>
         <div className="leading-[1.1]">
-          <div className="text-white font-semibold text-base">MyaThida</div>
+          <div className="text-white font-semibold text-base">AcJ Gaming Lounge</div>
           <div className="text-2xs text-rail-faint font-semibold tracking-caps">{t("brand.tagline")}</div>
         </div>
       </div>

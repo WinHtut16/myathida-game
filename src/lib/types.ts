@@ -26,18 +26,21 @@ export interface Staff {
   createdBy: string | null;
 }
 
+export type StationState = "free" | "reserved" | "occupied";
+
 export interface Station {
   id: string;
   name: string; // "TV 1", "VIP"
   tier: Tier;
   status: "available" | "maintenance";
   /**
-   * Whether the TV is in use. No longer independent truth: game.open_session
-   * and game.close_session maintain it, and game.set_occupied refuses to
-   * contradict a live session. Staff may still toggle it manually on a free
-   * station to mark a TV busy without billing anyone.
+   * Free / reserved / occupied. Not independent truth for 'occupied':
+   * game.open_session and game.close_session maintain that transition, and
+   * game.set_station_state refuses to contradict a live session. 'reserved'
+   * is staff-only, set from the floor board, for holding a TV without
+   * billing anyone yet.
    */
-  occupied: boolean;
+  state: StationState;
   sortOrder: number;
 }
 
@@ -136,9 +139,9 @@ export interface ActiveSession {
 /** Station joined with derived floor state — what the occupancy board renders. */
 export interface StationView {
   station: Station;
-  occupied: boolean;
+  state: StationState;
   rate: number;
   pricing: Pricing;
-  /** Null when the TV is free, or occupied only by the manual flag. */
+  /** Null when the TV is free, reserved, or occupied only by the manual flag. */
   active: ActiveSession | null;
 }

@@ -1,16 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { Circle, CircleDot, ClipboardList, Play, Receipt, Wrench } from "lucide-react";
-import { setOccupiedAction } from "@/app/actions/floor";
+import { Circle, CircleDot, Clock, ClipboardList, Play, Receipt, Wrench } from "lucide-react";
+import { setStationStateAction } from "@/app/actions/floor";
 import { openSessionAction } from "@/app/actions/live-session";
-import { useT } from "@/i18n";
+import { useT, type MessageKey } from "@/i18n";
 import { formatMMK } from "@/lib/format";
 import { useNow } from "@/lib/hooks/useNow";
 import { formatElapsed, previewLiveTotal } from "@/lib/pricing";
-import type { StationView } from "@/lib/types";
+import type { StationState, StationView } from "@/lib/types";
 import { cx } from "@/lib/ui";
+import { Badge } from "@/components/ui/Badge";
 import { TierBadge } from "./TierBadge";
+
+/** Tap the state chip cycles it — the common path (free -> occupied via
+ * Start session) never touches this, so a one-tap skip past "reserved" is
+ * an acceptable cost for the rarer manual path. */
+const NEXT_STATE: Record<StationState, StationState> = {
+  free: "reserved",
+  reserved: "occupied",
+  occupied: "free",
+};
+
+const STATE_ICON: Record<StationState, typeof Circle> = {
+  free: Circle,
+  reserved: Clock,
+  occupied: CircleDot,
+};
+
+const STATE_VARIANT: Record<StationState, "neutral" | "warning" | "success"> = {
+  free: "neutral",
+  reserved: "warning",
+  occupied: "success",
+};
+
+const STATE_LABEL_KEY: Record<StationState, MessageKey> = {
+  free: "floor.free",
+  reserved: "floor.reserved",
+  occupied: "floor.occupied",
+};
+
+const STATE_ARIA_KEY: Record<StationState, MessageKey> = {
+  free: "floor.markFree",
+  reserved: "floor.markReserved",
+  occupied: "floor.markOccupied",
+};
+
+/** Card tint per state — the whole tile carries the state, not just the chip. */
+const STATE_TINT: Record<StationState, { bg: string; border: string }> = {
+  free: { bg: "bg-surface", border: "var(--game-line-strong)" },
+  reserved: { bg: "bg-status-warn-bg", border: "var(--game-status-warn)" },
+  occupied: { bg: "bg-status-active-bg", border: "var(--game-status-active)" },
+};
 
 export function StationTile({
   v,
@@ -27,18 +68,18 @@ export function StationTile({
   disabled?: boolean;
 }) {
   const { t } = useT();
-  const { station, occupied, rate, active, pricing } = v;
+  const { station, state, rate, active, pricing } = v;
   const maint = station.status === "maintenance";
 
   /**
-   * Occupancy is server state, so this does not flip a local boolean and hope.
+   * Occupancy is server state, so this does not flip a local value and hope.
    * The action runs, the server component re-renders with whatever the database
    * actually says, and a refusal surfaces as a message instead of a tile that
    * looks changed but is not.
    */
-  const toggleOccupied = () =>
+  const cycleState = () =>
     onPending(async () => {
-      const result = await setOccupiedAction(station.id, !occupied);
+      const result = await setStationStateAction(station.id, NEXT_STATE[state]);
       if (!result.ok && result.message) onError(result.message);
     });
 
@@ -60,7 +101,7 @@ export function StationTile({
       >
         <Header name={station.name} tier={station.tier} nameClass="text-text-muted" />
         <div className="flex-1 flex items-center justify-center gap-2 py-6 text-status-warn-deep text-xs font-semibold">
-          <Wrench size={15} />
+          <Wrench size={16} />
           {t("floor.maintenance")}
         </div>
       </div>
@@ -73,19 +114,34 @@ export function StationTile({
     return <RunningTile v={v} session={active} pricing={pricing} disabled={disabled} />;
   }
 
+  const StateIcon = STATE_ICON[state];
+  const tint = STATE_TINT[state];
+
   return (
     <div
-      className={cx(
-        "rounded-lg p-4 flex flex-col gap-3 border border-line-strong shadow-card",
-        occupied ? "bg-status-active-bg" : "bg-surface",
-      )}
-      style={{
-        borderTop: occupied
-          ? "4px solid var(--game-status-active)"
-          : "4px solid var(--game-line-strong)",
-      }}
+      className={cx("rounded-lg p-4 flex flex-col gap-3 border border-line-strong shadow-card", tint.bg)}
+      style={{ borderTop: `4px solid ${tint.border}` }}
     >
-      <Header name={station.name} tier={station.tier} />
+      <Header
+        name={station.name}
+        tier={station.tier}
+        stateBadge={
+          /* The manual state survives for holding a TV busy or reserved
+             without billing anyone. game.set_station_state refuses it once a
+             session is running, so it can no longer contradict the timer. */
+          <button
+            onClick={cycleState}
+            disabled={disabled}
+            aria-label={t(STATE_ARIA_KEY[NEXT_STATE[state]])}
+            className="-m-2 p-2 disabled:opacity-60"
+          >
+            <Badge variant={STATE_VARIANT[state]}>
+              <StateIcon size={11} className="mr-1" />
+              {t(STATE_LABEL_KEY[state])}
+            </Badge>
+          </button>
+        }
+      />
 
       <div className="flex items-baseline gap-1">
         <span className="font-display text-xl font-semibold tabular-nums tracking-tight text-text">
@@ -99,37 +155,19 @@ export function StationTile({
         disabled={disabled}
         className="flex items-center justify-center gap-2 bg-accent text-white rounded-md py-2.5 text-sm font-semibold hover:bg-accent-strong disabled:opacity-60 transition-colors"
       >
-        <Play size={15} />
+        <Play size={16} />
         {t("floor.start")}
       </button>
 
-      <div className="flex gap-2">
-        {/* The manual flag survives for marking a TV busy without billing
-            anyone. game.set_occupied refuses it once a session is running, so
-            it can no longer contradict the timer. */}
-        <button
-          onClick={toggleOccupied}
-          disabled={disabled}
-          className={cx(
-            "flex-1 flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold border disabled:opacity-60 transition-colors",
-            occupied
-              ? "bg-surface text-status-active-ink border-status-active-bd hover:bg-status-active-bg"
-              : "bg-line-faint text-text border-line-soft hover:bg-line-soft",
-          )}
-        >
-          {occupied ? <CircleDot size={13} /> : <Circle size={13} />}
-          {occupied ? t("floor.occupied") : t("floor.free")}
-        </button>
-        {/* Retroactive entry, for the session where nobody pressed Start. */}
-        <button
-          onClick={onRecord}
-          disabled={disabled}
-          className="flex-1 flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold border border-line-soft bg-line-faint text-text hover:bg-line-soft disabled:opacity-60 transition-colors"
-        >
-          <ClipboardList size={13} />
-          {t("floor.record")}
-        </button>
-      </div>
+      {/* Retroactive entry, for the session where nobody pressed Start. */}
+      <button
+        onClick={onRecord}
+        disabled={disabled}
+        className="flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-semibold border border-line-soft bg-line-faint text-text hover:bg-line-soft disabled:opacity-60 transition-colors"
+      >
+        <ClipboardList size={16} />
+        {t("floor.record")}
+      </button>
     </div>
   );
 }
@@ -186,17 +224,30 @@ function RunningTile({
         aria-disabled={disabled}
         className="flex items-center justify-center gap-2 bg-accent text-white rounded-md py-2.5 text-sm font-semibold hover:bg-accent-strong transition-colors"
       >
-        <Receipt size={15} />
+        <Receipt size={16} />
         {t("floor.openSession")}
       </Link>
     </div>
   );
 }
 
-function Header({ name, tier, nameClass = "" }: { name: string; tier: StationView["station"]["tier"]; nameClass?: string }) {
+function Header({
+  name,
+  tier,
+  nameClass = "",
+  stateBadge,
+}: {
+  name: string;
+  tier: StationView["station"]["tier"];
+  nameClass?: string;
+  stateBadge?: React.ReactNode;
+}) {
   return (
     <div className="flex items-start justify-between">
-      <div className={cx("text-base font-bold", nameClass)}>{name}</div>
+      <div className="flex items-center gap-2">
+        <div className={cx("text-base font-bold", nameClass)}>{name}</div>
+        {stateBadge}
+      </div>
       <TierBadge tier={tier} />
     </div>
   );
