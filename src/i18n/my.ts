@@ -238,6 +238,8 @@ export const my: Record<string, string> = {
   "account.installIosSteps": "Safari ရှိ Share ခလုတ်ကို နှိပ်ပြီး \"Add to Home Screen\" ကို ရွေးပါ။",
   "account.installMacTitle": "Dock သို့ ထည့်ရန်",
   "account.installMacSteps": "Safari ၏ menu bar တွင် File → \"Add to Dock\" ကို ရွေးပါ။",
+  "account.installOtherTitle": "ဤအက်ပ်ကို ထည့်သွင်းရန်",
+  "account.installOtherSteps": "အက်ပ်အဖြစ် ထည့်သွင်းရန် ဤစာမျက်နှာကို Chrome သို့မဟုတ် Edge တွင် ဖွင့်ပါ။",
 
   "reports.corrected": "ပြင်ဆင်ပြီး",
   "reports.correct": "အချိန် ပြင်ရန်",

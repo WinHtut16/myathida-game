@@ -246,6 +246,8 @@ export const en = {
   "account.installIosSteps": "Tap the Share icon in Safari, then choose \"Add to Home Screen\".",
   "account.installMacTitle": "Add to Dock",
   "account.installMacSteps": "In Safari's menu bar, choose File → \"Add to Dock\".",
+  "account.installOtherTitle": "Install this app",
+  "account.installOtherSteps": "Open this page in Chrome or Edge to install it as an app.",
 
   "reports.corrected": "Corrected",
   "reports.correct": "Fix the time",

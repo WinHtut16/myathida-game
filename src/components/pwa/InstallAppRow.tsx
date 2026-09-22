@@ -6,15 +6,18 @@ import { useT } from "@/i18n";
 import { useInstallPrompt } from "@/lib/pwa/useInstallPrompt";
 import { InstallInstructionsDialog } from "@/components/pwa/InstallInstructionsDialog";
 
-/** Permanent "Install app" entry on the Account page. */
+/** Permanent "Install app" entry on the Account page. Always renders a
+ * button when not yet installed: `beforeinstallprompt` only sometimes fires
+ * by the time this mounts (browser heuristics, timing, a prior dismissal
+ * this session), so gating visibility on `canPrompt` made the row silently
+ * vanish on Windows/Android whenever that event hadn't landed yet. The
+ * fallback "How to Install" always has somewhere to send the user, via
+ * InstallInstructionsDialog's platform-specific (including generic
+ * Chrome/Edge) instructions. */
 export function InstallAppRow() {
   const { t } = useT();
   const { platform, isStandalone, canPrompt, promptInstall } = useInstallPrompt();
   const [showInstructions, setShowInstructions] = useState(false);
-
-  const instructionsOnly = !canPrompt && (platform === "ios" || platform === "macos");
-  const eligible = canPrompt || instructionsOnly;
-  if (!eligible && !isStandalone) return null;
 
   async function handleAction() {
     if (canPrompt) {
