@@ -133,12 +133,14 @@ export function StationTile({
             onClick={cycleState}
             disabled={disabled}
             aria-label={t(STATE_ARIA_KEY[NEXT_STATE[state]])}
-            className="-m-2 p-2 rounded-full border border-black/10 hover:bg-black/5 active:bg-black/10 transition-colors disabled:opacity-60 disabled:hover:bg-transparent"
+            className="-m-2 p-2 disabled:opacity-60"
           >
-            <Badge variant={STATE_VARIANT[state]}>
-              <StateIcon size={11} className="mr-1" />
-              {t(STATE_LABEL_KEY[state])}
-            </Badge>
+            <span className="inline-flex rounded-full border border-black/10 hover:border-black/25 active:scale-95 transition-all">
+              <Badge variant={STATE_VARIANT[state]}>
+                <StateIcon size={11} className="mr-1" />
+                {t(STATE_LABEL_KEY[state])}
+              </Badge>
+            </span>
           </button>
         }
       />
