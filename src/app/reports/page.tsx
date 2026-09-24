@@ -180,7 +180,7 @@ function Body({
   canCorrect: boolean;
   canVoid: boolean;
 }) {
-  const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames, pricing } =
+  const { totals, previous, byDay, byHour, byStation, topSnacks, sessions, staffNames, pricing, products } =
     data;
 
   // Sparkline for the hero tile: the daily revenue already computed, tail-end.
@@ -283,6 +283,7 @@ function Body({
         canCorrect={canCorrect}
         canVoid={canVoid}
         pricing={pricing}
+        products={products}
         viewAllHref="/reports/sessions"
       />
     </div>

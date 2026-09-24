@@ -73,7 +73,7 @@ export default async function SessionHistoryPage({
     );
   }
 
-  const { sessions, staffNames, total, page, pageCount, stations, staffList, pricing } = data;
+  const { sessions, staffNames, total, page, pageCount, stations, staffList, pricing, products } = data;
   const hasFilters = !!(filters.from || filters.to || filters.stationId || filters.staff);
 
   const hrefForPage = (p: number) => {
@@ -109,6 +109,7 @@ export default async function SessionHistoryPage({
           canCorrect={!!user}
           canVoid={user?.isSuperadmin ?? false}
           pricing={pricing}
+          products={products}
           scroll={false}
           emptyLabel={hasFilters ? t("reports.noMatches") : t("reports.noneRecorded")}
         />

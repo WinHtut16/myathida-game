@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Receipt, X, TriangleAlert, Undo2, ArrowRight } from "lucide-react";
-import { correctSessionAction, voidSessionAction } from "@/app/actions/sessions";
+import { Receipt, X, TriangleAlert, Undo2, ArrowRight, Plus, Minus, Trash2 } from "lucide-react";
+import { correctSessionAction, editSessionSnacksAction, voidSessionAction } from "@/app/actions/sessions";
+import type { SnackEditChange } from "@/app/actions/sessions";
 import { TierBadge } from "@/components/station/TierBadge";
 import { formatDateTime, formatDuration, formatMMK, formatMMKUnit } from "@/lib/format";
-import type { Pricing, Session } from "@/lib/types";
+import type { Locale, Pricing, Product, Session } from "@/lib/types";
+import type { MessageKey } from "@/i18n";
 import { previewCorrection } from "@/lib/pricing";
-import { useT } from "@/i18n";
+import { localizedName, useT } from "@/i18n";
 import { fill } from "@/lib/ui";
 
 /**
@@ -27,12 +29,15 @@ export function SessionTable({
   emptyLabel,
   total,
   pricing = [],
+  products = [],
 }: {
   sessions: Session[];
   staffNames: Record<string, string>;
   /** Rate card for the correction preview. Empty = no preview, never a crash. */
   pricing?: Pricing[];
-  /** Fixing a wrong duration/amount. Open to any active staff. */
+  /** Active products, for the "add a forgotten snack" picker. Empty = picker shows nothing to add. */
+  products?: Product[];
+  /** Fixing a wrong duration/amount, or a wrong snack. Open to any active staff. */
   canCorrect?: boolean;
   /** Cancelling a session outright (zeroes it). Superadmin-only. */
   canVoid?: boolean;
@@ -154,6 +159,7 @@ export function SessionTable({
           canCorrect={canCorrect}
           canVoid={canVoid}
           pricing={pricing}
+          products={products}
           onClose={() => setReceipt(null)}
         />
       )}
@@ -161,33 +167,63 @@ export function SessionTable({
   );
 }
 
+/** A closed session's order line, mid-edit in the "snacks" panel. */
+interface WorkingLine {
+  orderLineId: string;
+  productId: string;
+  productName: string;
+  unitPrice: number;
+  originalQty: number;
+  qty: number;
+  /** Stepped down to zero rather than deleted, so an accidental tap is one click to undo. */
+  removed: boolean;
+}
+
+/** A snack tapped in from the picker, not yet on the order. */
+interface NewLine {
+  productId: string;
+  productName: string;
+  unitPrice: number;
+  qty: number;
+}
+
 function ReceiptModal({
   session,
   canCorrect,
   canVoid,
   pricing,
+  products,
   onClose,
 }: {
   session: Session;
   pricing: Pricing[];
+  products: Product[];
   canCorrect: boolean;
   canVoid: boolean;
   onClose: () => void;
 }) {
-  const { t } = useT();
-  // Two different repairs, and they must not be one mis-click apart. "fix"
-  // re-prices the session and keeps the day it was taken on. "cancel" writes
-  // the whole sale off and is terminal.
-  const [mode, setMode] = useState<"fix" | "cancel" | null>(null);
+  const { t, locale } = useT();
+  // Three different repairs, and they must not be one mis-click apart. "fix"
+  // re-prices the session and keeps the day it was taken on. "snacks" edits
+  // the order lines. "cancel" writes the whole sale off and is terminal.
+  const [mode, setMode] = useState<"fix" | "snacks" | "cancel" | null>(null);
   const [minutes, setMinutes] = useState(String(session.minutes));
   const [reason, setReason] = useState("");
   const [returnSnacks, setReturnSnacks] = useState(false);
+  const [workingLines, setWorkingLines] = useState<WorkingLine[]>([]);
+  const [newLines, setNewLines] = useState<NewLine[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const typedMinutes = Number(minutes);
   const minutesValid = Number.isInteger(typedMinutes) && typedMinutes > 0;
-  const canSubmit = reason.trim().length > 0 && (mode === "cancel" || minutesValid);
+  const hasSnackChanges =
+    workingLines.some((l) => l.removed || l.qty !== l.originalQty) || newLines.length > 0;
+  const canSubmit =
+    reason.trim().length > 0 &&
+    (mode === "cancel" ||
+      (mode === "fix" && minutesValid) ||
+      (mode === "snacks" && hasSnackChanges));
 
   // The server re-derives all of this; the preview only exists so the owner
   // sees the number before committing. `find` rather than rateFor(): an empty
@@ -198,19 +234,80 @@ function ReceiptModal({
       ? previewCorrection(typedMinutes, tier, session.ratePerHour, session.snacksTotal)
       : null;
 
-  const open = (next: "fix" | "cancel") => {
+  // Client-side only, same status as the "fix" preview above: the server is
+  // still authoritative and re-sums order_lines itself on save.
+  const snacksPreview =
+    workingLines.filter((l) => !l.removed).reduce((n, l) => n + l.unitPrice * l.qty, 0) +
+    newLines.reduce((n, l) => n + l.unitPrice * l.qty, 0);
+  const totalPreview = session.playtimeTotal + snacksPreview;
+
+  const open = (next: "fix" | "snacks" | "cancel") => {
     setMode(next);
     setError(null);
     setReason("");
     setMinutes(String(session.minutes));
+    if (next === "snacks") {
+      setWorkingLines(
+        session.orders
+          .filter((o) => !!o.id)
+          .map((o) => ({
+            orderLineId: o.id as string,
+            productId: o.productId,
+            productName: o.productName,
+            unitPrice: o.unitPrice,
+            originalQty: o.qty,
+            qty: o.qty,
+            removed: false,
+          })),
+      );
+      setNewLines([]);
+    }
   };
+
+  const stepLine = (orderLineId: string, delta: number) =>
+    setWorkingLines((lines) =>
+      lines.map((l) => {
+        if (l.orderLineId !== orderLineId) return l;
+        if (l.removed) return delta > 0 ? { ...l, removed: false, qty: l.originalQty } : l;
+        const qty = l.qty + delta;
+        return qty <= 0 ? { ...l, removed: true } : { ...l, qty };
+      }),
+    );
+
+  const addProduct = (p: Product) =>
+    setNewLines((lines) => {
+      const existing = lines.find((l) => l.productId === p.id);
+      if (existing) {
+        return lines.map((l) => (l.productId === p.id ? { ...l, qty: l.qty + 1 } : l));
+      }
+      return [...lines, { productId: p.id, productName: localizedName(locale, p), unitPrice: p.price, qty: 1 }];
+    });
+
+  const stepNewLine = (productId: string, delta: number) =>
+    setNewLines((lines) =>
+      lines
+        .map((l) => (l.productId === productId ? { ...l, qty: l.qty + delta } : l))
+        .filter((l) => l.qty > 0),
+    );
+
+  const buildSnackChanges = (): SnackEditChange[] => [
+    ...workingLines
+      .filter((l) => l.removed)
+      .map((l): SnackEditChange => ({ kind: "remove", orderLineId: l.orderLineId })),
+    ...workingLines
+      .filter((l) => !l.removed && l.qty !== l.originalQty)
+      .map((l): SnackEditChange => ({ kind: "setQty", orderLineId: l.orderLineId, qty: l.qty })),
+    ...newLines.map((l): SnackEditChange => ({ kind: "add", productId: l.productId, qty: l.qty })),
+  ];
 
   const submit = () =>
     startTransition(async () => {
       const r =
         mode === "fix"
           ? await correctSessionAction(session.id, typedMinutes, reason)
-          : await voidSessionAction(session.id, reason, returnSnacks);
+          : mode === "snacks"
+            ? await editSessionSnacksAction(session.id, buildSnackChanges(), reason)
+            : await voidSessionAction(session.id, reason, returnSnacks);
       if (r.ok) onClose();
       else setError(r.message ?? "Could not change the session.");
     });
@@ -273,6 +370,17 @@ function ReceiptModal({
           </div>
         )}
 
+        {session.snackEditedAt && session.originalSnacksTotal !== null && (
+          <div className="mx-[22px] mb-4 rounded-md border border-line bg-surface-sunken px-3.5 py-2.5 text-xs text-text-secondary">
+            <strong className="font-semibold text-text">{t("reports.snacksCorrected")}.</strong>{" "}
+            {fill(t("reports.snacksCorrectedFrom"), {
+              v: formatMMK(session.originalSnacksTotal),
+              n: formatMMK(session.snacksTotal),
+            })}
+            {session.snackEditReason ? ` · ${session.snackEditReason}` : ""}
+          </div>
+        )}
+
         {mode && (
           <div className="mx-[22px] mb-4 rounded-md border border-line bg-surface-sunken p-3.5">
             {error && (
@@ -318,15 +426,39 @@ function ReceiptModal({
                 )}
               </>
             )}
+            {mode === "snacks" && (
+              <SnackEditPanel
+                t={t}
+                locale={locale}
+                pending={pending}
+                workingLines={workingLines}
+                newLines={newLines}
+                products={products}
+                onStepLine={stepLine}
+                onStepNewLine={stepNewLine}
+                onAddProduct={addProduct}
+                oldTotal={session.total}
+                totalPreview={totalPreview}
+                hasSnackChanges={hasSnackChanges}
+              />
+            )}
             <label className="block text-2xs tracking-caps uppercase text-text-muted font-semibold mb-1.5">
-              {mode === "fix" ? t("reports.correctReason") : t("reports.cancelReason")}
+              {mode === "fix"
+                ? t("reports.correctReason")
+                : mode === "snacks"
+                  ? t("reports.editSnacksReason")
+                  : t("reports.cancelReason")}
             </label>
             <input
               autoFocus={mode === "cancel"}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={
-                mode === "fix" ? t("reports.correctReasonHint") : t("reports.cancelReasonHint")
+                mode === "fix"
+                  ? t("reports.correctReasonHint")
+                  : mode === "snacks"
+                    ? t("reports.editSnacksReasonHint")
+                    : t("reports.cancelReasonHint")
               }
               disabled={pending}
               className="cat-input"
@@ -358,14 +490,16 @@ function ReceiptModal({
                 onClick={submit}
                 disabled={pending || !canSubmit}
                 className={`${
-                  mode === "fix" ? "bg-accent" : "bg-status-expired"
+                  mode === "cancel" ? "bg-status-expired" : "bg-accent"
                 } text-white rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-45`}
               >
                 {pending
                   ? t("record.saving")
                   : mode === "fix"
                     ? t("reports.correctConfirm")
-                    : t("reports.cancelConfirm")}
+                    : mode === "snacks"
+                      ? t("reports.editSnacksConfirm")
+                      : t("reports.cancelConfirm")}
               </button>
               <button
                 onClick={() => setMode(null)}
@@ -389,6 +523,15 @@ function ReceiptModal({
                 {t("reports.correct")}
               </button>
             )}
+            {canCorrect && (
+              <button
+                onClick={() => open("snacks")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+              >
+                <Plus size={14} />
+                {t("reports.editSnacks")}
+              </button>
+            )}
             {canVoid && (
               <button
                 onClick={() => open("cancel")}
@@ -407,6 +550,164 @@ function ReceiptModal({
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The "edit snacks" panel inside the fix/cancel modal: current order lines
+ * with a qty stepper, a picker for a forgotten item, and a running total
+ * preview. Kept as its own component so ReceiptModal's JSX does not grow a
+ * third deeply-nested mode inline.
+ */
+function SnackEditPanel({
+  t,
+  locale,
+  pending,
+  workingLines,
+  newLines,
+  products,
+  onStepLine,
+  onStepNewLine,
+  onAddProduct,
+  oldTotal,
+  totalPreview,
+  hasSnackChanges,
+}: {
+  t: (key: MessageKey) => string;
+  locale: Locale;
+  pending: boolean;
+  workingLines: WorkingLine[];
+  newLines: NewLine[];
+  products: Product[];
+  onStepLine: (orderLineId: string, delta: number) => void;
+  onStepNewLine: (productId: string, delta: number) => void;
+  onAddProduct: (p: Product) => void;
+  oldTotal: number;
+  totalPreview: number;
+  hasSnackChanges: boolean;
+}) {
+  return (
+    <div className="mb-3">
+      {workingLines.length === 0 && newLines.length === 0 ? (
+        <p className="text-xs text-text-muted m-0 mb-2.5">{t("session.noSnacks")}</p>
+      ) : (
+        <ul className="list-none p-0 m-0 mb-2.5 space-y-1.5">
+          {workingLines.map((l) => (
+            <li
+              key={l.orderLineId}
+              className={`flex items-center justify-between gap-2 text-sm ${l.removed ? "opacity-50" : ""}`}
+            >
+              <span className={`min-w-0 truncate ${l.removed ? "line-through text-text-muted" : "text-text"}`}>
+                {l.removed ? l.originalQty : l.qty}× {l.productName}
+                {!l.removed && l.qty !== l.originalQty && (
+                  <span className="text-2xs text-text-muted"> ({l.originalQty} → {l.qty})</span>
+                )}
+              </span>
+              <span className="flex items-center gap-1 flex-none">
+                {l.removed ? (
+                  <button
+                    type="button"
+                    onClick={() => onStepLine(l.orderLineId, 1)}
+                    disabled={pending}
+                    aria-label={t("common.undo")}
+                    className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline disabled:opacity-50"
+                  >
+                    <Undo2 size={12} />
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onStepLine(l.orderLineId, -1)}
+                      disabled={pending}
+                      aria-label={t("session.remove")}
+                      className="text-text-muted hover:text-status-expired-ink disabled:opacity-50"
+                    >
+                      {l.qty <= 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onStepLine(l.orderLineId, 1)}
+                      disabled={pending}
+                      aria-label={t("session.addSnack")}
+                      className="text-text-muted hover:text-accent disabled:opacity-50"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </>
+                )}
+              </span>
+            </li>
+          ))}
+          {newLines.map((l) => (
+            <li key={l.productId} className="flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 truncate text-text">
+                {l.qty}× {l.productName}{" "}
+                <span className="text-2xs text-accent font-semibold">{t("common.new")}</span>
+              </span>
+              <span className="flex items-center gap-1 flex-none">
+                <button
+                  type="button"
+                  onClick={() => onStepNewLine(l.productId, -1)}
+                  disabled={pending}
+                  aria-label={t("session.remove")}
+                  className="text-text-muted hover:text-status-expired-ink disabled:opacity-50"
+                >
+                  {l.qty <= 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onStepNewLine(l.productId, 1)}
+                  disabled={pending}
+                  aria-label={t("session.addSnack")}
+                  className="text-text-muted hover:text-accent disabled:opacity-50"
+                >
+                  <Plus size={14} />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="text-2xs font-semibold uppercase tracking-wide text-text-muted mb-1.5">
+        {t("session.addSnack")}
+      </div>
+      <div className="space-y-1.5 max-h-[180px] overflow-auto mb-3">
+        {products.map((p) => {
+          const out = p.stock !== null && p.stock <= 0;
+          return (
+            <button
+              type="button"
+              key={p.id}
+              onClick={() => onAddProduct(p)}
+              disabled={pending || out}
+              className={`w-full flex items-center justify-between gap-2 border rounded-md px-3 py-1.5 text-xs transition-colors ${
+                out
+                  ? "border-line bg-line-faint text-text-muted cursor-not-allowed"
+                  : "border-line bg-surface text-text hover:border-accent hover:bg-accent-soft"
+              }`}
+            >
+              <span className="min-w-0 truncate">{localizedName(locale, p)}</span>
+              <span className="flex items-center gap-2 flex-none">
+                <span className="tabular-nums text-text-secondary">{formatMMK(p.price)}</span>
+                {out ? <span>{t("session.outOfStock")}</span> : <Plus size={13} className="text-accent" />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {hasSnackChanges && (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-line-soft bg-surface px-3 py-2 text-xs">
+          <span className="text-text-secondary">{t("reports.total")}</span>
+          <span className="tabular-nums font-semibold flex-none">
+            <span className="text-text-muted line-through">{formatMMK(oldTotal)}</span>{" "}
+            <ArrowRight size={11} className="inline -mt-px" /> {formatMMK(totalPreview)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

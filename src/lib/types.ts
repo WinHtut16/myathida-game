@@ -115,6 +115,15 @@ export interface Session {
   originalTotal: number | null;
   correctionReason: string | null;
   correctedAt: string | null;
+  /**
+   * Set when an admin added, removed, or re-quantified snacks on this session
+   * after it closed. originalSnacksTotal is filled once, the first time, so a
+   * second edit still shows what the customer's snacks originally totalled.
+   * Null on every session that has never had its snacks edited.
+   */
+  originalSnacksTotal: number | null;
+  snackEditReason: string | null;
+  snackEditedAt: string | null;
 }
 
 /**

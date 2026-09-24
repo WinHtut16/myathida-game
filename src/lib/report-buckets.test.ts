@@ -39,6 +39,9 @@ function session(overrides: Partial<Session> & { createdAt: string; total: numbe
     originalTotal: null,
     correctionReason: null,
     correctedAt: null,
+    originalSnacksTotal: null,
+    snackEditReason: null,
+    snackEditedAt: null,
     ...overrides,
   };
 }

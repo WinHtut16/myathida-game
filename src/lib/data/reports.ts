@@ -6,7 +6,7 @@ import { getStaffDirectory } from "./staff-directory";
 import { YANGON_OFFSET_MIN, yangonDay, yangonDayStart } from "./yangon";
 import { buildTimeline, type TimelineData } from "@/lib/timeline";
 import { bucketByDay, bucketByHour, type Bucket } from "@/lib/report-buckets";
-import type { OrderLine, Pricing, Session, Tier } from "@/lib/types";
+import type { OrderLine, Pricing, Product, Session, Tier } from "@/lib/types";
 
 /**
  * Server-side reads and aggregation for the reports screen.
@@ -63,6 +63,8 @@ export interface ReportsData {
    * batch - four rows, no extra round-trip on the wire.
    */
   pricing: Pricing[];
+  /** Active products, for the "add a forgotten snack" picker on a past session. */
+  products: Product[];
   totals: Totals;
   /** Same-length window immediately before this one, for the trend badges. */
   previous: Totals | null;
@@ -103,7 +105,7 @@ export const RECENT_TAIL = 20;
  * shapes for the same `Session`.
  */
 const SESSION_SELECT =
-  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,original_minutes,original_charged_minutes,original_total,correction_reason,corrected_at,order_lines(product_id,product_name,qty,unit_price,line_total)";
+  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,original_minutes,original_charged_minutes,original_total,correction_reason,corrected_at,original_snacks_total,snack_edit_reason,snack_edited_at,order_lines(id,product_id,product_name,qty,unit_price,line_total)";
 
 interface SessionRow {
   id: string;
@@ -126,7 +128,11 @@ interface SessionRow {
   original_total: number | null;
   correction_reason: string | null;
   corrected_at: string | null;
+  original_snacks_total: number | null;
+  snack_edit_reason: string | null;
+  snack_edited_at: string | null;
   order_lines: {
+    id: string;
     product_id: string | null;
     product_name: string;
     qty: number;
@@ -142,6 +148,7 @@ interface SessionRow {
 
 function mapSessionRow(r: SessionRow): Session {
   const orders: OrderLine[] = (r.order_lines ?? []).map((o) => ({
+    id: o.id,
     productId: o.product_id ?? "",
     productName: o.product_name,
     qty: o.qty,
@@ -170,6 +177,9 @@ function mapSessionRow(r: SessionRow): Session {
     originalTotal: r.original_total === null ? null : Number(r.original_total),
     correctionReason: r.correction_reason,
     correctedAt: r.corrected_at,
+    originalSnacksTotal: r.original_snacks_total === null ? null : Number(r.original_snacks_total),
+    snackEditReason: r.snack_edit_reason,
+    snackEditedAt: r.snack_edited_at,
     // Reports only ever show closed rows (both readers filter on status), but
     // the type carries these so a screen that wants to say "paid by KBZPay" or
     // "50 min waived" does not need a second query for it.
@@ -179,6 +189,29 @@ function mapSessionRow(r: SessionRow): Session {
     paymentMethod: (r.payment_method as Session["paymentMethod"]) ?? null,
     waivedMinutes: r.waived_minutes ?? 0,
   };
+}
+
+interface ProductRow {
+  id: string;
+  name_en: string;
+  name_my: string;
+  category: string;
+  price: number;
+  stock: number | null;
+  active: boolean;
+}
+
+/** Shared by getReports() and getSessionHistory() for the "add a forgotten snack" picker. */
+function mapProducts(rows: ProductRow[] | null): Product[] {
+  return (rows ?? []).map((p) => ({
+    id: p.id,
+    nameEn: p.name_en,
+    nameMy: p.name_my,
+    category: p.category as Product["category"],
+    price: Number(p.price),
+    stock: p.stock,
+    active: p.active,
+  }));
 }
 
 /** Turn a failed `sessions` read into the message the screen should show. */
@@ -245,9 +278,10 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
   if (from) query = query.gte("created_at", from.toISOString());
 
-  const [sessionsRes, pricingRes, directory] = await Promise.all([
+  const [sessionsRes, pricingRes, productsRes, directory] = await Promise.all([
     query,
     supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
+    supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
     getStaffDirectory(),
   ]);
 
@@ -329,6 +363,7 @@ export async function getReports(period: Period): Promise<ReportsResult> {
       incrementMinutes: p.increment_minutes,
       graceMinutes: p.grace_minutes,
     })),
+    products: mapProducts(productsRes.data as ProductRow[] | null),
     truncated: rows.length >= ROW_CAP,
   };
 }
@@ -363,6 +398,8 @@ export interface SessionHistoryData {
   staffList: { id: string; name: string }[];
   /** Rate card, for the correction preview. Same reason as ReportsData. */
   pricing: Pricing[];
+  /** Active products, for the "add a forgotten snack" picker on a past session. */
+  products: Product[];
 }
 
 export type SessionHistoryResult = SessionHistoryData | { ok: false; message: string };
@@ -404,10 +441,11 @@ export async function getSessionHistory(
   if (filters.stationId) query = query.eq("station_id", filters.stationId);
   if (filters.staff) query = query.eq("created_by", filters.staff);
 
-  const [sessionsRes, stationsRes, pricingRes, directory] = await Promise.all([
+  const [sessionsRes, stationsRes, pricingRes, productsRes, directory] = await Promise.all([
     query,
     supabase.from("stations").select("id,name").order("sort_order"),
     supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
+    supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
     getStaffDirectory(),
   ]);
 
@@ -445,6 +483,7 @@ export async function getSessionHistory(
       incrementMinutes: p.increment_minutes,
       graceMinutes: p.grace_minutes,
     })),
+    products: mapProducts(productsRes.data as ProductRow[] | null),
   };
 }
 
