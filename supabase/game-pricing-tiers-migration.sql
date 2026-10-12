@@ -98,17 +98,17 @@ drop policy if exists pricing_tiers_write_superadmin on game.pricing_tiers;
 create policy pricing_tiers_write_superadmin on game.pricing_tiers for all
   using ((select game.is_superadmin())) with check ((select game.is_superadmin()));
 
--- ── 2. Seed: a 60-minute point from today's rate, plus a 30-minute ─────────
---      STARTING VALUE - a one-time migration convenience, never an ongoing
---      derivation. Nothing in game.replace_pricing_tiers or this migration
---      ever recomputes 30 from 60 again after this statement runs; the owner
---      should review and likely change it.
+-- ── 2. Seed: a 60-minute point from today's rate, plus the client's actual
+--      30-minute prices (confirmed 2026-10-13: PS4 2000, PS5 3000, VIP 4000 -
+--      not half the hourly rate, independently set from day one).
 insert into game.pricing_tiers (tier, duration_minutes, rate)
 select tier, 60, rate_per_hour from game.pricing
 on conflict (tier, duration_minutes) do nothing;
 
-insert into game.pricing_tiers (tier, duration_minutes, rate)
-select tier, 30, round(rate_per_hour / 2) from game.pricing
+insert into game.pricing_tiers (tier, duration_minutes, rate) values
+  ('PS4', 30, 2000),
+  ('PS5', 30, 3000),
+  ('VIP', 30, 4000)
 on conflict (tier, duration_minutes) do nothing;
 
 -- ── 3. pricing.rate_per_hour becomes a maintained mirror ────────────────────
