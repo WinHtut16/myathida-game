@@ -116,8 +116,15 @@ export const en = {
 
   // pricing
   "pricing.rateCard": "Rate card",
-  "pricing.ratePerHour": "Rate per hour",
-  "pricing.ratePerHourSub": "Charged in blocks off this rate",
+  "pricing.tierPrice": "Duration prices",
+  "pricing.duration": "min",
+  "pricing.durationSub": "Each duration is its own price — 90 min is never 60 + 30.",
+  "pricing.addTier": "Add a duration",
+  "pricing.removeTier": "Remove this duration",
+  "pricing.sixtyRequired": "Pricing needs a 60-minute price — everything else is based on it.",
+  "pricing.invalidDuration": "Each duration must be a whole number of minutes, more than zero.",
+  "pricing.invalidPrice": "Each price must be zero or more.",
+  "pricing.duplicateDuration": "Each duration can only be priced once.",
   "pricing.minMinutes": "Minimum minutes",
   "pricing.minMinutesSub": "Shortest charged session",
   "pricing.save": "Save rate",

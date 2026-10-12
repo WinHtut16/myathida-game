@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Plus, Trash2 } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { updatePricingAction } from "@/app/actions/catalogue";
 import { TierBadge } from "@/components/station/TierBadge";
-import { useT } from "@/i18n";
+import { useT, type MessageKey } from "@/i18n";
 import { formatMMK } from "@/lib/format";
-import type { Pricing } from "@/lib/types";
+import type { Pricing, PricingTier } from "@/lib/types";
 
 /**
  * Rate cards.
@@ -37,6 +38,25 @@ export function PricingView({ pricing, canEdit }: { pricing: Pricing[]; canEdit:
   );
 }
 
+const byDuration = (a: PricingTier, b: PricingTier) => a.durationMinutes - b.durationMinutes;
+
+/** Mirrors updatePricingAction's own checks, so Save disables before a round trip. */
+function tiersError(tiers: PricingTier[], t: (k: MessageKey) => string): string | null {
+  if (tiers.length === 0) return t("pricing.sixtyRequired");
+  for (const tier of tiers) {
+    if (!Number.isInteger(tier.durationMinutes) || tier.durationMinutes <= 0) {
+      return t("pricing.invalidDuration");
+    }
+    if (!Number.isFinite(tier.rate) || tier.rate < 0) {
+      return t("pricing.invalidPrice");
+    }
+  }
+  const durations = tiers.map((d) => d.durationMinutes);
+  if (new Set(durations).size !== durations.length) return t("pricing.duplicateDuration");
+  if (!durations.includes(60)) return t("pricing.sixtyRequired");
+  return null;
+}
+
 function RateCard({
   pricing,
   canEdit,
@@ -48,24 +68,33 @@ function RateCard({
 }) {
   const { t } = useT();
   const [pending, startTransition] = useTransition();
+  const [tiers, setTiers] = useState<PricingTier[]>([...pricing.tiers].sort(byDuration));
   const [draft, setDraft] = useState({
-    ratePerHour: pricing.ratePerHour,
     minMinutes: pricing.minMinutes,
     incrementMinutes: pricing.incrementMinutes,
     graceMinutes: pricing.graceMinutes,
   });
 
+  const sortedOriginal = [...pricing.tiers].sort(byDuration);
   const dirty =
-    draft.ratePerHour !== pricing.ratePerHour ||
+    JSON.stringify(tiers) !== JSON.stringify(sortedOriginal) ||
     draft.minMinutes !== pricing.minMinutes ||
     draft.incrementMinutes !== pricing.incrementMinutes ||
     draft.graceMinutes !== pricing.graceMinutes;
+
+  const error = tiersError(tiers, t);
+  const sixtyRate = tiers.find((d) => d.durationMinutes === 60)?.rate ?? 0;
+
+  const setTier = (i: number, patch: Partial<PricingTier>) =>
+    setTiers((list) => list.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
+  const addTier = () => setTiers((list) => [...list, { durationMinutes: 0, rate: 0 }]);
+  const removeTier = (i: number) => setTiers((list) => list.filter((_, idx) => idx !== i));
 
   const save = () =>
     startTransition(async () => {
       const r = await updatePricingAction(
         pricing.tier,
-        draft.ratePerHour,
+        [...tiers].sort(byDuration),
         draft.minMinutes,
         draft.incrementMinutes,
         draft.graceMinutes,
@@ -79,7 +108,6 @@ function RateCard({
     });
 
   const rows: { key: keyof typeof draft; label: string; sub: string }[] = [
-    { key: "ratePerHour", label: t("pricing.ratePerHour"), sub: t("pricing.ratePerHourSub") },
     { key: "minMinutes", label: t("pricing.minMinutes"), sub: t("pricing.minMinutesSub") },
     // These apply to BOTH doors onto the sessions table: a session closed off a
     // timer and one typed in afterwards go through the same game.bill_minutes().
@@ -92,6 +120,51 @@ function RateCard({
       <div className="flex items-center gap-2.5 mb-5">
         <TierBadge tier={pricing.tier} />
         <span className="text-md font-bold">{t("pricing.rateCard")}</span>
+      </div>
+
+      <div className="flex flex-col gap-2.5 mb-4">
+        <div className="text-sm font-semibold">{t("pricing.tierPrice")}</div>
+        <div className="text-xs text-text-muted -mt-1.5 mb-1">{t("pricing.durationSub")}</div>
+        {tiers.map((tier, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              value={tier.durationMinutes}
+              disabled={!canEdit || pending || tier.durationMinutes === 60}
+              onChange={(e) => setTier(i, { durationMinutes: Number(e.target.value) || 0 })}
+              className="border border-line rounded-md px-2.5 py-2 font-display text-sm font-semibold tabular-nums tracking-tight w-[72px] text-right outline-none disabled:bg-surface-sunken disabled:text-text-muted"
+            />
+            <span className="text-xs text-text-muted">{t("pricing.duration")}</span>
+            <input
+              type="number"
+              min={0}
+              value={tier.rate}
+              disabled={!canEdit || pending}
+              onChange={(e) => setTier(i, { rate: Number(e.target.value) || 0 })}
+              className="border border-line rounded-md px-3 py-2 font-display text-sm font-semibold tabular-nums tracking-tight w-[100px] text-right outline-none disabled:bg-surface-sunken disabled:text-text-muted ml-auto"
+            />
+            <button
+              type="button"
+              onClick={() => removeTier(i)}
+              disabled={!canEdit || pending || tier.durationMinutes === 60}
+              title={t("pricing.removeTier")}
+              className="p-2 text-text-muted hover:text-danger disabled:opacity-30 disabled:hover:text-text-muted"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addTier}
+          disabled={!canEdit || pending}
+          className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-strong disabled:opacity-45 mt-1"
+        >
+          <Plus className="size-3.5" />
+          {t("pricing.addTier")}
+        </button>
+        {error && <div className="text-2xs text-danger mt-0.5">{error}</div>}
       </div>
 
       <div className="flex flex-col gap-4">
@@ -121,12 +194,10 @@ function RateCard({
 
       <button
         onClick={save}
-        disabled={!canEdit || pending || !dirty}
+        disabled={!canEdit || pending || !dirty || !!error}
         className="w-full mt-4 bg-accent text-white rounded-md hover:bg-accent-strong transition-colors py-3 text-sm font-semibold disabled:opacity-45"
       >
-        {pending
-          ? t("record.saving")
-          : `${t("pricing.save")} · ${formatMMK(draft.ratePerHour)}/hr`}
+        {pending ? t("record.saving") : `${t("pricing.save")} · ${formatMMK(sixtyRate)}/hr`}
       </button>
     </div>
   );

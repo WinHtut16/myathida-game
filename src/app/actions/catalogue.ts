@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ProductCategory, Tier } from "@/lib/types";
 
+export interface PricingTierInput {
+  durationMinutes: number;
+  rate: number;
+}
+
 /**
  * Writes for Snacks and Pricing.
  *
@@ -216,15 +221,37 @@ export async function setStockAction(
   return { ok: true };
 }
 
+/**
+ * Replaces ALL duration tiers for one station tier in one call, via an RPC -
+ * a deliberate exception to this file's own "plain writes, no RPC" rule
+ * above. That rule holds for a single scalar field; this replaces a
+ * variable-length list of rows (delete-then-insert), which two separate
+ * `.from(...)` calls from here could not do atomically.
+ */
 export async function updatePricingAction(
   tier: Tier,
-  ratePerHour: number,
+  tiers: PricingTierInput[],
   minMinutes: number,
   incrementMinutes: number,
   graceMinutes: number,
 ): Promise<ActionResult> {
-  if (!Number.isFinite(ratePerHour) || ratePerHour < 0) {
-    return { ok: false, message: "Rate must be zero or more." };
+  if (tiers.length === 0) {
+    return { ok: false, message: "Pricing needs at least one duration tier." };
+  }
+  for (const t of tiers) {
+    if (!Number.isInteger(t.durationMinutes) || t.durationMinutes <= 0) {
+      return { ok: false, message: "Each duration must be a whole number of minutes, more than zero." };
+    }
+    if (!Number.isFinite(t.rate) || t.rate < 0) {
+      return { ok: false, message: "Each price must be zero or more." };
+    }
+  }
+  const durations = tiers.map((t) => t.durationMinutes);
+  if (new Set(durations).size !== durations.length) {
+    return { ok: false, message: "Each duration can only be priced once." };
+  }
+  if (!durations.includes(60)) {
+    return { ok: false, message: "Pricing needs a 60-minute rate — everything else is based on it." };
   }
   if (!Number.isInteger(minMinutes) || minMinutes < 0) {
     return { ok: false, message: "Minimum minutes must be a whole number, zero or more." };
@@ -239,34 +266,34 @@ export async function updatePricingAction(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pricing")
-    .update({
-      rate_per_hour: ratePerHour,
-      min_minutes: minMinutes,
-      increment_minutes: incrementMinutes,
-      grace_minutes: graceMinutes,
-    })
-    .eq("tier", tier)
-    .select("tier");
+  const { error } = await supabase.rpc("replace_pricing_tiers", {
+    p_tier: tier,
+    p_points: tiers.map((t) => ({ duration_minutes: t.durationMinutes, rate: t.rate })),
+    p_min_minutes: minMinutes,
+    p_increment_minutes: incrementMinutes,
+    p_grace_minutes: graceMinutes,
+  });
 
   if (error) {
     console.error("[catalogue] pricing write failed", {
       tier, code: error.code, message: error.message,
       details: error.details, hint: error.hint,
     });
+    if (error.code === "42883") {
+      return {
+        ok: false,
+        message:
+          "Per-duration pricing is not set up yet. Run supabase/game-pricing-tiers-migration.sql in the futsal Supabase project.",
+      };
+    }
     return { ok: false, message: explain(error.code, error.message) };
-  }
-  if (!data || data.length === 0) {
-    console.warn("[catalogue] pricing write affected 0 rows (RLS)", { tier });
-    return { ok: false, message: DENIED };
   }
 
   /**
-   * Only future sessions are affected. record_session snapshots rate_per_hour
-   * onto every row it writes, so changing a price here never rewrites what a
-   * customer was already charged - which is why the receipts in Reports stay
-   * correct after a price rise.
+   * Only future sessions are affected. open_session/record_session snapshot
+   * the full tier curve onto every row they write, so changing prices here
+   * never rewrites what a customer was already charged - which is why the
+   * receipts in Reports stay correct after a price rise.
    */
   revalidatePath("/pricing");
   revalidatePath("/floor");
