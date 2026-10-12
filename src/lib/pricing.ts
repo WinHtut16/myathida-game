@@ -1,4 +1,11 @@
-import type { OrderLine, Pricing, Tier } from "./types";
+import type { OrderLine, Pricing, PricingTier, SoldPricing, Tier } from "./types";
+
+/** Shared shape billMinutes() needs — both Pricing and SoldPricing satisfy it. */
+interface BillingRule {
+  minMinutes: number;
+  incrementMinutes: number;
+  graceMinutes: number;
+}
 
 /**
  * THE BILLING RULE. Mirrors game.bill_minutes(), which both game.close_session()
@@ -19,23 +26,60 @@ import type { OrderLine, Pricing, Tier } from "./types";
  * 97-game-live-sessions.sql asserts against the database - if one drifts, one of
  * those two suites goes red.
  */
-function billMinutes(minutes: number, pricing: Pricing, waiveBlocks = 0): number {
+function billMinutes(minutes: number, rule: BillingRule, waiveBlocks = 0): number {
   // The pricing CHECK makes a non-positive increment impossible in the database,
   // where bill_minutes raises on one. Here it is clamped instead: a preview must
   // never be the thing that blanks the floor screen.
-  const increment = Math.max(1, pricing.incrementMinutes);
-  const afterGrace = Math.max(0, minutes - pricing.graceMinutes);
-  const billed = Math.max(pricing.minMinutes, Math.ceil(afterGrace / increment) * increment);
+  const increment = Math.max(1, rule.incrementMinutes);
+  const afterGrace = Math.max(0, minutes - rule.graceMinutes);
+  const billed = Math.max(rule.minMinutes, Math.ceil(afterGrace / increment) * increment);
   const waive = Math.min(Math.max(waiveBlocks, 0), 1) * increment;
-  return Math.max(pricing.minMinutes, billed - waive);
+  return Math.max(rule.minMinutes, billed - waive);
+}
+
+/**
+ * Materializes the implicit (0,0) origin in front of the admin-set points,
+ * sorted ascending. Every lookup goes through points shaped this way — the
+ * live tier list here, and a session's frozen SoldPricing.points already
+ * shaped this way by game.pricing_curve() — so tierRate() never special-
+ * cases where the curve starts.
+ */
+function curveOf(tiers: PricingTier[]): PricingTier[] {
+  return [{ durationMinutes: 0, rate: 0 }, ...tiers].sort(
+    (a, b) => a.durationMinutes - b.durationMinutes,
+  );
+}
+
+/**
+ * Piecewise-linear lookup over points already including the origin. Finds
+ * the bracketing segment and interpolates; a duration below the first point
+ * or beyond the last extrapolates off the NEAREST segment's slope (not a
+ * flat continuation of either endpoint's own blended rate) — one rule, no
+ * per-tier-count special case. `points.length === 1` only when zero tiers
+ * are configured (an unconfigured tier prices everything at that single
+ * point's rate, i.e. 0).
+ */
+function tierRate(minutes: number, points: PricingTier[]): number {
+  if (points.length === 1) return points[0].rate;
+  let lo = points[0];
+  let hi = points[1];
+  for (let i = 0; i < points.length - 1; i++) {
+    lo = points[i];
+    hi = points[i + 1];
+    if (minutes <= hi.durationMinutes) break;
+  }
+  const slope = (hi.rate - lo.rate) / (hi.durationMinutes - lo.durationMinutes);
+  return lo.rate + slope * (minutes - lo.durationMinutes);
 }
 
 /**
  * Multiply before dividing, matching the SQL exactly. Two paths to the same
- * total must not disagree by a kyat at a rounding boundary.
+ * total must not disagree by a kyat at a rounding boundary. `rate` here is
+ * already the TOTAL price at chargedMinutes (tierRate already did the
+ * proportioning), so this is just the rounding step, not another divide.
  */
-function playtimeCharge(chargedMinutes: number, ratePerHour: number): number {
-  return Math.round((ratePerHour * chargedMinutes) / 60);
+function playtimeCharge(chargedMinutes: number, tiers: PricingTier[]): number {
+  return Math.round(tierRate(chargedMinutes, curveOf(tiers)));
 }
 
 /**
@@ -58,31 +102,28 @@ export function computePlaytime(
   pricing: Pricing,
 ): { chargedMinutes: number; total: number } {
   const chargedMinutes = billMinutes(minutes, pricing);
-  return { chargedMinutes, total: playtimeCharge(chargedMinutes, pricing.ratePerHour) };
+  return { chargedMinutes, total: playtimeCharge(chargedMinutes, pricing.tiers) };
 }
 
 /**
  * What a settled session will cost after a superadmin re-prices it, mirroring
  * game.correct_session().
  *
- * The TIER supplies blocks, grace and the floor - those describe how the shop
- * rounds. The SESSION supplies the rate, because a price rise since the
- * customer paid must not move a bill they already agreed to. That override is
- * one word in a spread and invisible in a diff, which is why this lives here
- * with a test on it rather than inline in the modal.
+ * Takes the session's OWN frozen pricing snapshot — blocks, grace, floor, and
+ * the full tier curve as they were when the rate was decided — never today's
+ * live pricing. A price rise since the customer paid must not move a bill
+ * they already agreed to; taking a SoldPricing rather than a live Pricing
+ * makes that structurally impossible rather than a convention to remember.
  *
  * Snacks ride along untouched: a wrong duration is not a wrong crisp packet.
  */
 export function previewCorrection(
   minutes: number,
-  tier: Pricing,
-  soldAtRatePerHour: number,
+  soldPricing: SoldPricing,
   snacksTotal: number,
 ): { chargedMinutes: number; playtimeTotal: number; total: number } {
-  const { chargedMinutes, total } = computePlaytime(minutes, {
-    ...tier,
-    ratePerHour: soldAtRatePerHour,
-  });
+  const chargedMinutes = billMinutes(minutes, soldPricing);
+  const total = Math.round(tierRate(chargedMinutes, soldPricing.points));
   return { chargedMinutes, playtimeTotal: total, total: total + snacksTotal };
 }
 
@@ -124,7 +165,68 @@ export function computeLiveBill(
     // What was ACTUALLY waived, which is not what was asked for when the request
     // would have pushed the bill below the tier minimum.
     waivedMinutes: billedMinutes - chargedMinutes,
-    playtimeTotal: playtimeCharge(chargedMinutes, pricing.ratePerHour),
+    playtimeTotal: playtimeCharge(chargedMinutes, pricing.tiers),
+  };
+}
+
+/** The two parallel column shapes `pricing` and `pricing_tiers` select as. */
+interface PricingRowShape {
+  tier: Tier;
+  rate_per_hour: number;
+  min_minutes: number;
+  increment_minutes: number;
+  grace_minutes: number;
+}
+interface PricingTierRowShape {
+  tier: Tier;
+  duration_minutes: number;
+  rate: number;
+}
+
+/**
+ * Assembles Pricing[] from the two selects every reader needs: `pricing`
+ * (min/increment/grace, plus the rate_per_hour mirror) and `pricing_tiers`
+ * (the admin-set duration/price points). Shared so floor.ts/live-session.ts/
+ * catalogue.ts/reports.ts don't each reinvent this join.
+ */
+export function mapPricingRows(
+  pricingRows: PricingRowShape[],
+  tierRows: PricingTierRowShape[],
+): Pricing[] {
+  return pricingRows.map((p) => {
+    const tiers = tierRows
+      .filter((t) => t.tier === p.tier)
+      .map((t) => ({ durationMinutes: t.duration_minutes, rate: Number(t.rate) }))
+      .sort((a, b) => a.durationMinutes - b.durationMinutes);
+    return {
+      tier: p.tier,
+      tiers,
+      ratePerHour: tiers.find((t) => t.durationMinutes === 60)?.rate ?? Number(p.rate_per_hour),
+      minMinutes: p.min_minutes,
+      incrementMinutes: p.increment_minutes,
+      graceMinutes: p.grace_minutes,
+    };
+  });
+}
+
+/**
+ * Snake_case `sessions.sold_pricing` jsonb to camelCase SoldPricing. Null
+ * only on a row written before this column existed and not yet backfilled.
+ */
+export function mapSoldPricing(json: unknown): SoldPricing | null {
+  if (!json || typeof json !== "object") return null;
+  const j = json as Record<string, unknown>;
+  const points = Array.isArray(j.points)
+    ? (j.points as Array<Record<string, unknown>>).map((p) => ({
+        durationMinutes: Number(p.duration_minutes),
+        rate: Number(p.rate),
+      }))
+    : [];
+  return {
+    points,
+    minMinutes: Number(j.min_minutes),
+    incrementMinutes: Number(j.increment_minutes),
+    graceMinutes: Number(j.grace_minutes),
   };
 }
 

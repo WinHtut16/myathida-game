@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
 import { yangonDayStart } from "./yangon";
+import { mapPricingRows } from "@/lib/pricing";
 import type { Pricing, Product, Station, Tier } from "@/lib/types";
 
 /** Server reads for the catalogue screens (Snacks, Pricing). */
@@ -24,6 +25,12 @@ interface PricingRow {
   min_minutes: number;
   increment_minutes: number;
   grace_minutes: number;
+}
+
+interface PricingTierRow {
+  tier: Tier;
+  duration_minutes: number;
+  rate: number;
 }
 
 export type CatalogueResult<T> = { ok: true; data: T } | { ok: false; message: string };
@@ -79,29 +86,32 @@ export async function getPricing(): Promise<CatalogueResult<Pricing[]>> {
   if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pricing")
-    .select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes");
+  const [pricingRes, tiersRes] = await Promise.all([
+    supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
+    supabase.from("pricing_tiers").select("tier,duration_minutes,rate"),
+  ]);
 
-  if (error) {
+  if (pricingRes.error) {
     console.error("[catalogue] pricing read failed", {
-      code: error.code, message: error.message, details: error.details, hint: error.hint,
+      code: pricingRes.error.code, message: pricingRes.error.message,
+      details: pricingRes.error.details, hint: pricingRes.error.hint,
     });
-    return { ok: false, message: explainRead(error.code, error.message) };
+    return { ok: false, message: explainRead(pricingRes.error.code, pricingRes.error.message) };
+  }
+  if (tiersRes.error) {
+    console.error("[catalogue] pricing tiers read failed", {
+      code: tiersRes.error.code, message: tiersRes.error.message,
+      details: tiersRes.error.details, hint: tiersRes.error.hint,
+    });
+    return { ok: false, message: explainRead(tiersRes.error.code, tiersRes.error.message) };
   }
 
   const order: Tier[] = ["PS4", "PS5", "VIP"];
   return {
     ok: true,
-    data: (data as PricingRow[])
-      .map((p) => ({
-        tier: p.tier,
-        ratePerHour: Number(p.rate_per_hour),
-        minMinutes: p.min_minutes,
-        incrementMinutes: p.increment_minutes,
-        graceMinutes: p.grace_minutes,
-      }))
-      .sort((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier)),
+    data: mapPricingRows(pricingRes.data as PricingRow[], tiersRes.data as PricingTierRow[]).sort(
+      (a, b) => order.indexOf(a.tier) - order.indexOf(b.tier),
+    ),
   };
 }
 

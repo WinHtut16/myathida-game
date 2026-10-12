@@ -20,6 +20,7 @@ function session(overrides: Partial<Session> & { createdAt: string; total: numbe
     stationName: "TV 1",
     tier: "PS4",
     ratePerHour: 3000,
+    soldPricing: null,
     minutes: 60,
     chargedMinutes: 60,
     playtimeTotal: overrides.total,

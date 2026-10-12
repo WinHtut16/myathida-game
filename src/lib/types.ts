@@ -44,9 +44,34 @@ export interface Station {
   sortOrder: number;
 }
 
+/**
+ * One admin-set (duration, price) point. `rate` is the TOTAL price for
+ * exactly durationMinutes of play — not an hourly rate — so that a single
+ * point at (60, 5000) means exactly what rate_per_hour used to mean.
+ */
+export interface PricingTier {
+  durationMinutes: number;
+  rate: number;
+}
+
 export interface Pricing {
   tier: Tier;
-  ratePerHour: number; // MMK/hr
+  /**
+   * Admin-set (duration, price) points, independently set — 90 is never
+   * derived from 60+30. Any duration not landing exactly on a point (any
+   * live-session or typed-in minute count) is priced by piecewise-linear
+   * interpolation through these points plus an implicit (0,0) origin,
+   * extrapolated beyond the highest point using the last segment's slope.
+   * See pricing.ts. Does not itself include the (0,0) origin.
+   */
+  tiers: PricingTier[];
+  /**
+   * Convenience: the 60-minute point's rate, for display-only readers that
+   * predate per-duration tiers (StationTile, LiveSessionView,
+   * RecordSessionModal, the PricingView save button). Never used for
+   * billing math.
+   */
+  ratePerHour: number; // MMK
   minMinutes: number; // minimum charged minutes (configurable; default 30)
   /**
    * Block size and grace period for a LIVE session, matching billiards
@@ -54,6 +79,21 @@ export interface Pricing {
    * spent, so 62 minutes bills as 60 rather than 70. Per tier, so the VIP room
    * can bill in different blocks from a PS4.
    */
+  incrementMinutes: number;
+  graceMinutes: number;
+}
+
+/**
+ * The pricing structure snapshotted onto a session at the moment its rate
+ * was decided (open_session / record_session), replayed by
+ * previewCorrection()/game.correct_session() instead of today's live
+ * pricing — so a price change since sale can never move a bill already
+ * charged. `points` always includes the (0,0) origin explicitly, matching
+ * what game.pricing_curve() materializes.
+ */
+export interface SoldPricing {
+  points: PricingTier[];
+  minMinutes: number;
   incrementMinutes: number;
   graceMinutes: number;
 }
@@ -86,6 +126,13 @@ export interface Session {
   stationName: string; // snapshot (station may be renamed later)
   tier: Tier;
   ratePerHour: number; // snapshot
+  /**
+   * The full pricing curve + blocking rule in effect when this session's
+   * rate was decided. previewCorrection()/correct_session() replay against
+   * this, never against today's live pricing. Null only on rows written
+   * before this column existed and not yet backfilled.
+   */
+  soldPricing: SoldPricing | null;
   minutes: number; // actual entered duration
   chargedMinutes: number; // max(minutes, minMinutes)
   playtimeTotal: number;
@@ -140,6 +187,7 @@ export interface ActiveSession {
   stationName: string;
   tier: Tier;
   ratePerHour: number; // snapshot, so a mid-session price change cannot move the bill
+  soldPricing: SoldPricing; // snapshot of the full curve, same reason
   startedAt: string; // ISO, from the server — never a client clock
   label: string | null;
   orders: OrderLine[];

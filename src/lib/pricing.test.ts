@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   computeLiveBill,
   computePlaytime,
+  mapPricingRows,
+  mapSoldPricing,
   previewCorrection,
   formatElapsed,
   previewLiveTotal,
   previewTotal,
 } from "./pricing";
-import type { OrderLine, Pricing } from "./types";
+import type { OrderLine, Pricing, PricingTier, SoldPricing } from "./types";
 
 /**
  * The billing rule exists twice: here, for the number on the staff member's
@@ -25,9 +27,14 @@ import type { OrderLine, Pricing } from "./types";
  */
 
 // PS5 as seeded: 10-minute blocks, 5-minute grace, 30-minute floor — the same
-// numbers billiards is actually running in production.
+// numbers billiards is actually running in production. A single 60-minute
+// tier is the degenerate case: one configured point plus the implicit
+// (0,0) origin is a 2-point line, which must reduce to exactly the old
+// `ratePerHour * minutes / 60` formula. That equivalence is what pins every
+// test below unchanged after the move to tiers.
 const ps5: Pricing = {
   tier: "PS5",
+  tiers: [{ durationMinutes: 60, rate: 5000 }],
   ratePerHour: 5000,
   minMinutes: 30,
   incrementMinutes: 10,
@@ -89,6 +96,62 @@ describe("computeLiveBill — the waiver", () => {
 
   it("ignores a negative waiver", () => {
     expect(computeLiveBill(66, ps5, -3).chargedMinutes).toBe(70);
+  });
+});
+
+describe("the pricing curve — piecewise-linear through admin-set tiers", () => {
+  // incrementMinutes: 1, graceMinutes: 0, minMinutes: 0 makes billMinutes()
+  // a no-op (chargedMinutes === minutes passed in), isolating the curve math
+  // under test from the unrelated blocking/grace rounding tested above.
+  const raw = (tiers: PricingTier[]): Pricing => ({
+    tier: "PS5",
+    tiers,
+    ratePerHour: 0,
+    minMinutes: 0,
+    incrementMinutes: 1,
+    graceMinutes: 0,
+  });
+  const multi = raw([
+    { durationMinutes: 30, rate: 2500 },
+    { durationMinutes: 60, rate: 5000 },
+    { durationMinutes: 90, rate: 6500 },
+  ]);
+
+  it("prices exactly at a configured point", () => {
+    expect(computeLiveBill(90, multi).playtimeTotal).toBe(6500);
+  });
+
+  it("interpolates strictly between two configured points", () => {
+    // 47 sits between the 30 (2500) and 60 (5000) points on the straight
+    // line joining them — not snapped to either endpoint.
+    expect(computeLiveBill(47, multi).playtimeTotal).toBe(3917);
+  });
+
+  it("extrapolates beyond the highest point off the LAST segment's slope", () => {
+    // 120 is past the 90-minute point. The last configured segment is
+    // 60->90 (slope 50/min), so 8000 is expected. A flat continuation of
+    // 90's own blended average (6500/90 ~= 72.2/min) would instead give
+    // ~8667 — asserting the specific number catches that regression.
+    expect(computeLiveBill(120, multi).playtimeTotal).toBe(8000);
+  });
+
+  it("interpolates below the lowest point against the implicit (0,0) origin", () => {
+    expect(computeLiveBill(10, multi).playtimeTotal).toBe(833);
+  });
+
+  it("prices everything at 0 with no tiers configured", () => {
+    const unconfigured = raw([]);
+    expect(computeLiveBill(60, unconfigured).playtimeTotal).toBe(0);
+    expect(computeLiveBill(120, unconfigured).playtimeTotal).toBe(0);
+  });
+
+  it("matches the legacy single-rate formula with exactly one tier", () => {
+    // The equivalence the whole design leans on: one point + the origin is
+    // a 2-point line, which is just ratePerHour * chargedMinutes / 60 —
+    // checked independently of the new implementation, for the SAME
+    // chargedMinutes billMinutes (unchanged) already produced.
+    const bill = computeLiveBill(47, ps5);
+    expect(bill.playtimeTotal).toBe(Math.round((5000 * bill.chargedMinutes) / 60));
   });
 });
 
@@ -187,6 +250,70 @@ describe("previewLiveTotal", () => {
   });
 });
 
+describe("mapPricingRows — assembles Pricing[] from the two parallel selects", () => {
+  const pricingRows = [
+    { tier: "PS4" as const, rate_per_hour: 3000, min_minutes: 30, increment_minutes: 10, grace_minutes: 5 },
+    { tier: "PS5" as const, rate_per_hour: 5000, min_minutes: 30, increment_minutes: 10, grace_minutes: 5 },
+  ];
+
+  it("attaches each tier's own rows, sorted by duration, to the matching pricing row", () => {
+    const tierRows = [
+      { tier: "PS5" as const, duration_minutes: 60, rate: 5000 },
+      { tier: "PS4" as const, duration_minutes: 60, rate: 3000 },
+      { tier: "PS5" as const, duration_minutes: 30, rate: 2500 },
+    ];
+    const result = mapPricingRows(pricingRows, tierRows);
+    const ps5 = result.find((p) => p.tier === "PS5")!;
+    expect(ps5.tiers).toEqual([
+      { durationMinutes: 30, rate: 2500 },
+      { durationMinutes: 60, rate: 5000 },
+    ]);
+    const ps4 = result.find((p) => p.tier === "PS4")!;
+    expect(ps4.tiers).toEqual([{ durationMinutes: 60, rate: 3000 }]);
+  });
+
+  it("derives ratePerHour from the 60-minute tier, not the raw column", () => {
+    // Simulates the mirror trigger not having caught up yet — the tiers
+    // list is the source of truth, the column is the fallback.
+    const tierRows = [{ tier: "PS5" as const, duration_minutes: 60, rate: 7000 }];
+    const result = mapPricingRows(pricingRows, tierRows);
+    expect(result.find((p) => p.tier === "PS5")!.ratePerHour).toBe(7000);
+  });
+
+  it("falls back to the raw column when no 60-minute tier is configured", () => {
+    const tierRows = [{ tier: "PS5" as const, duration_minutes: 30, rate: 2500 }];
+    const result = mapPricingRows(pricingRows, tierRows);
+    expect(result.find((p) => p.tier === "PS5")!.ratePerHour).toBe(5000);
+  });
+});
+
+describe("mapSoldPricing — snake_case jsonb snapshot to camelCase", () => {
+  it("converts a full snapshot", () => {
+    const snapshot = mapSoldPricing({
+      points: [
+        { duration_minutes: 0, rate: 0 },
+        { duration_minutes: 60, rate: 3000 },
+      ],
+      min_minutes: 30,
+      increment_minutes: 10,
+      grace_minutes: 5,
+    });
+    expect(snapshot).toEqual({
+      points: [
+        { durationMinutes: 0, rate: 0 },
+        { durationMinutes: 60, rate: 3000 },
+      ],
+      minMinutes: 30,
+      incrementMinutes: 10,
+      graceMinutes: 5,
+    });
+  });
+
+  it("returns null for a row with no snapshot yet", () => {
+    expect(mapSoldPricing(null)).toBeNull();
+  });
+});
+
 describe("formatElapsed", () => {
   it("shows mm:ss under an hour", () => {
     expect(formatElapsed(0)).toBe("00:00");
@@ -200,31 +327,41 @@ describe("formatElapsed", () => {
   });
 });
 
-describe("correction preview — the rate comes from the session, not the tier", () => {
-  // ReceiptModal builds its preview as computePlaytime(minutes, {...tier,
-  // ratePerHour: session.ratePerHour}), mirroring game.correct_session, which
-  // reads pr.min/increment/grace but s.rate_per_hour. The override is the whole
-  // point and it is invisible in a diff, so pin it: a price rise since the
-  // customer paid must not move the bill they already agreed to.
+describe("correction preview — replays the session's own snapshot, not live pricing", () => {
+  // The session carries its own frozen curve + blocking rule (SoldPricing).
+  // previewCorrection no longer accepts a live Pricing at all, so it is
+  // structurally impossible for it to use today's prices instead of what
+  // was actually sold — a stronger guarantee than a behavioral check, but
+  // the numbers below still pin the actual math.
+  const soldAt3000: SoldPricing = {
+    points: [
+      { durationMinutes: 0, rate: 0 },
+      { durationMinutes: 60, rate: 3000 },
+    ],
+    minMinutes: 30,
+    incrementMinutes: 10,
+    graceMinutes: 5,
+  };
+
   it("prices a corrected session at the rate it was sold at", () => {
-    const soldAt = 3000;
-    const tierToday: Pricing = { ...ps5, ratePerHour: 9000 }; // price tripled since
-    const preview = previewCorrection(62, tierToday, soldAt, 0);
+    const preview = previewCorrection(62, soldAt3000, 0);
 
-    expect(preview.chargedMinutes).toBe(60);   // blocks come from the tier
-    expect(preview.total).toBe(3000);          // rate comes from the session
+    expect(preview.chargedMinutes).toBe(60); // blocks come from the snapshot
+    expect(preview.total).toBe(3000); // rate comes from the snapshot
 
-    // What the owner would be shown if anyone "simplified" the override away.
+    // What the owner would be shown if the price had tripled since sale -
+    // previewCorrection never sees this, which is the whole point.
+    const tierToday: Pricing = { ...ps5, tiers: [{ durationMinutes: 60, rate: 9000 }] };
     expect(computePlaytime(62, tierToday).total).toBe(9000);
   });
 
   it("adds the snacks that were already on the session", () => {
-    expect(previewCorrection(62, ps5, 3000, 1500).total).toBe(4500);
+    expect(previewCorrection(62, soldAt3000, 1500).total).toBe(4500);
   });
 
   it("rounds a corrected duration by the same block rule as the timer", () => {
     for (const m of [2, 30, 34, 36, 62, 66]) {
-      expect(previewCorrection(m, ps5, 3000, 0).chargedMinutes).toBe(
+      expect(previewCorrection(m, soldAt3000, 0).chargedMinutes).toBe(
         computeLiveBill(m, ps5).chargedMinutes,
       );
     }

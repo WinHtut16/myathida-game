@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { mapPricingRows, mapSoldPricing } from "@/lib/pricing";
 import type { ActiveSession, OrderLine, Pricing, Product, Station, StationView, Tier } from "@/lib/types";
 
 /**
@@ -34,6 +35,12 @@ interface PricingRow {
   grace_minutes: number;
 }
 
+interface PricingTierRow {
+  tier: Tier;
+  duration_minutes: number;
+  rate: number;
+}
+
 interface OrderLineRow {
   id: string;
   product_id: string | null;
@@ -49,6 +56,7 @@ interface ActiveSessionRow {
   station_name: string;
   tier: Tier;
   rate_per_hour: number;
+  sold_pricing: unknown;
   started_at: string;
   label: string | null;
   order_lines: OrderLineRow[] | null;
@@ -81,9 +89,10 @@ export async function getFloorData(): Promise<FloorData> {
    * the Sydney project each is ~95ms, so serialising them would put a third of
    * a second on every floor-board render for no reason.
    */
-  const [stationsRes, pricingRes, productsRes, activeRes] = await Promise.all([
+  const [stationsRes, pricingRes, tiersRes, productsRes, activeRes] = await Promise.all([
     supabase.from("stations").select("id,name,tier,status,state,sort_order").order("sort_order"),
     supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
+    supabase.from("pricing_tiers").select("tier,duration_minutes,rate"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
     /**
      * The open sessions, with their snacks embedded in the same round trip.
@@ -97,7 +106,7 @@ export async function getFloorData(): Promise<FloorData> {
     supabase
       .from("sessions")
       .select(
-        "id,station_id,station_name,tier,rate_per_hour,started_at,label," +
+        "id,station_id,station_name,tier,rate_per_hour,sold_pricing,started_at,label," +
           "order_lines(id,product_id,product_name,qty,unit_price,line_total)",
       )
       .eq("status", "active"),
@@ -113,7 +122,8 @@ export async function getFloorData(): Promise<FloorData> {
    * exactly this reason. An RLS denial and a misspelled column must not arrive
    * here wearing the same clothes.
    */
-  const failure = stationsRes.error ?? pricingRes.error ?? productsRes.error ?? activeRes.error;
+  const failure =
+    stationsRes.error ?? pricingRes.error ?? tiersRes.error ?? productsRes.error ?? activeRes.error;
   if (failure) {
     console.error("[floor] read failed", {
       code: failure.code,
@@ -141,13 +151,10 @@ export async function getFloorData(): Promise<FloorData> {
     };
   }
 
-  const pricing: Pricing[] = (pricingRes.data ?? []).map((p: PricingRow) => ({
-    tier: p.tier,
-    ratePerHour: Number(p.rate_per_hour),
-    minMinutes: p.min_minutes,
-    incrementMinutes: p.increment_minutes,
-    graceMinutes: p.grace_minutes,
-  }));
+  const pricing: Pricing[] = mapPricingRows(
+    (pricingRes.data ?? []) as PricingRow[],
+    (tiersRes.data ?? []) as PricingTierRow[],
+  );
 
   /**
    * An empty station list with no error means RLS returned nothing: the person
@@ -167,6 +174,7 @@ export async function getFloorData(): Promise<FloorData> {
   // rather than crashing the board. open_session refuses it server-side too.
   const fallback = (tier: Tier): Pricing => ({
     tier,
+    tiers: [],
     ratePerHour: 0,
     minMinutes: 0,
     incrementMinutes: 10,
@@ -191,6 +199,14 @@ export async function getFloorData(): Promise<FloorData> {
       stationName: row.station_name,
       tier: row.tier,
       ratePerHour: Number(row.rate_per_hour),
+      // Zeroed fallback, matching fallback() above: a row somehow missing its
+      // snapshot must not be the thing that crashes the floor board.
+      soldPricing: mapSoldPricing(row.sold_pricing) ?? {
+        points: [],
+        minMinutes: 0,
+        incrementMinutes: 10,
+        graceMinutes: 0,
+      },
       startedAt: row.started_at,
       label: row.label,
       orders: (row.order_lines ?? []).map(toOrderLine),

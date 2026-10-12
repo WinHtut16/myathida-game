@@ -6,7 +6,8 @@ import { getStaffDirectory } from "./staff-directory";
 import { YANGON_OFFSET_MIN, yangonDay, yangonDayStart } from "./yangon";
 import { buildTimeline, type TimelineData } from "@/lib/timeline";
 import { bucketByDay, bucketByHour, type Bucket } from "@/lib/report-buckets";
-import type { OrderLine, Pricing, Product, Session, Tier } from "@/lib/types";
+import { mapSoldPricing } from "@/lib/pricing";
+import type { OrderLine, Product, Session, Tier } from "@/lib/types";
 
 /**
  * Server-side reads and aggregation for the reports screen.
@@ -57,12 +58,6 @@ export interface ReportsData {
   period: Period;
   sessions: Session[];
   staffNames: Record<string, string>;
-  /**
-   * The rate card, so a superadmin correcting a session sees what the new
-   * duration will actually cost BEFORE saving. Rides in the existing parallel
-   * batch - four rows, no extra round-trip on the wire.
-   */
-  pricing: Pricing[];
   /** Active products, for the "add a forgotten snack" picker on a past session. */
   products: Product[];
   totals: Totals;
@@ -105,7 +100,7 @@ export const RECENT_TAIL = 20;
  * shapes for the same `Session`.
  */
 const SESSION_SELECT =
-  "id,station_id,station_name,tier,rate_per_hour,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,original_minutes,original_charged_minutes,original_total,correction_reason,corrected_at,original_snacks_total,snack_edit_reason,snack_edited_at,order_lines(id,product_id,product_name,qty,unit_price,line_total)";
+  "id,station_id,station_name,tier,rate_per_hour,sold_pricing,minutes,charged_minutes,playtime_total,snacks_total,total,label,created_by,created_at,void_reason,voided_at,status,started_at,ended_at,payment_method,waived_minutes,original_minutes,original_charged_minutes,original_total,correction_reason,corrected_at,original_snacks_total,snack_edit_reason,snack_edited_at,order_lines(id,product_id,product_name,qty,unit_price,line_total)";
 
 interface SessionRow {
   id: string;
@@ -113,6 +108,7 @@ interface SessionRow {
   station_name: string;
   tier: Tier;
   rate_per_hour: number;
+  sold_pricing: unknown;
   minutes: number;
   charged_minutes: number;
   playtime_total: number;
@@ -161,6 +157,7 @@ function mapSessionRow(r: SessionRow): Session {
     stationName: r.station_name,
     tier: r.tier,
     ratePerHour: Number(r.rate_per_hour),
+    soldPricing: mapSoldPricing(r.sold_pricing),
     minutes: r.minutes,
     chargedMinutes: r.charged_minutes,
     playtimeTotal: Number(r.playtime_total),
@@ -278,9 +275,8 @@ export async function getReports(period: Period): Promise<ReportsResult> {
 
   if (from) query = query.gte("created_at", from.toISOString());
 
-  const [sessionsRes, pricingRes, productsRes, directory] = await Promise.all([
+  const [sessionsRes, productsRes, directory] = await Promise.all([
     query,
-    supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
     getStaffDirectory(),
   ]);
@@ -348,21 +344,6 @@ export async function getReports(period: Period): Promise<ReportsResult> {
     byHour,
     byStation,
     topSnacks,
-    // A pricing failure costs the correction preview, not a single number on
-    // this screen, so it degrades to an empty rate card rather than failing the
-    // whole report.
-    pricing: (
-      (pricingRes.data as {
-        tier: Tier; rate_per_hour: number; min_minutes: number;
-        increment_minutes: number; grace_minutes: number;
-      }[] | null) ?? []
-    ).map((p) => ({
-      tier: p.tier,
-      ratePerHour: Number(p.rate_per_hour),
-      minMinutes: p.min_minutes,
-      incrementMinutes: p.increment_minutes,
-      graceMinutes: p.grace_minutes,
-    })),
     products: mapProducts(productsRes.data as ProductRow[] | null),
     truncated: rows.length >= ROW_CAP,
   };
@@ -396,8 +377,6 @@ export interface SessionHistoryData {
   /** Option lists for the filter controls. */
   stations: { id: string; name: string }[];
   staffList: { id: string; name: string }[];
-  /** Rate card, for the correction preview. Same reason as ReportsData. */
-  pricing: Pricing[];
   /** Active products, for the "add a forgotten snack" picker on a past session. */
   products: Product[];
 }
@@ -441,10 +420,9 @@ export async function getSessionHistory(
   if (filters.stationId) query = query.eq("station_id", filters.stationId);
   if (filters.staff) query = query.eq("created_by", filters.staff);
 
-  const [sessionsRes, stationsRes, pricingRes, productsRes, directory] = await Promise.all([
+  const [sessionsRes, stationsRes, productsRes, directory] = await Promise.all([
     query,
     supabase.from("stations").select("id,name").order("sort_order"),
-    supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
     getStaffDirectory(),
   ]);
@@ -471,18 +449,6 @@ export async function getSessionHistory(
       (s) => s.id && s.name,
     ),
     staffList: (directory ?? []).map((r) => ({ id: r.id, name: r.name })),
-    pricing: (
-      (pricingRes.data as {
-        tier: Tier; rate_per_hour: number; min_minutes: number;
-        increment_minutes: number; grace_minutes: number;
-      }[] | null) ?? []
-    ).map((p) => ({
-      tier: p.tier,
-      ratePerHour: Number(p.rate_per_hour),
-      minMinutes: p.min_minutes,
-      incrementMinutes: p.increment_minutes,
-      graceMinutes: p.grace_minutes,
-    })),
     products: mapProducts(productsRes.data as ProductRow[] | null),
   };
 }

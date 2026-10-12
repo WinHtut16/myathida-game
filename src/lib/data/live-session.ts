@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { mapPricingRows, mapSoldPricing } from "@/lib/pricing";
 import type { ActiveSession, OrderLine, Pricing, Product, Tier } from "@/lib/types";
 
 /**
@@ -18,22 +19,23 @@ export type LiveSessionData =
 export async function getLiveSession(sessionId: string): Promise<LiveSessionData> {
   const supabase = await createClient();
 
-  const [sessionRes, pricingRes, productsRes] = await Promise.all([
+  const [sessionRes, pricingRes, tiersRes, productsRes] = await Promise.all([
     supabase
       .from("sessions")
       .select(
-        "id,station_id,station_name,tier,rate_per_hour,started_at,label,status," +
+        "id,station_id,station_name,tier,rate_per_hour,sold_pricing,started_at,label,status," +
           "order_lines(id,product_id,product_name,qty,unit_price,line_total)",
       )
       .eq("id", sessionId)
       .maybeSingle(),
     supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
+    supabase.from("pricing_tiers").select("tier,duration_minutes,rate"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
   ]);
 
   // Errors are read, not discarded: a denied read and a broken one must not
   // both arrive here as "not found".
-  const failure = sessionRes.error ?? pricingRes.error ?? productsRes.error;
+  const failure = sessionRes.error ?? pricingRes.error ?? tiersRes.error ?? productsRes.error;
   if (failure) {
     console.error("[live-session] read failed", {
       sessionId,
@@ -52,6 +54,7 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
         station_name: string;
         tier: Tier;
         rate_per_hour: number;
+        sold_pricing: unknown;
         started_at: string | null;
         label: string | null;
         status: "active" | "closed";
@@ -73,13 +76,16 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     return { ok: false, message: "That session has no start time and cannot be billed live." };
   }
 
-  const pricingList: Pricing[] = (pricingRes.data ?? []).map((p) => ({
-    tier: p.tier as Tier,
-    ratePerHour: Number(p.rate_per_hour),
-    minMinutes: p.min_minutes,
-    incrementMinutes: p.increment_minutes,
-    graceMinutes: p.grace_minutes,
-  }));
+  const pricingList: Pricing[] = mapPricingRows(
+    (pricingRes.data ?? []) as {
+      tier: Tier;
+      rate_per_hour: number;
+      min_minutes: number;
+      increment_minutes: number;
+      grace_minutes: number;
+    }[],
+    (tiersRes.data ?? []) as { tier: Tier; duration_minutes: number; rate: number }[],
+  );
 
   const pricing = pricingList.find((p) => p.tier === row.tier);
   if (!pricing) {
@@ -98,14 +104,22 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     lineTotal: Number(l.line_total),
   }));
 
+  // The snapshot, not the current pricing row: a mid-session price change
+  // must not move a bill the customer was already quoted.
+  const soldPricing = mapSoldPricing(row.sold_pricing) ?? {
+    points: [],
+    minMinutes: pricing.minMinutes,
+    incrementMinutes: pricing.incrementMinutes,
+    graceMinutes: pricing.graceMinutes,
+  };
+
   const session: ActiveSession = {
     id: row.id,
     stationId: row.station_id,
     stationName: row.station_name,
     tier: row.tier,
-    // The snapshot, not the current pricing row: a mid-session price change
-    // must not move a bill the customer was already quoted.
     ratePerHour: Number(row.rate_per_hour),
+    soldPricing,
     startedAt: row.started_at,
     label: row.label,
     orders,
@@ -121,5 +135,14 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     active: p.active,
   }));
 
-  return { ok: true, session, pricing: { ...pricing, ratePerHour: Number(row.rate_per_hour) }, products };
+  // Billing math reads from pricing.tiers, so the sold curve must be frozen
+  // there too, not only in ratePerHour — min/increment/grace stay LIVE
+  // (sourced from `pricing`, found above by tier), same as before.
+  const frozenPricing: Pricing = {
+    ...pricing,
+    tiers: soldPricing.points.filter((p) => p.durationMinutes > 0),
+    ratePerHour: Number(row.rate_per_hour),
+  };
+
+  return { ok: true, session, pricing: frozenPricing, products };
 }

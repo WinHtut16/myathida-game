@@ -7,7 +7,7 @@ import { correctSessionAction, editSessionSnacksAction, voidSessionAction } from
 import type { SnackEditChange } from "@/app/actions/sessions";
 import { TierBadge } from "@/components/station/TierBadge";
 import { formatDateTime, formatDuration, formatMMK, formatMMKUnit } from "@/lib/format";
-import type { Locale, Pricing, Product, Session } from "@/lib/types";
+import type { Locale, Product, Session } from "@/lib/types";
 import type { MessageKey } from "@/i18n";
 import { previewCorrection } from "@/lib/pricing";
 import { localizedName, useT } from "@/i18n";
@@ -28,13 +28,10 @@ export function SessionTable({
   viewAllHref,
   emptyLabel,
   total,
-  pricing = [],
   products = [],
 }: {
   sessions: Session[];
   staffNames: Record<string, string>;
-  /** Rate card for the correction preview. Empty = no preview, never a crash. */
-  pricing?: Pricing[];
   /** Active products, for the "add a forgotten snack" picker. Empty = picker shows nothing to add. */
   products?: Product[];
   /** Fixing a wrong duration/amount, or a wrong snack. Open to any active staff. */
@@ -158,7 +155,6 @@ export function SessionTable({
           session={receipt}
           canCorrect={canCorrect}
           canVoid={canVoid}
-          pricing={pricing}
           products={products}
           onClose={() => setReceipt(null)}
         />
@@ -191,12 +187,10 @@ function ReceiptModal({
   session,
   canCorrect,
   canVoid,
-  pricing,
   products,
   onClose,
 }: {
   session: Session;
-  pricing: Pricing[];
   products: Product[];
   canCorrect: boolean;
   canVoid: boolean;
@@ -226,12 +220,14 @@ function ReceiptModal({
       (mode === "snacks" && hasSnackChanges));
 
   // The server re-derives all of this; the preview only exists so the owner
-  // sees the number before committing. `find` rather than rateFor(): an empty
-  // rate card must show NO preview, not silently price everything as tier one.
-  const tier = pricing.find((p) => p.tier === session.tier) ?? null;
+  // sees the number before committing. It replays the session's OWN frozen
+  // pricing snapshot, never today's live `pricing` list — a price change
+  // since sale must not move what this correction previews. A session
+  // written before snapshots existed (soldPricing null) shows no preview
+  // rather than guessing.
   const preview =
-    mode === "fix" && minutesValid && tier
-      ? previewCorrection(typedMinutes, tier, session.ratePerHour, session.snacksTotal)
+    mode === "fix" && minutesValid && session.soldPricing
+      ? previewCorrection(typedMinutes, session.soldPricing, session.snacksTotal)
       : null;
 
   // Client-side only, same status as the "fix" preview above: the server is
