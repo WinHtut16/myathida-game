@@ -359,6 +359,14 @@ describe("correction preview — replays the session's own snapshot, not live pr
     expect(previewCorrection(62, soldAt3000, 1500).total).toBe(4500);
   });
 
+  it("prices at 0 rather than throwing when the snapshot has no points", () => {
+    // Real shape: floor.ts/live-session.ts build exactly this zeroed fallback
+    // for an ActiveSession whose sold_pricing column is null (pre-backfill or
+    // any insert path other than open_session/record_session).
+    const empty: SoldPricing = { points: [], minMinutes: 0, incrementMinutes: 10, graceMinutes: 0 };
+    expect(previewCorrection(60, empty, 0).total).toBe(0);
+  });
+
   it("rounds a corrected duration by the same block rule as the timer", () => {
     for (const m of [2, 30, 34, 36, 62, 66]) {
       expect(previewCorrection(m, soldAt3000, 0).chargedMinutes).toBe(

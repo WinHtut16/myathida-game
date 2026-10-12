@@ -55,11 +55,16 @@ function curveOf(tiers: PricingTier[]): PricingTier[] {
  * the bracketing segment and interpolates; a duration below the first point
  * or beyond the last extrapolates off the NEAREST segment's slope (not a
  * flat continuation of either endpoint's own blended rate) — one rule, no
- * per-tier-count special case. `points.length === 1` only when zero tiers
- * are configured (an unconfigured tier prices everything at that single
- * point's rate, i.e. 0).
+ * per-tier-count special case. `points.length === 1` when zero tiers are
+ * configured (curveOf's origin is the only point, pricing at 0);
+ * `points.length === 0` for a bare SoldPricing snapshot with no points at
+ * all — previewCorrection() passes soldPricing.points directly, skipping
+ * curveOf, and the floor/live-session zeroed fallback for a missing
+ * snapshot is exactly this shape. Both degenerate the same way: nothing
+ * configured prices at 0.
  */
 function tierRate(minutes: number, points: PricingTier[]): number {
+  if (points.length === 0) return 0;
   if (points.length === 1) return points[0].rate;
   let lo = points[0];
   let hi = points[1];

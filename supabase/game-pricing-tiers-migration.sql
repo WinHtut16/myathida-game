@@ -86,13 +86,17 @@ comment on table game.pricing_tiers is
 
 alter table game.pricing_tiers enable row level security;
 
+-- (select …) initPlan wrapper, not a bare call - same reason as every other
+-- game.* RLS policy since game-perf-migration.sql: it gives Postgres proof
+-- the stable function returns the same value for every row, so it runs once
+-- per query instead of once per row scanned.
 drop policy if exists pricing_tiers_select on game.pricing_tiers;
 create policy pricing_tiers_select on game.pricing_tiers for select
-  using (game.is_active_staff());
+  using ((select game.is_active_staff()));
 
 drop policy if exists pricing_tiers_write_superadmin on game.pricing_tiers;
 create policy pricing_tiers_write_superadmin on game.pricing_tiers for all
-  using (game.is_superadmin()) with check (game.is_superadmin());
+  using ((select game.is_superadmin())) with check ((select game.is_superadmin()));
 
 -- ── 2. Seed: a 60-minute point from today's rate, plus a 30-minute ─────────
 --      STARTING VALUE - a one-time migration convenience, never an ongoing

@@ -213,20 +213,33 @@ export async function getFloorData(): Promise<FloorData> {
     });
   }
 
-  const stations: StationView[] = (stationsRes.data ?? []).map((s: StationRow) => ({
-    station: {
-      id: s.id,
-      name: s.name,
-      tier: s.tier,
-      status: s.status,
+  const stations: StationView[] = (stationsRes.data ?? []).map((s: StationRow) => {
+    const active = activeByStation.get(s.id) ?? null;
+    const livePricing = pricingFor(s.tier);
+    // StationTile's running tile prices off this same object (via
+    // previewLiveTotal), so a station WITH an active session must see the
+    // curve FROZEN at that session's open time, not today's live tiers - the
+    // same freeze live-session.ts already applies on the single-session
+    // page. A free/reserved station has no session to freeze and just gets
+    // the live rate card.
+    const pricing = active
+      ? { ...livePricing, tiers: active.soldPricing.points.filter((p) => p.durationMinutes > 0) }
+      : livePricing;
+    return {
+      station: {
+        id: s.id,
+        name: s.name,
+        tier: s.tier,
+        status: s.status,
+        state: s.state,
+        sortOrder: s.sort_order,
+      },
       state: s.state,
-      sortOrder: s.sort_order,
-    },
-    state: s.state,
-    rate: pricingFor(s.tier).ratePerHour,
-    pricing: pricingFor(s.tier),
-    active: activeByStation.get(s.id) ?? null,
-  }));
+      rate: livePricing.ratePerHour,
+      pricing,
+      active,
+    };
+  });
 
   const products: Product[] = (productsRes.data ?? []).map((p: ProductRow) => ({
     id: p.id,
