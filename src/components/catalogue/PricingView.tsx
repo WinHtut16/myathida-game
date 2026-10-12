@@ -107,12 +107,10 @@ function RateCard({
       }
     });
 
-  const rows: { key: keyof typeof draft; label: string; sub: string }[] = [
+  const rows: { key: keyof typeof draft; label: string; sub?: string }[] = [
     { key: "minMinutes", label: t("pricing.minMinutes"), sub: t("pricing.minMinutesSub") },
-    // These apply to BOTH doors onto the sessions table: a session closed off a
-    // timer and one typed in afterwards go through the same game.bill_minutes().
-    { key: "incrementMinutes", label: t("pricing.increment"), sub: t("pricing.blocksHint") },
-    { key: "graceMinutes", label: t("pricing.grace"), sub: t("pricing.blocksHint") },
+    { key: "incrementMinutes", label: t("pricing.increment") },
+    { key: "graceMinutes", label: t("pricing.grace") },
   ];
 
   return (
@@ -124,7 +122,6 @@ function RateCard({
 
       <div className="flex flex-col gap-2.5 mb-4">
         <div className="text-sm font-semibold">{t("pricing.tierPrice")}</div>
-        <div className="text-xs text-text-muted -mt-1.5 mb-1">{t("pricing.durationSub")}</div>
         {tiers.map((tier, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
@@ -172,7 +169,7 @@ function RateCard({
           <div key={r.key} className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-sm font-semibold">{r.label}</div>
-              <div className="text-xs text-text-muted">{r.sub}</div>
+              {r.sub && <div className="text-xs text-text-muted">{r.sub}</div>}
             </div>
             <input
               type="number"

@@ -56,7 +56,6 @@ export const en = {
   "session.startedAt": "Started",
   "pricing.increment": "Block size (min)",
   "pricing.grace": "Grace (min)",
-  "pricing.blocksHint": "Every session rounds up to a whole block once the grace is used, whether it was timed or typed in. Same rule as billiards.",
 
   // record session
   "record.title": "Record session",
@@ -118,7 +117,6 @@ export const en = {
   "pricing.rateCard": "Rate card",
   "pricing.tierPrice": "Duration prices",
   "pricing.duration": "min",
-  "pricing.durationSub": "Each duration is its own price — 90 min is never 60 + 30.",
   "pricing.addTier": "Add a duration",
   "pricing.removeTier": "Remove this duration",
   "pricing.sixtyRequired": "Pricing needs a 60-minute price — everything else is based on it.",
