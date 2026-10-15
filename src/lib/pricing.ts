@@ -51,21 +51,37 @@ function curveOf(tiers: PricingTier[]): PricingTier[] {
 }
 
 /**
- * Piecewise-linear lookup over points already including the origin. Finds
- * the bracketing segment and interpolates; a duration below the first point
- * or beyond the last extrapolates off the NEAREST segment's slope (not a
- * flat continuation of either endpoint's own blended rate) — one rule, no
- * per-tier-count special case. `points.length === 1` when zero tiers are
+ * Piecewise-linear lookup over points already including the origin, for any
+ * duration up to the highest configured point: finds the bracketing
+ * segment and interpolates. `points.length === 1` when zero tiers are
  * configured (curveOf's origin is the only point, pricing at 0);
  * `points.length === 0` for a bare SoldPricing snapshot with no points at
  * all — previewCorrection() passes soldPricing.points directly, skipping
  * curveOf, and the floor/live-session zeroed fallback for a missing
  * snapshot is exactly this shape. Both degenerate the same way: nothing
  * configured prices at 0.
+ *
+ * BEYOND the highest configured point, the price is NOT a linear guess off
+ * the last segment's slope — it repeats the highest tier's own price once
+ * per whole multiple of its duration, plus whatever the leftover minutes
+ * cost under the ordinary interpolation above. This matches how a long
+ * session is actually priced: N whole blocks of the biggest bundle set,
+ * plus whatever's left, not a straight line extended past the last number
+ * anyone typed. `remainder` is always `< top.durationMinutes` by
+ * construction, so the one recursive call always lands in the ordinary
+ * branch and never recurses again.
  */
 function tierRate(minutes: number, points: PricingTier[]): number {
   if (points.length === 0) return 0;
   if (points.length === 1) return points[0].rate;
+
+  const top = points[points.length - 1];
+  if (minutes > top.durationMinutes) {
+    const k = Math.floor(minutes / top.durationMinutes);
+    const remainder = minutes - k * top.durationMinutes;
+    return k * top.rate + tierRate(remainder, points);
+  }
+
   let lo = points[0];
   let hi = points[1];
   for (let i = 0; i < points.length - 1; i++) {

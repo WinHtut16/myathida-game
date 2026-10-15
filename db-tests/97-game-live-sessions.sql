@@ -8,7 +8,8 @@
 -- `"test": "vitest run"`, which covers the TS half of the pair; there is no
 -- SQL test harness (pgTAP or otherwise) configured. Run this by hand against
 -- a database that already has every supabase/*.sql migration applied,
--- INCLUDING game-pricing-tiers-migration.sql:
+-- INCLUDING game-pricing-tiers-migration.sql AND
+-- game-pricing-tiers-overflow-migration.sql:
 --
 --   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f db-tests/97-game-live-sessions.sql
 --
@@ -47,7 +48,7 @@ declare
   v_cases jsonb := jsonb_build_array(
     jsonb_build_array('exact match at a configured point (90)', 90, 6500),
     jsonb_build_array('interpolates strictly between two points (47, between 30 and 60)', 47, 3917),
-    jsonb_build_array('extrapolates beyond the highest point off the LAST segment''s slope (120)', 120, 8000),
+    jsonb_build_array('beyond the highest point: whole blocks of its price plus the remainder''s own price (120)', 120, 9000),
     jsonb_build_array('interpolates below the lowest point against the implicit origin (10)', 10, 833),
     jsonb_build_array('exact boundary shared by two adjacent segments agrees either way (60)', 60, 5000)
   );
@@ -64,6 +65,39 @@ begin
     end if;
   end loop;
   raise notice 'OK: game.tier_rate / game.pricing_curve match the TS fixture';
+end $$;
+
+-- ── beyond-highest-tier accumulation — the client's real PS4 shape ─────────
+-- Only 30 and 60 configured (no 90 point), so "top" is (60, 3000) and
+-- everything past it accumulates from that, mirroring src/lib/pricing.test.ts's
+-- `duo` fixture exactly.
+
+do $$
+declare
+  v_points jsonb := jsonb_build_array(
+    jsonb_build_object('duration_minutes', 0,  'rate', 0),
+    jsonb_build_object('duration_minutes', 30, 'rate', 2000),
+    jsonb_build_object('duration_minutes', 60, 'rate', 3000)
+  );
+  v_cases jsonb := jsonb_build_array(
+    jsonb_build_array('one whole top-tier block plus an exact remainder (90 = 60+30)', 90, 5000),
+    jsonb_build_array('two whole top-tier blocks, no remainder (120 = 2x60)', 120, 6000),
+    jsonb_build_array('the whole-block multiplier generalises past 2x (150 = 2x60 + 30)', 150, 8000),
+    jsonb_build_array('a non-exact remainder still interpolates ordinarily, not a snap or an error (70)', 70, 3667)
+  );
+  v_case jsonb;
+  v_got numeric;
+  v_expect numeric;
+begin
+  for v_case in select * from jsonb_array_elements(v_cases)
+  loop
+    v_expect := (v_case->>2)::numeric;
+    v_got := round(game.tier_rate((v_case->>1)::numeric, v_points));
+    if v_got is distinct from v_expect then
+      raise exception '% : expected % got %', v_case->>0, v_expect, v_got;
+    end if;
+  end loop;
+  raise notice 'OK: beyond-highest-tier accumulation matches the client''s PS4 numbers';
 end $$;
 
 do $$
@@ -93,7 +127,17 @@ begin
   if v_got is distinct from round(5000.0 * 47 / 60) then
     raise exception 'legacy equivalence at 47 min: expected % got %', round(5000.0 * 47 / 60), v_got;
   end if;
-  raise notice 'OK: one tier reduces to the legacy rate_per_hour * minutes / 60 formula';
+
+  -- Strengthened: the same equivalence must hold ABOVE the one configured
+  -- point too, now that overflow goes through the k/remainder branch
+  -- rather than being unreachable. 120 is already block-rounded (mirrors
+  -- pricing.test.ts's 125-elapsed -> 120-charged case).
+  v_got := round(game.tier_rate(120, v_single));
+  if v_got is distinct from round(5000.0 * 120 / 60) then
+    raise exception 'legacy equivalence above 60 at 120 min: expected % got %', round(5000.0 * 120 / 60), v_got;
+  end if;
+
+  raise notice 'OK: one tier reduces to the legacy rate_per_hour * minutes / 60 formula, above 60 too';
 end $$;
 
 -- ── end-to-end: a live session bills off its OWN frozen snapshot ───────────

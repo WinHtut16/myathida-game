@@ -127,12 +127,13 @@ describe("the pricing curve — piecewise-linear through admin-set tiers", () =>
     expect(computeLiveBill(47, multi).playtimeTotal).toBe(3917);
   });
 
-  it("extrapolates beyond the highest point off the LAST segment's slope", () => {
-    // 120 is past the 90-minute point. The last configured segment is
-    // 60->90 (slope 50/min), so 8000 is expected. A flat continuation of
-    // 90's own blended average (6500/90 ~= 72.2/min) would instead give
-    // ~8667 — asserting the specific number catches that regression.
-    expect(computeLiveBill(120, multi).playtimeTotal).toBe(8000);
+  it("beyond the highest point, repeats that tier's price per whole multiple plus the remainder's own price", () => {
+    // 120 is past the 90-minute point (top = (90, 6500)). One whole 90-min
+    // block (6500) plus a 30-min remainder (2500, an exact configured point)
+    // = 9000. NOT a linear guess off the 60->90 segment's slope (which would
+    // give 8000) — the client prices a long session as whole blocks of its
+    // biggest bundle plus whatever's left, not a continued straight line.
+    expect(computeLiveBill(120, multi).playtimeTotal).toBe(9000);
   });
 
   it("interpolates below the lowest point against the implicit (0,0) origin", () => {
@@ -152,6 +153,39 @@ describe("the pricing curve — piecewise-linear through admin-set tiers", () =>
     // chargedMinutes billMinutes (unchanged) already produced.
     const bill = computeLiveBill(47, ps5);
     expect(bill.playtimeTotal).toBe(Math.round((5000 * bill.chargedMinutes) / 60));
+
+    // Strengthened: the same equivalence must hold ABOVE the one configured
+    // point too, now that overflow goes through the k/remainder branch
+    // rather than a slope guess. 125min on ps5 (grace 5, increment 10,
+    // min 30) block-rounds to 120.
+    const over = computeLiveBill(125, ps5);
+    expect(over.chargedMinutes).toBe(120);
+    expect(over.playtimeTotal).toBe(Math.round((5000 * over.chargedMinutes) / 60));
+  });
+
+  // The client's real PS4 shape: only 30 and 60 configured (no 90 point),
+  // so "top" is (60, 3000) and everything past it is accumulated from that.
+  const duo = raw([
+    { durationMinutes: 30, rate: 2000 },
+    { durationMinutes: 60, rate: 3000 },
+  ]);
+
+  it("one whole top-tier block plus an exact remainder (90 = 60+30)", () => {
+    expect(computeLiveBill(90, duo).playtimeTotal).toBe(5000);
+  });
+
+  it("two whole top-tier blocks, no remainder (120 = 2x60)", () => {
+    expect(computeLiveBill(120, duo).playtimeTotal).toBe(6000);
+  });
+
+  it("the whole-block multiplier generalises past 2x (150 = 2x60 + 30)", () => {
+    expect(computeLiveBill(150, duo).playtimeTotal).toBe(8000);
+  });
+
+  it("a non-exact remainder still interpolates ordinarily, not a snap or an error", () => {
+    // 70 = 1x60 + 10 remainder. The remainder interpolates between (0,0)
+    // and (30,2000): 2000/30 * 10 = 666.67. Total = 3000 + 666.67 = 3666.67.
+    expect(computeLiveBill(70, duo).playtimeTotal).toBe(3667);
   });
 });
 
