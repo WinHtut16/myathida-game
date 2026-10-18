@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tag, Database, User, ScrollText, Grid2x2, LogOut } from "lucide-react";
+import { Tag, Database, Gamepad2, User, ScrollText, Grid2x2, LogOut } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { LanguageSwitch } from "./LanguageSwitch";
+
+// Everyone's items that don't fit the four-tab bottom bar.
+const STAFF_ITEMS = [
+  { href: "/titles", key: "nav.games" as const, icon: Gamepad2, match: (p: string) => p.startsWith("/titles") },
+];
 
 const SUPER_ITEMS = [
   { href: "/pricing", key: "nav.pricing" as const, icon: Tag, match: (p: string) => p.startsWith("/pricing") },
@@ -30,8 +35,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
 
   return (
     <div className="pb-2">
-      {superadmin &&
-        SUPER_ITEMS.map(({ href, key, icon: Icon, match }) => {
+      {[...STAFF_ITEMS, ...(superadmin ? SUPER_ITEMS : [])].map(({ href, key, icon: Icon, match }) => {
           const active = match(pathname);
           return (
             <Link

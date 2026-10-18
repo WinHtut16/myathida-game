@@ -65,6 +65,11 @@ mock/demo data source and no role switcher — sign-in happens on the hub
   receipts. Superadmin can correct a wrongly-recorded session.
 - **Products** (`/products`) — snack/drink price list + stock ledger,
   bilingual. Superadmin edits; all staff can view.
+- **Games** (`/titles`) — the games on the shelf (`game.titles`): title,
+  console, genre, players, Cloudinary cover, New/Popular tags, show/hide and
+  order. Any active staff edits. Shown titles appear on the park's public
+  `/games` page (hub repo). Needs `supabase/game-titles-migration.sql` and,
+  for covers, the `CLOUDINARY_*` env vars.
 - **Pricing** (`/pricing`, superadmin) — per-tier rate cards.
 - **Settings** (`/settings`) — floor plan (station tier/maintenance,
   superadmin edits), staff roster (read-only — staff CRUD lives on the hub

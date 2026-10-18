@@ -108,6 +108,36 @@ export interface Product {
   active: boolean;
 }
 
+export type TitlePlatform = "PS4" | "PS5";
+export const TITLE_GENRES = [
+  "action",
+  "adventure",
+  "fighting",
+  "racing",
+  "sports",
+  "shooter",
+  "horror",
+  "party",
+  "family",
+  "rpg",
+  "other",
+] as const;
+export type TitleGenre = (typeof TITLE_GENRES)[number];
+
+/** A game on the shelf (game.titles), shown to customers on the park's /games page. */
+export interface GameTitle {
+  id: string;
+  title: string;
+  platforms: TitlePlatform[];
+  genre: TitleGenre;
+  maxPlayers: number;
+  coverUrl: string | null;
+  isNew: boolean;
+  isPopular: boolean;
+  visible: boolean;
+  sortOrder: number;
+}
+
 /** A snack/drink line attached to a session, live or recorded. */
 export interface OrderLine {
   /** Present for a live session, where a line can still be removed. */
