@@ -27,6 +27,11 @@ export interface TitleInput {
   coverUrl: string | null;
   isNew: boolean;
   isPopular: boolean;
+  descriptionEn: string;
+  descriptionMy: string;
+  localCoop: boolean;
+  online: boolean;
+  featured: boolean;
 }
 
 const DENIED = "You need game staff access to change the games list.";
@@ -38,14 +43,39 @@ function explain(code: string | undefined, message: string): string {
     case "23505":
       return "That game is already on the list.";
     case "23514":
-      return "Check the details: a title, at least one console, and 1 to 4 players.";
+      return "Check the details: a title, at least one console, 1 to 4 players, and descriptions under 400 characters.";
+    case "42703":
+      return "The database is missing the new game fields. Run supabase/game-titles-details-migration.sql in the Supabase SQL editor, then save again.";
     default:
       return `Could not save${code ? ` (${code})` : ""}. ${message}`;
   }
 }
 
-function done(): ActionResult {
+/**
+ * Tell the park site (hub) that the games list changed, so /games shows it on
+ * the next load instead of after its 60 s cache. Best-effort: a missing env
+ * var, a slow hub or an error never fails the save. HUB_ORIGIN is the hub's
+ * public origin; PARK_REVALIDATE_SECRET must match the hub's.
+ */
+async function pingPark(): Promise<void> {
+  const origin = process.env.HUB_ORIGIN;
+  const secret = process.env.PARK_REVALIDATE_SECRET;
+  if (!origin || !secret) return;
+  try {
+    await fetch(`${origin.replace(/\/$/, "")}/api/park/revalidate-games`, {
+      method: "POST",
+      headers: { "x-park-revalidate": secret },
+      cache: "no-store",
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch {
+    // The park page still catches up within a minute on its own.
+  }
+}
+
+async function done(): Promise<ActionResult> {
   revalidatePath("/titles");
+  await pingPark();
   return { ok: true };
 }
 
@@ -58,6 +88,11 @@ export async function upsertTitleAction(input: TitleInput): Promise<ActionResult
   if (!(TITLE_GENRES as readonly string[]).includes(input.genre)) return { ok: false, message: "Pick a genre." };
   const maxPlayers = Math.round(input.maxPlayers);
   if (!(maxPlayers >= 1 && maxPlayers <= 4)) return { ok: false, message: "Players must be 1 to 4." };
+  const descriptionEn = input.descriptionEn.trim();
+  const descriptionMy = input.descriptionMy.trim();
+  if (descriptionEn.length > 400 || descriptionMy.length > 400) {
+    return { ok: false, message: "Keep each description under 400 characters." };
+  }
   if (input.coverUrl && !input.coverUrl.startsWith("https://res.cloudinary.com/")) {
     return { ok: false, message: "Upload the cover here; links to other sites are not shown on the park page." };
   }
@@ -71,6 +106,11 @@ export async function upsertTitleAction(input: TitleInput): Promise<ActionResult
     cover_url: input.coverUrl,
     is_new: input.isNew,
     is_popular: input.isPopular,
+    description_en: descriptionEn || null,
+    description_my: descriptionMy || null,
+    local_coop: input.localCoop,
+    online: input.online,
+    featured: input.featured,
   };
 
   let query;

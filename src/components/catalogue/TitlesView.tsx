@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Gamepad2, ImagePlus, Pencil, Trash2, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, Gamepad2, ImagePlus, Pencil, Star, Trash2, Users } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
@@ -37,6 +37,11 @@ export function TitlesView({ titles }: { titles: GameTitle[] }) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [isPopular, setIsPopular] = useState(false);
+  const [descriptionEn, setDescriptionEn] = useState("");
+  const [descriptionMy, setDescriptionMy] = useState("");
+  const [localCoop, setLocalCoop] = useState(false);
+  const [online, setOnline] = useState(false);
+  const [featured, setFeatured] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +54,11 @@ export function TitlesView({ titles }: { titles: GameTitle[] }) {
     setCoverUrl(null);
     setIsNew(false);
     setIsPopular(false);
+    setDescriptionEn("");
+    setDescriptionMy("");
+    setLocalCoop(false);
+    setOnline(false);
+    setFeatured(false);
   };
 
   const startEdit = (g: GameTitle) => {
@@ -60,6 +70,11 @@ export function TitlesView({ titles }: { titles: GameTitle[] }) {
     setCoverUrl(g.coverUrl);
     setIsNew(g.isNew);
     setIsPopular(g.isPopular);
+    setDescriptionEn(g.descriptionEn ?? "");
+    setDescriptionMy(g.descriptionMy ?? "");
+    setLocalCoop(g.localCoop);
+    setOnline(g.online);
+    setFeatured(g.featured);
     setError(null);
   };
 
@@ -85,6 +100,11 @@ export function TitlesView({ titles }: { titles: GameTitle[] }) {
         coverUrl,
         isNew,
         isPopular,
+        descriptionEn,
+        descriptionMy,
+        localCoop,
+        online,
+        featured,
       });
       if (!r.ok) {
         setError(r.message ?? "Could not save.");
@@ -171,6 +191,15 @@ export function TitlesView({ titles }: { titles: GameTitle[] }) {
                       <Users size={12} />
                       {g.maxPlayers}
                     </span>
+                    {g.featured && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded bg-accent text-white font-semibold">
+                        <Star size={11} />
+                        {t("titles.flagFeatured")}
+                      </span>
+                    )}
+                    {g.localCoop && (
+                      <span className="px-1.5 py-[1px] rounded border border-line text-text-secondary">{t("titles.flagCoop")}</span>
+                    )}
                     {g.isNew && (
                       <span className="px-1.5 py-[1px] rounded bg-accent-soft text-accent2 font-semibold">{t("titles.flagNew")}</span>
                     )}
@@ -345,10 +374,21 @@ export function TitlesView({ titles }: { titles: GameTitle[] }) {
           </Field>
 
           <Field label={t("titles.flags")}>
-            <div className="flex gap-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+              <Check label={t("titles.flagFeatured")} checked={featured} onChange={setFeatured} disabled={busy} />
               <Check label={t("titles.flagNew")} checked={isNew} onChange={setIsNew} disabled={busy} />
               <Check label={t("titles.flagPopular")} checked={isPopular} onChange={setIsPopular} disabled={busy} />
+              <Check label={t("titles.flagCoop")} checked={localCoop} onChange={setLocalCoop} disabled={busy} />
+              <Check label={t("titles.flagOnline")} checked={online} onChange={setOnline} disabled={busy} />
             </div>
+            <p className="text-xs text-text-muted m-0 mt-2 leading-relaxed">{t("titles.flagsHint")}</p>
+          </Field>
+
+          <Field label={t("titles.descriptionEn")}>
+            <Description value={descriptionEn} onChange={setDescriptionEn} disabled={busy} placeholder="Build your dream club and play head to head on one screen." />
+          </Field>
+          <Field label={t("titles.descriptionMy")}>
+            <Description value={descriptionMy} onChange={setDescriptionMy} disabled={busy} className="mm" placeholder="တစ်မျက်နှာပြင်တည်းမှာ နှစ်ယောက် ယှဉ်ကစားနိုင်ပါသည်။" />
           </Field>
 
           <button
@@ -458,6 +498,38 @@ function Check({
       />
       {label}
     </label>
+  );
+}
+
+/** Short description with a live character count (the database caps it at 400). */
+function Description({
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+  placeholder: string;
+  className?: string;
+}) {
+  const left = 400 - value.length;
+  return (
+    <div className="relative">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value.slice(0, 400))}
+        disabled={disabled}
+        rows={3}
+        placeholder={placeholder}
+        className={cx("cat-input resize-y min-h-[84px] leading-relaxed", className)}
+      />
+      <span className={cx("absolute bottom-2 right-2.5 text-2xs tabular-nums", left < 40 ? "text-status-expired-ink" : "text-text-muted")}>
+        {left}
+      </span>
+    </div>
   );
 }
 

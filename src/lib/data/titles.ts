@@ -18,6 +18,11 @@ interface TitleRow {
   is_popular: boolean;
   visible: boolean;
   sort_order: number;
+  description_en?: string | null;
+  description_my?: string | null;
+  local_coop?: boolean;
+  online?: boolean;
+  featured?: boolean;
 }
 
 const UNCONFIGURED =
@@ -35,6 +40,11 @@ function mapRow(r: TitleRow): GameTitle {
     isPopular: r.is_popular,
     visible: r.visible,
     sortOrder: r.sort_order,
+    descriptionEn: r.description_en ?? null,
+    descriptionMy: r.description_my ?? null,
+    localCoop: r.local_coop ?? false,
+    online: r.online ?? false,
+    featured: r.featured ?? false,
   };
 }
 
@@ -42,11 +52,14 @@ export async function getTitles(): Promise<CatalogueResult<GameTitle[]>> {
   if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("titles")
-    .select("id,title,platforms,genre,max_players,cover_url,is_new,is_popular,visible,sort_order")
-    .order("sort_order")
-    .order("title");
+  const base = "id,title,platforms,genre,max_players,cover_url,is_new,is_popular,visible,sort_order";
+  const details = ",description_en,description_my,local_coop,online,featured";
+  const read = (cols: string) => supabase.from("titles").select(cols).order("sort_order").order("title");
+  let res = await read(base + details);
+  // 42703: game-titles-details-migration.sql not run yet. Keep the screen
+  // working on the original columns; saving details will say what to run.
+  if (res.error?.code === "42703") res = await read(base);
+  const { data, error } = res;
 
   if (error) {
     // 42P01: the table is missing, i.e. game-titles-migration.sql not run yet.
@@ -56,5 +69,5 @@ export async function getTitles(): Promise<CatalogueResult<GameTitle[]>> {
         : `Could not load (${error.code ?? "unknown"}). ${error.message}`;
     return { ok: false, message };
   }
-  return { ok: true, data: (data as TitleRow[]).map(mapRow) };
+  return { ok: true, data: (data as unknown as TitleRow[]).map(mapRow) };
 }

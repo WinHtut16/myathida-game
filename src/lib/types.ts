@@ -136,6 +136,14 @@ export interface GameTitle {
   isPopular: boolean;
   visible: boolean;
   sortOrder: number;
+  /** Short descriptions for the park page (game-titles-details-migration.sql). */
+  descriptionEn: string | null;
+  descriptionMy: string | null;
+  /** Two or more people can play together on one screen. */
+  localCoop: boolean;
+  online: boolean;
+  /** Shown in the Featured spotlight at the top of the park's library. */
+  featured: boolean;
 }
 
 /** A snack/drink line attached to a session, live or recorded. */
