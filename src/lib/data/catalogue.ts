@@ -106,7 +106,7 @@ export async function getPricing(): Promise<CatalogueResult<Pricing[]>> {
     return { ok: false, message: explainRead(tiersRes.error.code, tiersRes.error.message) };
   }
 
-  const order: Tier[] = ["PS4", "PS5", "VIP"];
+  const order: Tier[] = ["PS4", "PS5", "VIP", "CINEMA"];
   return {
     ok: true,
     data: mapPricingRows(pricingRes.data as PricingRow[], tiersRes.data as PricingTierRow[]).sort(

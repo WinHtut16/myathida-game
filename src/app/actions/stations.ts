@@ -11,12 +11,11 @@ import type { Station, Tier } from "@/lib/types";
  * and zero rows, so every write asks for the affected rows back and treats an
  * empty result as a refusal rather than reporting a save that did not happen.
  *
- * There is deliberately no delete. game.sessions.station_id references these
- * rows, so removing a TV that has ever been used would be refused by the
- * database - and the history is the point: last month's takings for "TV 6"
- * should not become unattributable because the TV was replaced. A station that
- * is gone goes to maintenance, which hides it from the floor board's usable
- * tiles while keeping its past sessions readable.
+ * Delete goes through game.delete_station (superadmin-only RPC), not a bare
+ * DELETE: the FK from game.sessions is ON DELETE SET NULL, so a removed TV's
+ * past sessions stay in Reports via their station_name / tier snapshots. The
+ * RPC refuses while the TV has a session in progress. Maintenance remains the
+ * reversible alternative for a TV that is only temporarily out.
  */
 
 export interface ActionResult {
@@ -92,6 +91,37 @@ export async function upsertStationAction(input: {
 
   revalidatePath("/settings");
   revalidatePath("/floor");
+  return { ok: true };
+}
+
+export async function deleteStationAction(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_station", { p_id: id });
+
+  if (error) {
+    console.error("[stations] delete failed", {
+      id, code: error.code, message: error.message,
+      details: error.details, hint: error.hint,
+    });
+    if (error.code === "42501") return { ok: false, message: DENIED };
+    if (error.code === "23514") {
+      return { ok: false, message: "This station has a session in progress. End it before deleting." };
+    }
+    if (error.code === "23503") {
+      return { ok: false, message: "That station no longer exists. Refresh the page." };
+    }
+    if (error.code === "42883" || error.code === "PGRST202") {
+      return {
+        ok: false,
+        message: "Station delete is not set up on the database yet. Run game-station-delete-migration.sql.",
+      };
+    }
+    return { ok: false, message: `Could not delete${error.code ? ` (${error.code})` : ""}. ${error.message}` };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/floor");
+  revalidatePath("/reports");
   return { ok: true };
 }
 

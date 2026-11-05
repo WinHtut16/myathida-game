@@ -124,6 +124,9 @@ export const my: Record<string, string> = {
 
   "settings.stations": "စက်များ",
   "settings.addStation": "စက်ထည့်",
+  "settings.deleteTitle": "ဤစက်ကို ဖျက်မလား?",
+  "settings.deleteMessage": "{name} ကို ကွင်းမှ ဖယ်ရှားမည်။ ယခင်အသုံးပြုမှုနှင့် ဝင်ငွေမှတ်တမ်းများ ကျန်ရှိနေမည်။ ခေတ္တသာ ရပ်ထားလိုပါက “ပြုပြင်ဆဲ” သို့ ပြောင်းပါ။",
+  "settings.deleteConfirm": "ဖျက်မည်",
   "settings.tier": "အဆင့်",
   "settings.status": "အခြေအနေ",
   "settings.admins": "အက်ဒမင်များ",

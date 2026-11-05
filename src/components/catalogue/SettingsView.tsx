@@ -1,16 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Shield, User, Wrench, CircleCheck, ExternalLink } from "lucide-react";
+import { Plus, Shield, User, Wrench, CircleCheck, ExternalLink, Trash2 } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { upsertStationAction, setStationStatusAction } from "@/app/actions/stations";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  upsertStationAction,
+  setStationStatusAction,
+  deleteStationAction,
+} from "@/app/actions/stations";
 import { TierBadge } from "@/components/station/TierBadge";
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch";
 import { useT } from "@/i18n";
-import { cx } from "@/lib/ui";
+import { cx, fill } from "@/lib/ui";
 import type { Station, Tier } from "@/lib/types";
 
-const TIERS: Tier[] = ["PS4", "PS5", "VIP"];
+const TIERS: Tier[] = ["PS4", "PS5", "VIP", "CINEMA"];
 
 export interface StaffRow {
   id: string;
@@ -33,8 +38,16 @@ export function SettingsView({
   const { t } = useT();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [deleting, setDeleting] = useState<Station | null>(null);
 
-  const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
+  const confirmDelete = () => {
+    if (!deleting) return;
+    const id = deleting.id;
+    setDeleting(null);
+    run(() => deleteStationAction(id));
+  };
+
+  const run =(fn: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
       const r = await fn();
       setError(r.ok ? null : (r.message ?? "Could not save."));
@@ -86,6 +99,7 @@ export function SettingsView({
               disabled={pending}
               onError={setError}
               onRun={run}
+              onDelete={() => setDeleting(s)}
             />
           ))}
         </div>
@@ -168,6 +182,18 @@ export function SettingsView({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={deleting !== null}
+        onClose={() => setDeleting(null)}
+        onConfirm={confirmDelete}
+        variant="danger"
+        title={t("settings.deleteTitle")}
+        message={deleting ? fill(t("settings.deleteMessage"), { name: deleting.name }) : ""}
+        confirmLabel={t("settings.deleteConfirm")}
+        cancelLabel={t("common.cancel")}
+        isLoading={pending}
+      />
     </>
   );
 }
@@ -178,12 +204,14 @@ function StationRow({
   disabled,
   onError,
   onRun,
+  onDelete,
 }: {
   station: Station;
   canEdit: boolean;
   disabled: boolean;
   onError: (m: string | null) => void;
   onRun: (fn: () => Promise<{ ok: boolean; message?: string }>) => void;
+  onDelete: () => void;
 }) {
   const { t } = useT();
   const [name, setName] = useState(station.name);
@@ -255,7 +283,8 @@ function StationRow({
       )}
 
       {canEdit ? (
-        <div className="flex w-full md:w-auto bg-line-faint border border-line-soft rounded-md p-[3px] text-2xs font-semibold justify-self-start">
+        <div className="flex w-full md:w-auto items-center gap-2 justify-self-start">
+        <div className="flex flex-1 md:flex-none bg-line-faint border border-line-soft rounded-md p-[3px] text-2xs font-semibold">
           <button
             onClick={() => !maint || onRun(() => setStationStatusAction(station.id, "available"))}
             disabled={disabled}
@@ -280,6 +309,15 @@ function StationRow({
             <Wrench size={12} className="flex-none" />
             {t("floor.maintenance")}
           </button>
+        </div>
+        <button
+          onClick={onDelete}
+          disabled={disabled}
+          aria-label={`${t("settings.deleteConfirm")}: ${station.name}`}
+          className="p-1.5 rounded-md text-text-muted hover:text-status-expired-ink hover:bg-status-expired-bg disabled:opacity-45 flex-none"
+        >
+          <Trash2 size={15} />
+        </button>
         </div>
       ) : (
         <span

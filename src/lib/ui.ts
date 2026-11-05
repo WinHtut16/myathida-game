@@ -16,7 +16,8 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
  * green/amber station states:
  *   PS4 — base tier, light grey chip
  *   PS5 — current gen, dark slate chip
- *   VIP — premium, gold chip */
+ *   VIP — premium, gold chip
+ *   CINEMA — mini-cinema TVs, accent-blue chip (a viewing room, not a console) */
 export const TIER_STYLE: Record<Tier, { bg: string; ink: string; border?: string; label: string }> = {
   PS4: {
     bg: "var(--game-line-faint)",
@@ -33,5 +34,10 @@ export const TIER_STYLE: Record<Tier, { bg: string; ink: string; border?: string
     bg: "var(--game-status-warn)",
     ink: "#231600",
     label: "VIP",
+  },
+  CINEMA: {
+    bg: "var(--game-accent2)",
+    ink: "#ffffff",
+    label: "Cinema",
   },
 };

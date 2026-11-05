@@ -130,6 +130,9 @@ export const en = {
   // settings
   "settings.stations": "Stations",
   "settings.addStation": "Add station",
+  "settings.deleteTitle": "Delete this station?",
+  "settings.deleteMessage": "{name} will be removed from the floor. Past sessions and takings keep their record. To take it out of use only for a while, set it to Maintenance instead.",
+  "settings.deleteConfirm": "Delete",
   "settings.tier": "Tier",
   "settings.status": "Status",
   "settings.admins": "Admins",

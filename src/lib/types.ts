@@ -6,7 +6,7 @@
 // press Start, and a session nobody can record is revenue nobody can see.
 
 /** Pricing tier. VIP is a PS5 in the VIP room at a higher rate. */
-export type Tier = "PS4" | "PS5" | "VIP";
+export type Tier = "PS4" | "PS5" | "VIP" | "CINEMA";
 
 export type Role = "superadmin" | "admin";
 
