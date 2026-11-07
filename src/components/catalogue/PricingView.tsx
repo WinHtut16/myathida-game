@@ -6,9 +6,10 @@ import { Plus, Trash2 } from "lucide-react";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { updatePricingAction } from "@/app/actions/catalogue";
 import { TierBadge } from "@/components/station/TierBadge";
+import { PointsRuleCard } from "@/components/catalogue/PointsRuleCard";
 import { useT, type MessageKey } from "@/i18n";
 import { formatMMK } from "@/lib/format";
-import type { Pricing, PricingTier } from "@/lib/types";
+import type { PointRule, Pricing, PricingTier } from "@/lib/types";
 
 /**
  * Rate cards.
@@ -20,7 +21,16 @@ import type { Pricing, PricingTier } from "@/lib/types";
  * "will this change yesterday's takings?" is a fair thing for an owner to
  * worry about before touching it.
  */
-export function PricingView({ pricing, canEdit }: { pricing: Pricing[]; canEdit: boolean }) {
+export function PricingView({
+  pricing,
+  canEdit,
+  pointRule,
+}: {
+  pricing: Pricing[];
+  canEdit: boolean;
+  /** ok=false: the points migrations have not been run yet. */
+  pointRule: { ok: true; rule: PointRule | null } | { ok: false };
+}) {
   const { t } = useT();
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +43,14 @@ export function PricingView({ pricing, canEdit }: { pricing: Pricing[]; canEdit:
         {pricing.map((p) => (
           <RateCard key={p.tier} pricing={p} canEdit={canEdit} onError={setError} />
         ))}
+        {pointRule.ok ? (
+          <PointsRuleCard rule={pointRule.rule} canEdit={canEdit} onError={setError} />
+        ) : (
+          <div className="bg-surface border border-line rounded-md p-6 text-xs text-text-muted leading-relaxed">
+            <div className="text-md font-bold text-text mb-2">{t("points.ruleTitle")}</div>
+            {t("points.ruleUnavailable")}
+          </div>
+        )}
       </div>
     </>
   );

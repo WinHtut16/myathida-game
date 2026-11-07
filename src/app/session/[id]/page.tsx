@@ -32,6 +32,7 @@ export default async function SessionPage({
       session={data.session}
       pricing={data.pricing}
       products={data.products}
+      pointRule={data.pointRule}
     />
   );
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Check, Minus, Plus, X } from "lucide-react";
+import { toast } from "sonner";
 import { recordSessionAction } from "@/app/actions/floor";
 import { localizedName, useT } from "@/i18n";
 import { cx, fill } from "@/lib/ui";
@@ -37,6 +38,8 @@ export function RecordSessionModal({
   const [minutes, setMinutes] = useState<number>(60);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [label, setLabel] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const station = available.find((s) => s.id === sid);
   const pricing = station ? rateFor(pricingList, station.tier) : null;
@@ -82,9 +85,17 @@ export function RecordSessionModal({
         minutes,
         items: orderLines.map((l) => ({ productId: l.productId, qty: l.qty })),
         label: label.trim() || null,
+        customerPhone: phone.trim() || null,
       });
       if (result.ok) {
+        if (result.earned && result.earned.points > 0) {
+          toast.success(fill(t("points.earnedToast"), { p: result.earned.points, name: result.earned.customerName }));
+        }
+        if (result.customerWarning) toast.warning(result.customerWarning);
         onClose();
+      } else if (result.field === "phone" && result.message) {
+        // Nothing was recorded. Keep the modal so only the phone needs fixing.
+        setPhoneError(result.message);
       } else if (result.message) {
         onError(result.message);
         onClose();
@@ -225,6 +236,31 @@ export function RecordSessionModal({
               placeholder="Ko Aung"
               className="w-full border border-line rounded-md px-3 py-2.5 text-sm outline-none"
             />
+          </div>
+
+          {/* customer phone -> points */}
+          <div>
+            <Label>
+              {t("points.recordPhone")} <span className="normal-case tracking-normal font-normal">{t("record.optional")}</span>
+            </Label>
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setPhoneError(null);
+              }}
+              placeholder={t("points.phonePlaceholder")}
+              className={cx(
+                "w-full border rounded-md px-3 py-2.5 text-sm outline-none tabular-nums",
+                phoneError ? "border-status-expired-ink" : "border-line",
+              )}
+            />
+            <p className={cx("text-2xs mt-1 m-0", phoneError ? "text-status-expired-ink" : "text-text-muted")}>
+              {phoneError ?? t("points.recordHint")}
+            </p>
           </div>
         </div>
 

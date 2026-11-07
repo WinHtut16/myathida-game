@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { getPricing } from "@/lib/data/catalogue";
+import { getPointRule, getPricing } from "@/lib/data/catalogue";
 import { getCurrentUser } from "@/lib/data/session";
 import { PricingView } from "@/components/catalogue/PricingView";
 import { SetupNotice } from "@/components/catalogue/SetupNotice";
@@ -16,7 +16,12 @@ import { getT } from "@/i18n/server";
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
-  const [result, user, { t }] = await Promise.all([getPricing(), getCurrentUser(), getT()]);
+  const [result, user, { t }, ruleResult] = await Promise.all([
+    getPricing(),
+    getCurrentUser(),
+    getT(),
+    getPointRule(),
+  ]);
 
   if (!result.ok) {
     return (
@@ -28,7 +33,11 @@ export default async function PricingPage() {
 
   return (
     <AppShell title={t("nav.pricing")}>
-      <PricingView pricing={result.data} canEdit={user?.isSuperadmin ?? false} />
+      <PricingView
+        pricing={result.data}
+        canEdit={user?.isSuperadmin ?? false}
+        pointRule={ruleResult.ok ? { ok: true, rule: ruleResult.data } : { ok: false }}
+      />
     </AppShell>
   );
 }

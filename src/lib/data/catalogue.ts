@@ -5,7 +5,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
 import { yangonDayStart } from "./yangon";
 import { mapPricingRows } from "@/lib/pricing";
-import type { Pricing, Product, Station, Tier } from "@/lib/types";
+import { mapPointRule } from "@/lib/points";
+import type { PointRule, Pricing, Product, Station, Tier } from "@/lib/types";
 
 /** Server reads for the catalogue screens (Snacks, Pricing). */
 
@@ -327,4 +328,26 @@ export async function getStockHistory(
       ? productsRes.data.map((p) => ({ id: p.id, name: p.nameEn }))
       : [],
   };
+}
+
+/**
+ * The game shop's points rule (public.point_rules, shared with the hub).
+ * Separate from getPricing so a missing points migration never hides prices.
+ */
+export async function getPointRule(): Promise<CatalogueResult<PointRule | null>> {
+  if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("public")
+    .from("point_rules")
+    .select("block_minutes,points_per_block,is_active")
+    .eq("app", "game")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[catalogue] point_rules read failed", { code: error.code, message: error.message });
+    return { ok: false, message: error.message };
+  }
+  return { ok: true, data: mapPointRule(data) };
 }

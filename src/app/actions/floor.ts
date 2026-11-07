@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { setSessionCustomerAction } from "@/app/actions/live-session";
 import { createClient } from "@/lib/supabase/server";
 import type { StationState } from "@/lib/types";
 
@@ -79,12 +80,30 @@ export interface RecordSessionInput {
   minutes: number;
   items: { productId: string; qty: number }[];
   label: string | null;
+  /** Registered customer's phone, to earn points. Optional. */
+  customerPhone?: string | null;
 }
 
 export async function recordSessionAction(
   input: RecordSessionInput,
-): Promise<ActionResult> {
+): Promise<ActionResult & { earned?: { points: number; customerName: string }; customerWarning?: string; field?: "phone" }> {
   const supabase = await createClient();
+
+  // Check the phone BEFORE taking the sale: a mistyped number then stops the
+  // save and staff fix it, instead of a recorded session with no customer.
+  const phone = input.customerPhone?.trim();
+  if (phone) {
+    const { data: found, error: lookupError } = await supabase
+      .schema("public")
+      .rpc("find_customer_by_phone", { p_phone: phone });
+    if (lookupError) {
+      console.error("[floor] find_customer_by_phone failed", { code: lookupError.code, message: lookupError.message });
+      return { ok: false, message: lookupError.message, field: "phone" };
+    }
+    if (!Array.isArray(found) || found.length === 0) {
+      return { ok: false, message: "No customer is registered with that phone number. Ask them to sign up first.", field: "phone" };
+    }
+  }
 
   /**
    * Note what is NOT sent: no prices, no totals, no rate. The browser has all
@@ -92,7 +111,7 @@ export async function recordSessionAction(
    * function re-derives every figure from the pricing and product rows, so a
    * tampered request cannot book a 90-minute VIP session for 300 MMK.
    */
-  const { error } = await supabase.rpc("record_session", {
+  const { data: sessionId, error } = await supabase.rpc("record_session", {
     p_station_id: input.stationId,
     p_minutes: input.minutes,
     p_items: input.items.filter((i) => i.qty > 0),
@@ -114,5 +133,14 @@ export async function recordSessionAction(
 
   revalidatePath("/floor");
   revalidatePath("/reports");
-  return { ok: true };
+
+  // The sale is recorded whatever happens next: points must not undo money
+  // already taken. The phone was checked above, so this rarely fails.
+  if (!phone) return { ok: true };
+
+  const attach = await setSessionCustomerAction(sessionId as string, phone);
+  if (!attach.ok) return { ok: true, customerWarning: attach.message };
+  return attach.customer
+    ? { ok: true, earned: { points: attach.points ?? 0, customerName: attach.customer.name } }
+    : { ok: true };
 }

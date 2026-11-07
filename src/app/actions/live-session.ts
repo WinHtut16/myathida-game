@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { PaymentMethod } from "@/lib/types";
+import { mapPointRule, pointsFor } from "@/lib/points";
+import type { PaymentMethod, SessionCustomer } from "@/lib/types";
 
 /**
  * Writes for a live session: start, add a snack, remove one, close, cancel.
@@ -121,13 +122,23 @@ export async function removeSessionItemAction(
   return { ok: true };
 }
 
+/**
+ * Points earned on close, read back from the closed row: charged minutes
+ * (after any waiver) and the rule the database froze on it. The ledger itself
+ * is written by the database trigger - this only reports it.
+ */
+export interface ClosePoints {
+  points: number;
+  customerName: string;
+}
+
 export async function closeSessionAction(
   sessionId: string,
   paymentMethod: PaymentMethod,
   waiveBlocks = 0,
-): Promise<ActionResult> {
+): Promise<ActionResult & { earned?: ClosePoints }> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("close_session", {
+  const { data, error } = await supabase.rpc("close_session", {
     p_session_id: sessionId,
     p_payment_method: paymentMethod,
     p_waive_blocks: waiveBlocks ? 1 : 0,
@@ -137,7 +148,55 @@ export async function closeSessionAction(
 
   revalidateSession(sessionId);
   revalidatePath("/reports");
-  return { ok: true };
+
+  const row = data as {
+    customer_id?: string | null;
+    customer_name?: string | null;
+    charged_minutes?: number | null;
+    points_rule?: unknown;
+  } | null;
+  const earned =
+    row?.customer_id && row.customer_name
+      ? { points: pointsFor(Number(row.charged_minutes ?? 0), mapPointRule(row.points_rule)), customerName: row.customer_name }
+      : undefined;
+  return { ok: true, earned };
+}
+
+/**
+ * Attach a registered customer (by phone) to a session so it earns points,
+ * or remove them with an empty phone. Same phone again re-syncs the points,
+ * which is how a session whose points failed at checkout gets repaired.
+ *
+ * Messages from set_session_customer are written for the counter already
+ * ("No customer is registered with that phone number..."), so they pass
+ * through rather than going through explain()'s generic 42501 text, which
+ * would hide the superadmin-only rule for finished sessions.
+ */
+export async function setSessionCustomerAction(
+  sessionId: string,
+  phone: string | null,
+): Promise<ActionResult & { customer?: SessionCustomer | null; points?: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("set_session_customer", {
+    p_session_id: sessionId,
+    p_phone: phone?.trim() || null,
+  });
+
+  if (error) {
+    console.error("[live-session] set_session_customer failed", { sessionId, code: error.code, message: error.message });
+    if (error.code === "42883") {
+      return { ok: false, message: "Points are not set up yet. Run supabase/game-points-migration.sql in the futsal Supabase project." };
+    }
+    return { ok: false, message: error.message };
+  }
+
+  revalidateSession(sessionId);
+  const r = data as { customer_id: string | null; username: string | null; phone: string | null; points: number };
+  return {
+    ok: true,
+    customer: r.customer_id ? { id: r.customer_id, name: r.username ?? "", phone: r.phone ?? "" } : null,
+    points: Number(r.points ?? 0),
+  };
 }
 
 export async function cancelSessionAction(

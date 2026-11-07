@@ -299,3 +299,37 @@ export async function updatePricingAction(
   revalidatePath("/floor");
   return { ok: true };
 }
+
+/**
+ * Save the game shop's points rule. public.set_point_rule re-checks that the
+ * caller is the game shop's superadmin and audits the change; this only
+ * pre-validates so the message reads well.
+ */
+export async function setPointRuleAction(
+  blockMinutes: number,
+  pointsPerBlock: number,
+  isActive: boolean,
+): Promise<ActionResult> {
+  if (!Number.isInteger(blockMinutes) || blockMinutes < 1 || blockMinutes > 1440) {
+    return { ok: false, message: "Block length must be between 1 and 1440 minutes." };
+  }
+  if (!Number.isInteger(pointsPerBlock) || pointsPerBlock < 0 || pointsPerBlock > 100000) {
+    return { ok: false, message: "Points per block must be between 0 and 100000." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.schema("public").rpc("set_point_rule", {
+    p_app: "game",
+    p_block_minutes: blockMinutes,
+    p_points_per_block: pointsPerBlock,
+    p_is_active: isActive,
+  });
+
+  if (error) {
+    console.error("[catalogue] set_point_rule failed", { code: error.code, message: error.message });
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/pricing");
+  return { ok: true };
+}
