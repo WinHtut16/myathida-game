@@ -354,6 +354,7 @@ export const my: Record<string, string> = {
 
   // points (multi-business loyalty)
   "points.customer": "ဖောက်သည် (ပွိုင့်)",
+  "points.navLink": "ပွိုင့်နှင့် ဆုလက်ဆောင်များ",
   "points.phonePlaceholder": "ဖုန်းနံပါတ်၊ ဥပမာ 09…",
   "points.add": "ထည့်မည်",
   "points.remove": "ဖောက်သည်ကို ဖယ်ရှားမည်",

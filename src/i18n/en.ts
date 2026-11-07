@@ -362,6 +362,7 @@ export const en = {
 
   // points (multi-business loyalty)
   "points.customer": "Customer (points)",
+  "points.navLink": "Points & rewards",
   "points.phonePlaceholder": "Phone, e.g. 09…",
   "points.add": "Add",
   "points.remove": "Remove customer",

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tag, Database, Gamepad2, User, ScrollText, Grid2x2, LogOut } from "lucide-react";
+import { Tag, Database, Gamepad2, User, ScrollText, Grid2x2, LogOut, Star } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
@@ -77,6 +77,13 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
           {t("nav.auditLog")}
         </a>
       )}
+      <a
+        href="/admin/loyalty/game"
+        className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
+      >
+        <Star size={18} strokeWidth={1.9} />
+        {t("points.navLink")}
+      </a>
       <a
         href="/admin/apps"
         className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
