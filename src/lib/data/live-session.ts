@@ -2,7 +2,8 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { mapPricingRows, mapSoldPricing } from "@/lib/pricing";
-import type { ActiveSession, OrderLine, Pricing, Product, Tier } from "@/lib/types";
+import { mapPointRule } from "@/lib/points";
+import type { ActiveSession, OrderLine, PointRule, Pricing, Product, Tier } from "@/lib/types";
 
 /**
  * One open session, for its own screen.
@@ -13,17 +14,18 @@ import type { ActiveSession, OrderLine, Pricing, Product, Tier } from "@/lib/typ
  */
 
 export type LiveSessionData =
-  | { ok: true; session: ActiveSession; pricing: Pricing; products: Product[] }
+  | { ok: true; session: ActiveSession; pricing: Pricing; products: Product[]; pointRule: PointRule | null }
   | { ok: false; message: string };
 
 export async function getLiveSession(sessionId: string): Promise<LiveSessionData> {
   const supabase = await createClient();
 
-  const [sessionRes, pricingRes, tiersRes, productsRes] = await Promise.all([
+  const [sessionRes, pricingRes, tiersRes, productsRes, ruleRes] = await Promise.all([
     supabase
       .from("sessions")
       .select(
         "id,station_id,station_name,tier,rate_per_hour,sold_pricing,started_at,label,status," +
+          "customer_id,customer_name,customer_phone," +
           "order_lines(id,product_id,product_name,qty,unit_price,line_total)",
       )
       .eq("id", sessionId)
@@ -31,6 +33,10 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     supabase.from("pricing").select("tier,rate_per_hour,min_minutes,increment_minutes,grace_minutes"),
     supabase.from("pricing_tiers").select("tier,duration_minutes,rate"),
     supabase.from("products").select("id,name_en,name_my,category,price,stock,active").eq("active", true),
+    // The points rule lives in the hub's public schema (shared by all three
+    // businesses). Optional: a failed read hides the points hint, nothing more.
+    supabase.schema("public").from("point_rules")
+      .select("block_minutes,points_per_block,is_active").eq("app", "game").maybeSingle(),
   ]);
 
   // Errors are read, not discarded: a denied read and a broken one must not
@@ -58,6 +64,9 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
         started_at: string | null;
         label: string | null;
         status: "active" | "closed";
+        customer_id: string | null;
+        customer_name: string | null;
+        customer_phone: string | null;
         order_lines:
           | { id: string; product_id: string | null; product_name: string; qty: number; unit_price: number; line_total: number }[]
           | null;
@@ -123,6 +132,9 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     startedAt: row.started_at,
     label: row.label,
     orders,
+    customer: row.customer_id
+      ? { id: row.customer_id, name: row.customer_name ?? "", phone: row.customer_phone ?? "" }
+      : null,
   };
 
   const products: Product[] = (productsRes.data ?? []).map((p) => ({
@@ -144,5 +156,10 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     ratePerHour: Number(row.rate_per_hour),
   };
 
-  return { ok: true, session, pricing: frozenPricing, products };
+  if (ruleRes.error) {
+    console.error("[live-session] points rule read failed", { code: ruleRes.error.code, message: ruleRes.error.message });
+  }
+  const pointRule = ruleRes.error ? null : mapPointRule(ruleRes.data);
+
+  return { ok: true, session, pricing: frozenPricing, products, pointRule };
 }

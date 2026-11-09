@@ -229,6 +229,22 @@ export interface ActiveSession {
   startedAt: string; // ISO, from the server — never a client clock
   label: string | null;
   orders: OrderLine[];
+  /** Registered customer earning points on this session, if staff attached one. */
+  customer?: SessionCustomer | null;
+}
+
+/** A registered customer (shared hub account) attached to a session. */
+export interface SessionCustomer {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+/** public.point_rules for the game shop: N points per full block of paid minutes. */
+export interface PointRule {
+  blockMinutes: number;
+  pointsPerBlock: number;
+  isActive: boolean;
 }
 
 /** Station joined with derived floor state — what the occupancy board renders. */

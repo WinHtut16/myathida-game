@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { ArrowLeft, Ban, Plus, Receipt, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   addSessionItemAction,
   cancelSessionAction,
@@ -11,13 +12,14 @@ import {
   removeSessionItemAction,
 } from "@/app/actions/live-session";
 import { AppShell } from "@/components/layout/AppShell";
+import { CustomerField } from "@/components/session/CustomerField";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { localizedName, useT } from "@/i18n";
 import { formatMMK } from "@/lib/format";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useNow } from "@/lib/hooks/useNow";
 import { formatElapsed, previewLiveTotal } from "@/lib/pricing";
-import type { ActiveSession, PaymentMethod, Pricing, Product } from "@/lib/types";
+import type { ActiveSession, PaymentMethod, PointRule, Pricing, Product } from "@/lib/types";
 import { cx, fill } from "@/lib/ui";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "kbzpay", "wave", "other"];
@@ -26,10 +28,12 @@ export function LiveSessionView({
   session,
   pricing,
   products,
+  pointRule,
 }: {
   session: ActiveSession;
   pricing: Pricing;
   products: Product[];
+  pointRule: PointRule | null;
 }) {
   const { t, locale } = useT();
   const router = useRouter();
@@ -62,6 +66,9 @@ export function LiveSessionView({
       if (!result.ok) {
         if (result.message) setError(result.message);
         return;
+      }
+      if (result.earned && result.earned.points > 0) {
+        toast.success(fill(t("points.earnedToast"), { p: result.earned.points, name: result.earned.customerName }));
       }
       // The session no longer exists as "open", so staying here would render
       // the not-open notice. Back to the board, where the TV now reads free.
@@ -102,6 +109,8 @@ export function LiveSessionView({
           {/* ── the clock and the money ── */}
           <section className="bg-surface border border-line rounded-xl shadow-card p-5">
             <LiveBill session={session} pricing={pricing} waive={waive} />
+
+            <CustomerField sessionId={session.id} customer={session.customer} pointRule={pointRule} />
 
             {pane === "none" && (
               <div className="mt-5 flex flex-col sm:flex-row gap-2">
