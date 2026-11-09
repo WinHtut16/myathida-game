@@ -50,8 +50,6 @@ Consequences for day-to-day work:
   server action re-checks the caller's role itself; a hidden nav item or
   disabled button is a UX courtesy, not the authorization boundary.
 
-<!-- BEGIN:nextjs-agent-rules -->
-
 ## Points & rewards (`/points`)
 
 Customers earn game points automatically from sessions (`supabase/game-points-migration.sql`, rule on Pricing). The **Points** section manages the rest, like futsal's Loyalty section in the hub: `/points` (requests: approve / decline, owner clears history), `/points/rewards` (+ `/new`, `/[id]`: any staff switches on/off, only an owner creates/edits/deletes), `/points/customers` (+ `/[id]`: list with search, balance, history, corrections with a reason).
@@ -59,6 +57,8 @@ Customers earn game points automatically from sessions (`supabase/game-points-mi
 - Every read and write is a hub `public.loyalty_*` function (`loyalty-zone-admin-migration.sql` in PointSystem_AkoATP), called with `.schema("public").rpc(...)` from `src/lib/data/points.ts` and `src/app/actions/points.ts`. This zone has no service role and those tables are service-role-only, so the database function does the permission check (game grant; global superadmin for reward edits). Hidden buttons are a courtesy.
 - Nav badge: `usePendingPoints` polls `pendingCountAction` every 30 s while visible (no per-render query, no browser Supabase).
 - Customers see their game points at `/games/account` on the hub site.
+
+<!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
 
