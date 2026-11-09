@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Grid2x2, User, ScrollText, Star } from "lucide-react";
+import { LogOut, Grid2x2, User, ScrollText } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { useT } from "@/i18n";
@@ -55,15 +55,6 @@ export function SidebarFooter() {
           {t("nav.auditLog")}
         </a>
       )}
-
-      {/* Points & rewards for this shop live in the hub (plain <a>: another zone). */}
-      <a
-        href="/admin/loyalty/game"
-        className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-rail-faint hover:bg-rail-hover hover:text-rail-text transition-colors"
-      >
-        <Star size={15} />
-        {t("points.navLink")}
-      </a>
 
       <a
         href="/admin/apps"

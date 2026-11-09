@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Cookie, Database, Gamepad2, LayoutDashboard, Settings, Tag, User } from "lucide-react";
+import { BarChart3, Cookie, Database, Gamepad2, LayoutDashboard, Settings, Star, Tag, User } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { SidebarFooter } from "./SidebarFooter";
+import { PendingBadge } from "./PendingBadge";
+import { usePendingPoints } from "@/lib/hooks/usePendingPoints";
 
 // Paths are relative to this app's basePath (/admin/game), which Next adds to
 // <Link href> and strips from usePathname() automatically - so these stay
@@ -16,6 +18,7 @@ const NAV = [
   { href: "/reports", key: "nav.history" as const, icon: BarChart3, super: false, match: (p: string) => p.startsWith("/reports") },
   { href: "/products", key: "nav.snacks" as const, icon: Cookie, super: false, match: (p: string) => p.startsWith("/products") },
   { href: "/titles", key: "nav.games" as const, icon: Gamepad2, super: false, match: (p: string) => p.startsWith("/titles") },
+  { href: "/points", key: "nav.points" as const, icon: Star, super: false, match: (p: string) => p.startsWith("/points") },
   { href: "/pricing", key: "nav.pricing" as const, icon: Tag, super: true, match: (p: string) => p.startsWith("/pricing") },
   { href: "/settings", key: "nav.settings" as const, icon: Settings, super: false, match: (p: string) => p.startsWith("/settings") },
   { href: "/export", key: "nav.export" as const, icon: Database, super: true, match: (p: string) => p.startsWith("/export") },
@@ -33,6 +36,7 @@ export function Sidebar() {
    */
   const user = useCurrentUser();
   const superadmin = user?.isSuperadmin ?? false;
+  const pending = usePendingPoints(!!user);
 
   return (
     <div className="hidden md:flex md:flex-col w-[216px] bg-rail text-rail-text flex-none py-[18px]">
@@ -72,6 +76,7 @@ export function Sidebar() {
             >
               <Icon size={17} />
               {t(key)}
+              {href === "/points" && pending ? <PendingBadge count={pending} /> : null}
             </Link>
           );
         })}
