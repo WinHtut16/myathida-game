@@ -7,7 +7,7 @@ export default async function Loading() {
   const { t } = await getT();
   return (
     <AppShell title={t("nav.points")}>
-      <div className="p-4 sm:p-5 px-4 sm:px-[22px] max-w-[1100px] flex flex-col gap-4">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] w-full max-w-[960px] mx-auto flex flex-col gap-4">
         <SkeletonCard>
           <Bar w="280px" h={22} />
         </SkeletonCard>
