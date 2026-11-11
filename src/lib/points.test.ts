@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapPointRule, maskPhone, pointsFor } from "./points";
+import { mapPointRule, mapTierPoints, maskPhone, pointsFor } from "./points";
 
 const rule = { blockMinutes: 60, pointsPerBlock: 10, isActive: true };
 
@@ -37,5 +37,30 @@ describe("mapPointRule", () => {
 describe("maskPhone", () => {
   it("keeps the first two and last four digits", () => {
     expect(maskPhone("09777300011")).toBe("09•••••0011");
+  });
+});
+
+describe("mapTierPoints - client rule 2026-11-11", () => {
+  it("reads points per hour by tier", () => {
+    expect(
+      mapTierPoints([
+        { tier: "PS4", points_per_hour: 3 },
+        { tier: "PS5", points_per_hour: 5 },
+        { tier: "VIP", points_per_hour: 7 },
+        { tier: "CINEMA", points_per_hour: 7 },
+      ]),
+    ).toEqual({ PS4: 3, PS5: 5, VIP: 7, CINEMA: 7 });
+  });
+
+  it("skips rows without a number and tolerates junk", () => {
+    expect(mapTierPoints([{ tier: "PS4", points_per_hour: null }])).toEqual({});
+    expect(mapTierPoints(null)).toEqual({});
+  });
+
+  it("full hours only: a PS4 hour earns 3, a half hour nothing", () => {
+    const ps4 = { blockMinutes: 60, pointsPerBlock: 3, isActive: true };
+    expect(pointsFor(30, ps4)).toBe(0);
+    expect(pointsFor(60, ps4)).toBe(3);
+    expect(pointsFor(119, ps4)).toBe(3);
   });
 });

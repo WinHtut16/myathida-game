@@ -5,7 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getStaffDirectory } from "./staff-directory";
 import { yangonDayStart } from "./yangon";
 import { mapPricingRows } from "@/lib/pricing";
-import { mapPointRule } from "@/lib/points";
+import { mapPointRule, mapTierPoints } from "@/lib/points";
 import type { PointRule, Pricing, Product, Station, Tier } from "@/lib/types";
 
 /** Server reads for the catalogue screens (Snacks, Pricing). */
@@ -328,6 +328,27 @@ export async function getStockHistory(
       ? productsRes.data.map((p) => ({ id: p.id, name: p.nameEn }))
       : [],
   };
+}
+
+/**
+ * Points per full hour, per tier (game.pricing.points_per_hour, from
+ * game-tier-points-migration.sql). data=null when that migration has not run
+ * yet (the column is missing), so the Pricing page falls back to the old
+ * single rule instead of breaking.
+ */
+export async function getTierPoints(): Promise<CatalogueResult<Partial<Record<Tier, number>> | null>> {
+  if (!isSupabaseConfigured()) return { ok: false, message: UNCONFIGURED };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("pricing").select("tier,points_per_hour");
+
+  if (error) {
+    // 42703 = undefined column: migration not run yet.
+    if (error.code === "42703") return { ok: true, data: null };
+    console.error("[catalogue] tier points read failed", { code: error.code, message: error.message });
+    return { ok: false, message: error.message };
+  }
+  return { ok: true, data: mapTierPoints(data) };
 }
 
 /**

@@ -109,7 +109,7 @@ afterwards) call, so one duration cannot carry two prices.
 | PS4 | 3,000 MMK/hr | TV 1–7 |
 | PS5 | 5,000 MMK/hr | TV 8–9 |
 | VIP (PS5) | 7,000 MMK/hr | VIP room |
-| CINEMA | 3,000 MMK/hr (placeholder, set real price on Pricing page) | Mini-cinema TVs |
+| CINEMA | 7,000 MMK/hr (same as VIP; game-tier-points-migration.sql) | Mini-cinema TVs |
 
 ## Roles
 

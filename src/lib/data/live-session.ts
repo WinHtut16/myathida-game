@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { mapPricingRows, mapSoldPricing } from "@/lib/pricing";
-import { mapPointRule } from "@/lib/points";
+import { mapPointRule, mapTierPoints } from "@/lib/points";
 import type { ActiveSession, OrderLine, PointRule, Pricing, Product, Tier } from "@/lib/types";
 
 /**
@@ -20,7 +20,7 @@ export type LiveSessionData =
 export async function getLiveSession(sessionId: string): Promise<LiveSessionData> {
   const supabase = await createClient();
 
-  const [sessionRes, pricingRes, tiersRes, productsRes, ruleRes] = await Promise.all([
+  const [sessionRes, pricingRes, tiersRes, productsRes, ruleRes, tierPointsRes] = await Promise.all([
     supabase
       .from("sessions")
       .select(
@@ -37,6 +37,9 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
     // businesses). Optional: a failed read hides the points hint, nothing more.
     supabase.schema("public").from("point_rules")
       .select("block_minutes,points_per_block,is_active").eq("app", "game").maybeSingle(),
+    // Points per hour by tier (game-tier-points-migration.sql). Optional too:
+    // before that migration the column is missing and the shop-wide rule is shown.
+    supabase.from("pricing").select("tier,points_per_hour"),
   ]);
 
   // Errors are read, not discarded: a denied read and a broken one must not
@@ -159,7 +162,14 @@ export async function getLiveSession(sessionId: string): Promise<LiveSessionData
   if (ruleRes.error) {
     console.error("[live-session] points rule read failed", { code: ruleRes.error.code, message: ruleRes.error.message });
   }
-  const pointRule = ruleRes.error ? null : mapPointRule(ruleRes.data);
+  const shopRule = ruleRes.error ? null : mapPointRule(ruleRes.data);
+  // Same rule the database will freeze on close: the shop switch, 60-minute
+  // blocks, this tier's points per hour (game.session_point_rule).
+  const tierPoints = tierPointsRes.error ? null : mapTierPoints(tierPointsRes.data)[session.tier];
+  const pointRule: PointRule | null =
+    shopRule && tierPoints !== undefined && tierPoints !== null
+      ? { blockMinutes: 60, pointsPerBlock: tierPoints, isActive: shopRule.isActive }
+      : shopRule;
 
   return { ok: true, session, pricing: frozenPricing, products, pointRule };
 }

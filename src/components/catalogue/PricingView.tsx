@@ -9,7 +9,7 @@ import { TierBadge } from "@/components/station/TierBadge";
 import { PointsRuleCard } from "@/components/catalogue/PointsRuleCard";
 import { useT, type MessageKey } from "@/i18n";
 import { formatMMK } from "@/lib/format";
-import type { PointRule, Pricing, PricingTier } from "@/lib/types";
+import type { PointRule, Pricing, PricingTier, Tier } from "@/lib/types";
 
 /**
  * Rate cards.
@@ -25,11 +25,14 @@ export function PricingView({
   pricing,
   canEdit,
   pointRule,
+  tierPoints,
 }: {
   pricing: Pricing[];
   canEdit: boolean;
   /** ok=false: the points migrations have not been run yet. */
   pointRule: { ok: true; rule: PointRule | null } | { ok: false };
+  /** null: game-tier-points-migration.sql not run yet (old single rule). */
+  tierPoints: Partial<Record<Tier, number>> | null;
 }) {
   const { t } = useT();
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,13 @@ export function PricingView({
           <RateCard key={p.tier} pricing={p} canEdit={canEdit} onError={setError} />
         ))}
         {pointRule.ok ? (
-          <PointsRuleCard rule={pointRule.rule} canEdit={canEdit} onError={setError} />
+          <PointsRuleCard
+            rule={pointRule.rule}
+            tiers={pricing.map((p) => p.tier)}
+            tierPoints={tierPoints}
+            canEdit={canEdit}
+            onError={setError}
+          />
         ) : (
           <div className="bg-surface border border-line rounded-md p-6 text-xs text-text-muted leading-relaxed">
             <div className="text-md font-bold text-text mb-2">{t("points.ruleTitle")}</div>
