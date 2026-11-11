@@ -301,6 +301,28 @@ export async function updatePricingAction(
 }
 
 /**
+ * Points per full hour for one tier. game.set_tier_points re-checks that the
+ * caller is an owner and audits the change. Applies to sessions that earn from
+ * now on; a session freezes its rule the first time it earns.
+ */
+export async function setTierPointsAction(tier: Tier, points: number): Promise<ActionResult> {
+  if (!Number.isInteger(points) || points < 0 || points > 100000) {
+    return { ok: false, message: "Points per hour must be between 0 and 100000." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_tier_points", { p_tier: tier, p_points: points });
+
+  if (error) {
+    console.error("[catalogue] set_tier_points failed", { code: error.code, message: error.message });
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/pricing");
+  return { ok: true };
+}
+
+/**
  * Save the game shop's points rule. public.set_point_rule re-checks that the
  * caller is the game shop's superadmin and audits the change; this only
  * pre-validates so the message reads well.

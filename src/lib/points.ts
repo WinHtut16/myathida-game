@@ -1,4 +1,4 @@
-import type { PointRule } from "@/lib/types";
+import type { PointRule, Tier } from "@/lib/types";
 
 /**
  * Points a session earns: N per FULL block of paid minutes, nothing for a
@@ -21,6 +21,21 @@ export function mapPointRule(raw: unknown): PointRule | null {
   const per = Number(r.points_per_block);
   if (!Number.isFinite(block) || !Number.isFinite(per)) return null;
   return { blockMinutes: block, pointsPerBlock: per, isActive: Boolean(r.is_active) };
+}
+
+/**
+ * game.pricing rows -> points per full hour by tier
+ * (game-tier-points-migration.sql). Rows without a number are skipped.
+ */
+export function mapTierPoints(rows: unknown): Partial<Record<Tier, number>> {
+  const out: Partial<Record<Tier, number>> = {};
+  if (!Array.isArray(rows)) return out;
+  for (const r of rows as { tier?: unknown; points_per_hour?: unknown }[]) {
+    if (r.points_per_hour === null || r.points_per_hour === undefined) continue;
+    const n = Number(r.points_per_hour);
+    if (typeof r.tier === "string" && Number.isFinite(n)) out[r.tier as Tier] = n;
+  }
+  return out;
 }
 
 /** 09xxxxxxx shown as 09•••••1234 on shared screens. */

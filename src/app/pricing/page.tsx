@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { getPointRule, getPricing } from "@/lib/data/catalogue";
+import { getPointRule, getPricing, getTierPoints } from "@/lib/data/catalogue";
 import { getCurrentUser } from "@/lib/data/session";
 import { PricingView } from "@/components/catalogue/PricingView";
 import { SetupNotice } from "@/components/catalogue/SetupNotice";
@@ -16,11 +16,12 @@ import { getT } from "@/i18n/server";
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
-  const [result, user, { t }, ruleResult] = await Promise.all([
+  const [result, user, { t }, ruleResult, tierPointsResult] = await Promise.all([
     getPricing(),
     getCurrentUser(),
     getT(),
     getPointRule(),
+    getTierPoints(),
   ]);
 
   if (!result.ok) {
@@ -37,6 +38,7 @@ export default async function PricingPage() {
         pricing={result.data}
         canEdit={user?.isSuperadmin ?? false}
         pointRule={ruleResult.ok ? { ok: true, rule: ruleResult.data } : { ok: false }}
+        tierPoints={tierPointsResult.ok ? tierPointsResult.data : null}
       />
     </AppShell>
   );
