@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Cookie, Database, Gamepad2, LayoutDashboard, Settings, Star, Tag, User } from "lucide-react";
@@ -9,6 +10,7 @@ import { cx } from "@/lib/ui";
 import { SidebarFooter } from "./SidebarFooter";
 import { PendingBadge } from "./PendingBadge";
 import { usePendingPoints } from "@/lib/hooks/usePendingPoints";
+import acjMark from "@/assets/acj-mark-mint.png";
 
 // Paths are relative to this app's basePath (/admin/game), which Next adds to
 // <Link href> and strips from usePathname() automatically - so these stay
@@ -41,9 +43,8 @@ export function Sidebar() {
   return (
     <div className="hidden md:flex md:flex-col w-[216px] bg-rail text-rail-text flex-none py-[18px]">
       <div className="px-5 pb-5 flex items-center gap-2.5 border-b border-rail-line mb-3">
-        <span className="w-[30px] h-[30px] rounded-md bg-accent flex items-center justify-center text-white font-display font-bold text-md">
-          A
-        </span>
+        {/* The client's ACJ mark in brand mint (same file as the hub's /games page). */}
+        <Image src={acjMark} alt="" width={34} height={23} priority className="flex-none" />
         <div className="leading-[1.1]">
           <div className="text-white font-semibold text-base">AcJ Gaming Lounge</div>
           <div className="text-2xs text-rail-faint font-semibold tracking-caps">{t("brand.tagline")}</div>

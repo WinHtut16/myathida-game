@@ -26,7 +26,7 @@ export function PointsShell({ children, right }: { children: ReactNode; right?: 
 
   return (
     <AppShell title={t("nav.points")} right={right}>
-      <div className="p-4 sm:p-5 px-4 sm:px-[22px] max-w-[1100px] flex flex-col gap-4">
+      <div className="p-4 sm:p-5 px-4 sm:px-[22px] w-full max-w-[960px] mx-auto flex flex-col gap-4">
         <nav className="flex gap-1 rounded-md bg-line-faint p-1 self-start max-w-full overflow-x-auto" aria-label={t("nav.points")}>
           {TABS.map(({ href, key, icon: Icon, match }) => {
             const active = match(pathname);
