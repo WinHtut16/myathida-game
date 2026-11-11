@@ -7,9 +7,12 @@ import { useCurrentUser } from "@/components/providers/SessionProvider";
 import { useT } from "@/i18n";
 import { cx } from "@/lib/ui";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { PendingBadge } from "./PendingBadge";
+import { usePendingPoints } from "@/lib/hooks/usePendingPoints";
 
 // Everyone's items that don't fit the four-tab bottom bar.
 const STAFF_ITEMS = [
+  { href: "/points", key: "nav.points" as const, icon: Star, match: (p: string) => p.startsWith("/points") },
   { href: "/titles", key: "nav.games" as const, icon: Gamepad2, match: (p: string) => p.startsWith("/titles") },
 ];
 
@@ -27,6 +30,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
   const { t } = useT();
   const user = useCurrentUser();
   const superadmin = user?.isSuperadmin ?? false;
+  const pending = usePendingPoints(!!user);
 
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
@@ -52,6 +56,7 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
             >
               <Icon size={18} strokeWidth={active ? 2.2 : 1.9} />
               {t(key)}
+              {href === "/points" && pending ? <PendingBadge count={pending} /> : null}
             </Link>
           );
         })}
@@ -77,13 +82,6 @@ export function MoreMenu({ onNavigate }: { onNavigate: () => void }) {
           {t("nav.auditLog")}
         </a>
       )}
-      <a
-        href="/admin/loyalty/game"
-        className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"
-      >
-        <Star size={18} strokeWidth={1.9} />
-        {t("points.navLink")}
-      </a>
       <a
         href="/admin/apps"
         className="flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-text hover:bg-line-faint"

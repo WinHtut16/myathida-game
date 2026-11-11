@@ -256,3 +256,60 @@ export interface StationView {
   /** Null when the TV is free, reserved, or occupied only by the manual flag. */
   active: ActiveSession | null;
 }
+
+// ── Points & rewards (game shop), via the hub's public.loyalty_* functions ──
+
+export interface LoyaltyReward {
+  id: string;
+  name: string;
+  nameMy: string | null;
+  description: string | null;
+  descriptionMy: string | null;
+  pointsCost: number;
+  stock: number | null;
+  isActive: boolean;
+}
+
+export type LoyaltyRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+
+export interface LoyaltyRequest {
+  id: string;
+  status: LoyaltyRequestStatus;
+  requestedAt: string;
+  resolvedAt: string | null;
+  notes: string | null;
+  pointsCost: number;
+  reward: { id: string; name: string; nameMy: string | null };
+  customer: { id: string; username: string; phone: string | null; balance: number };
+}
+
+export interface LoyaltyCustomerRow {
+  id: string;
+  username: string;
+  phone: string | null;
+  balance: number;
+  earned: number;
+  lastActivity: string | null;
+}
+
+export interface LoyaltyTxn {
+  id: string;
+  createdAt: string;
+  pointsDelta: number;
+  type: "earn" | "redeem" | "adjustment";
+  hoursPlayed: number | null;
+  note: string | null;
+  rewardName: string | null;
+  fromSession: boolean;
+}
+
+export interface LoyaltyCustomer {
+  id: string;
+  username: string;
+  phone: string | null;
+  createdAt: string;
+  balance: number;
+  earned: number;
+  redeemed: number;
+  transactions: LoyaltyTxn[];
+}
